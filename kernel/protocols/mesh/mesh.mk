@@ -2,6 +2,7 @@ NAME := mesh
 
 $(NAME)_TYPE := kernel
 GLOBAL_INCLUDES += include
+GLOBAL_DEFINES += CONFIG_AOS_MESH
 
 $(NAME)_INCLUDES += include
 
@@ -89,5 +90,3 @@ $(NAME)_CFLAGS      += -Wall -Werror
 else ifeq ($(COMPILER),gcc)
 $(NAME)_CFLAGS      += -Wall -Werror
 endif
-
-GLOBAL_DEFINES += CONFIG_AOS_MESH
