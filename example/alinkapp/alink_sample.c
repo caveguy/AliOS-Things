@@ -837,7 +837,7 @@ int application_start(int argc, char *argv[])
     sal_init();
 #endif
 
-	 // aos_post_delayed_action(1000, app_delayed_action, NULL);
+	 aos_post_delayed_action(1000, app_delayed_action, NULL);
     parse_opt(argc, argv);
 
     aos_set_log_level(AOS_LL_DEBUG);
