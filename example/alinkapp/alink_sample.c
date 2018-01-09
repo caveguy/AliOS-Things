@@ -817,12 +817,6 @@ static void at_uart_configure(uart_dev_t *u)
     u->config.flow_control = AT_UART_FLOW_CONTROL;
 }
 #endif
-static void app_delayed_action(void *arg)
-{
-    LOG("====%s:%d %s\r\n", __func__, __LINE__, aos_task_name());
-    aos_post_delayed_action(5000, app_delayed_action, NULL);
-}
-
 
 int application_start(int argc, char *argv[])
 {
@@ -836,8 +830,6 @@ int application_start(int argc, char *argv[])
 #ifdef WITH_SAL
     sal_init();
 #endif
-
-	 aos_post_delayed_action(1000, app_delayed_action, NULL);
     parse_opt(argc, argv);
 
     aos_set_log_level(AOS_LL_DEBUG);
