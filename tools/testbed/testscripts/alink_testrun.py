@@ -1,6 +1,8 @@
 import sys, os, time, httplib, json, subprocess, pdb
 from autotest import Autotest
 
+required_devices = [ [1, 'alink'] ]
+
 models={'mk3060':'0x13200', 'esp32':'0x10000', 'stm32':'0x8000000'}
 testnames={'5pps':0, '2pps':1, 'short5pps':15, 'short2pps':14}
 
@@ -194,12 +196,9 @@ def main(firmware='~/lb-all.bin', model='mk3060', testname='5pps'):
         print 'error: start failed'
         return [1, 'connect testbed failed']
 
-    number = 1
-    if testname in ['5pps', '2pps']:
-        timeout = 3600
-    else:
-        timeout = 120
-    allocted = at.device_allocate(model, number, timeout, 'alink')
+    number, purpose = required_devices[0]
+    timeout = 10
+    allocted = at.device_allocate(model, number, timeout, purpose)
     if len(allocted) != number:
         print "error: request device allocation failed"
         return [1, 'allocate device failed']

@@ -1,6 +1,8 @@
 import sys, os, time, httplib, json, subprocess, pdb
 from autotest import Autotest
 
+required_devices = [ [1, 'general'], [1, 'alink'] ]
+
 models={'mk3060':'0x13200', 'esp32':'0x10000'}
 testnames={'5pps':1, '2pps':0, 'short5pps':2, 'short2pps':3}
 
@@ -184,13 +186,11 @@ def main(firmware='~/lb-all.bin', model='mk3060', testname='5pps'):
 
     #request allocating devices
     devices = {}
-    number = 1
-    if testname in ['5pps', '2pps']:
-        timeout = 3600
-    else:
-        timeout = 120
-    allocated_leader = at.device_allocate(model, number, timeout, 'general')
-    allocated_router = at.device_allocate(model, number, timeout, 'alink')
+    timeout = 10
+    number, purpose = required_devices[0]
+    allocated_leader = at.device_allocate(model, number, timeout, purpose)
+    number, purpose = required_devices[1]
+    allocated_router = at.device_allocate(model, number, timeout, purpose)
     if len(allocated_leader) != number or len(allocated_router) != number:
         print "error: request allocating devices failed"
         return [1, 'allocate device failed']

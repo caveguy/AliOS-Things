@@ -2,6 +2,8 @@ import sys, os, time
 from autotest import Autotest
 from mesh_common import *
 
+required_devices = [ [7, 'general'] ]
+
 def main(firmware='lb-mk3060.bin', model='mk3060'):
     ap_ssid = 'aos_test_01'
     ap_pass = 'Alios@Embedded'
@@ -57,8 +59,8 @@ def main(firmware='lb-mk3060.bin', model='mk3060'):
         return [1, 'connect testbed failed']
 
     #request device allocation
-    number = 7
-    timeout = 300
+    number, purpose = required_devices[0]
+    timeout = 10
     allocated = allocate_devices(at, model, number, timeout)
     if len(allocated) != number:
         return [1, 'allocate device failed']

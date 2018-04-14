@@ -1,5 +1,5 @@
 import os, sys, time, socket, ssl, signal, re, Queue
-import thread, threading, json, traceback, shutil
+import thread, threading, json, traceback, shutil, errno
 import TBframe as pkt
 
 MAX_MSG_LENGTH = 65536
@@ -55,6 +55,12 @@ class Server:
             try:
                 sock.send(data)
             except:
+                if DEBUG: traceback.print_exc()
+                print 'error: can not send data over socket {}, will try close it'.format(repr(sock))
+                try:
+                    sock.close()
+                except:
+                    pass
                 continue
 
     def send_packet(self, sock, type, content, timeout=0.1):
@@ -232,19 +238,23 @@ class Server:
                     elif type == pkt.CLIENT_TAG:
                         client['tag'] = value
                         print 'client {0} tag: {1}'.format(client['uuid'],repr(value))
+            except socket.error as e:
+                if e.errno != errno.ECONNRESET:
+                    if DEBUG: traceback.print_exc()
+                break
             except:
                 if DEBUG: traceback.print_exc()
                 break
         conn.close()
         if conn in self.timeouts: self.timeouts.pop(conn)
         if client:
+            client['valid'] = False
             for port in client['devices']:
                 if client['devices'][port]['valid'] == False:
                     continue
                 client['devices'][port]['status'] = '{}'
                 client['devices'][port]['valid'] = False
                 print "device {0} removed from client {1}".format(port, client['uuid'])
-            client['valid'] = False
             print "client {0} @ {1} disconnected".format(client['uuid'], addr)
             self.send_device_list_to_all()
         else:
@@ -318,6 +328,10 @@ class Server:
             func_set = self.special_purpose_set[func_set]
         #if DEBUG and func_set: print purpose, func_set
 
+        reserve = 'yes'
+        if len(values) > 3:
+            reserve = values[3]
+
         allocated = []
         for client in self.client_list:
             allocated = []
@@ -368,9 +382,10 @@ class Server:
             if len(allocated) >= number:
                 break
         if len(allocated) >= number:
-            with self.allocated['lock']:
-                self.allocated['devices'] += allocated
-                self.allocated['timeout'] = time.time() + 10
+            if reserve == 'yes':
+                with self.allocated['lock']:
+                    self.allocated['devices'] += allocated
+                    self.allocated['timeout'] = time.time() + 10
             if DEBUG: print "allocated", allocated
             return ['success', '|'.join(allocated)]
         else:
@@ -514,6 +529,10 @@ class Server:
                         self.send_packet(terminal['socket'], pkt.RESPONSE, content)
                         print "terminal {0}:{1}".format(terminal['addr'][0], terminal['addr'][1]),
                         print "downloading log of device {0}:{1} ... succeed".format(uuid, port)
+            except socket.error as e:
+                if e.errno != errno.ECONNRESET:
+                    if DEBUG: traceback.print_exc()
+                break
             except:
                 if DEBUG: traceback.print_exc()
                 break

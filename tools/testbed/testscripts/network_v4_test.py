@@ -1,6 +1,8 @@
 import os, sys, time
 from autotest import Autotest
 
+required_devices = [ [1, 'hal'] ]
+
 def main(firmware='networkapp@stm32l432kc-nucleo.bin', model='stm32'):
     ap_ssid = 'aos_test_01'
     ap_pass = 'Alios@Embedded'
@@ -55,9 +57,9 @@ def main(firmware='networkapp@stm32l432kc-nucleo.bin', model='stm32'):
         return [1, 'connect testbed failed']
 
     #request device allocation
-    number = 1
-    timeout = 60
-    allocated = at.device_allocate(model, number, timeout, purpose='sal')
+    number, purpose = required_devices[0]
+    timeout = 10
+    allocated = at.device_allocate(model, number, timeout, purpose)
     if len(allocated) != number:
         return [1, 'allocate device failed']
         print 'allocated: {0}'.format(allocated)
