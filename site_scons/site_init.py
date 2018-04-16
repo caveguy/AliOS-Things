@@ -147,8 +147,9 @@ class aos_component:
 
     def add_prebuilt_libs(self, *libs):
         for lib in libs:
-            if not os.path.isabs(lib) and not lib.startswith('#'):
+            if not os.path.isabs(lib) and not lib.startswith('#'):  
                 lib = os.path.join(self.dir, lib)
+                lib = lib.replace( '\\', '/')
             aos_global_config.prebuilt_libs.append(lib)
 
     def add_prebuilt_objs(self, *objs):

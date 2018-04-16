@@ -97,11 +97,12 @@ global_cflags = []
 
 if aos_global_config.compiler == 'armcc':    
     global_cflags = Split(''' 
-        --c99 
-        --cpu=7E-M 
+        --c99
+        --cpu=Cortex-M4
+        --apcs=/hardfp
+        --fpu=vfpv4_sp_d16
         -D__MICROLIB 
         -g 
-        --apcs=interwork 
         --split_sections
     ''')
 elif  aos_global_config.compiler == 'iar':
@@ -128,11 +129,12 @@ for i in global_cflags:
 global_asflags = []
 if aos_global_config.compiler == 'armcc':    
     global_asflags = Split(''' 
-        --cpu=7E-M 
-        -g 
-        --apcs=interwork 
-        --library_type=microlib 
-        --pd 
+        --cpu=Cortex-M4
+        -g
+        --apcs=/hardfp
+        --fpu=vfpv4_sp_d16
+        --library_type=microlib
+        --pd
         "__MICROLIB SETA 1"
     ''')
 elif  aos_global_config.compiler == 'iar':
@@ -161,7 +163,11 @@ global_ldflags = []
 if aos_global_config.compiler == 'armcc':    
     global_ldflags = Split(''' 
         -L 
-        --cpu=7E-M
+        --cpu=Cortex-M4
+        -L
+        --fpu=vfpv4_sp_d16
+        -L
+        --apcs=/hardfp
         -L 
         --strict
         -L
