@@ -149,7 +149,7 @@ class aos_component:
         for lib in libs:
             if not os.path.isabs(lib) and not lib.startswith('#'):  
                 lib = os.path.join(self.dir, lib)
-                lib = lib.replace( '\\', '/')
+                lib = lib.replace('\\', '/')
             aos_global_config.prebuilt_libs.append(lib)
 
     def add_prebuilt_objs(self, *objs):
@@ -406,7 +406,11 @@ class dependency_process_impl(process):
     def __pre_config(self):
         for config, func_comp in self.config.config_observers.items():
             for func, comp in func_comp.items():
+                len_deps = len(comp.get_comp_deps())
                 func(comp)
+                if len_deps != len(comp.get_comp_deps()):
+                    for dep in comp.get_comp_deps():
+                        self.__add_components_dependency(dep)
             func_comp.clear()
 
     def __post_config(self):

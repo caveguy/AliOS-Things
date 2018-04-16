@@ -30,7 +30,7 @@ global_cflags = Split('''
     -lncurses
 ''')
 
-glbao_macros = Split('''
+global_macros = Split('''
     SYSINFO_PRODUCT_MODEL=\\"ALI_AOS_LINUXHOST\\"
     SYSINFO_DEVICE_NAME=\\"LINUXHOST\\"
     CONFIG_AOS_RHINO_MMREGION
@@ -47,7 +47,9 @@ component = aos_mcu_component('linuximpl', '', src)
 component.set_global_arch('linux')
 
 component.add_global_cflags(*global_cflags)
-component.add_global_macros(*glbao_macros)
+component.add_global_asflags('-m32')
+component.add_global_ldflags('-m32', '-lpthread', '-lm', '-lrt')
+component.add_global_macros(*global_macros)
 
 
 @post_config
