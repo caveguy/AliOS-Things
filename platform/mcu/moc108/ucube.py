@@ -277,7 +277,7 @@ global_incs = Split('''
         mx108/mx378/driver/entry
         #security/alicrypto/libalicrypto/inc/
 ''')
-component = aos_mcu_component('moc108', src)
+component = aos_mcu_component('moc108', 'arm-none-eabi-', src)
 component.add_includes(*incs)
 component.add_global_includes(*global_incs)
 
@@ -312,6 +312,8 @@ global_macro = Split('''
         CONFIG_AOS_CLI_BOARD
         CONFIG_AOS_FOTA_BREAKPOINT
         STDIO_UART=0
+        SYSINFO_PRODUCT_MODEL=\\"ALI_AOS_MK3060\\" 
+        SYSINFO_DEVICE_NAME=\\"MK3060\\"
 ''')
 for macro in global_macro:
     component.add_global_macros(macro)
@@ -398,13 +400,6 @@ aos_global_config.add_ld_files('mx108/mx378/build/mx108.ld.S')
 
 component.add_prebuilt_libs('librwnx/librwnx.a')
 component.set_global_arch('ARM968E-S')
-
-tool_chain = aos_global_config.create_tool_chain()
-tool_chain.set_prefix('arm-none-eabi-')
-tool_chain.set_cppflags('-DSYSINFO_PRODUCT_MODEL=\\"ALI_AOS_MK3060\\" -DSYSINFO_DEVICE_NAME=\\"MK3060\\"')
-tool_chain.set_linkcom('$LINK -o $TARGET $LDFLAGS -Wl,-Map,$MAPFILE -Wl,--whole-archive -Wl,--start-group $LIBS  -Wl,--end-group -Wl,--no-whole-archive -Wl,--gc-sections -Wl,--cref $LINKFLAGS')
-
-aos_global_config.tool_chain_config(tool_chain)
 
 
 class ota_bin(aos_command):

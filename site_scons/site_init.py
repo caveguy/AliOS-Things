@@ -188,8 +188,11 @@ class aos_component:
 
 
 class aos_mcu_component(aos_component):
-    def __init__(self, name, src):
+    def __init__(self, name, prefix, src):
         aos_component.__init__(self, name, src)
+        tool_chain = aos_global_config.create_tool_chain()
+        tool_chain.set_prefix(prefix)
+        aos_global_config.tool_chain_config(tool_chain)
 
     @staticmethod
     def add_global_cflags(*cflags):
@@ -215,7 +218,7 @@ class aos_board_component(aos_component):
     def __init__(self, name, mcu, src):
         aos_component.__init__(self, name, src)
         self.set_global_mcu_family(mcu)
-        self.add_comp_deps('platform/mcu/'+mcu )
+        self.add_comp_deps('platform/mcu/'+ mcu)
 
     @staticmethod
     def set_global_testcases(testcases):
