@@ -192,7 +192,8 @@ class aos_mcu_component(aos_component):
     def __init__(self, name, prefix, src):
         aos_component.__init__(self, name, src)
         tool_chain = aos_global_config.create_tool_chain()
-        tool_chain.set_prefix(prefix)
+        if aos_global_config.compiler == "gcc":
+            tool_chain.set_prefix(prefix)
         aos_global_config.tool_chain_config(tool_chain)
 
     @staticmethod

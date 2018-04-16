@@ -22,29 +22,33 @@ pca10056_platforms="pca10056"
 eml3047_targets="lorawan.lorawanapp lorawan.linklora"
 eml3047_platforms="eml3047"
 
-scons_build_targets="helloworld@b_l475e helloworld@starterkit"
-scons_ide_targets="helloworld@b_l475e helloworld@starterkit"
-ide_types="keil iar"
+#scons+gcc more to add
+scons_build_targets="nano@b_l475e helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 
-keil_iar_targets="helloworld@b_l475e"
+keil_iar_targets="helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 compiler_types="armcc iar"
+build_system="make scons"  
+build_tools="iar armcc"
+build_ide="iar keil" 
+
 
 if [ "$(uname)" = "Linux" ]; then
-    OS="Linux"
+    CUR_OS="Linux"
     keil_iar_targets=""
 elif [ "$(uname)" = "Darwin" ]; then
-    OS="OSX"
+    CUR_OS="OSX"
     linux_platforms=""
     keil_iar_targets=""
 elif [ "$(uname | grep NT)" != "" ]; then
-    OS="Windows"
+    CUR_OS="Windows"
     linux_platforms=""
     esp8266_platforms=""
 else
     echo "error: unkonw OS"
     exit 1
 fi
-echo "OS: ${OS}"
+echo "CUR_OS: ${CUR_OS}"
+
 
 git status > /dev/null 2>&1
 if [ $? -ne 0 ]; then
@@ -54,6 +58,8 @@ fi
 
 JNUM=`cat /proc/cpuinfo | grep processor | wc -l`
 
+
+
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
@@ -61,27 +67,31 @@ fi
 branch=`git status | grep "On branch" | sed -r 's/.*On branch //g'`
 cd $(git rev-parse --show-toplevel)
 
-for target in ${keil_iar_targets}; do
-    for compiler in ${compiler_types}; do
-        aos make clean > /dev/null 2>&1
-        aos make ${target} COMPILER=${compiler} > ${target}_${compiler}@${branch}.log 2>&1
-        if [ $? -eq 0 ]; then
-            echo "build make ${target} COMPILER=${compiler} at ${branch} branch succeed"
-            rm -f ${target}_${compiler}@${branch}.log
-        else
-            echo -e "build make ${target} COMPILER=${compiler} at ${branch} branch failed, log:\n"
-            cat ${target}_${compiler}@${branch}.log
-            echo -e "\nbuild make ${target} COMPILER=${compiler} at ${branch} branch failed"
-            aos make clean > /dev/null 2>&1
-            exit 1
-        fi
+    
+for s in ${build_system}; do
+    for i in ${keil_iar_targets}; do    
+        for t in ${build_tools}; do            
+            aos make clean > /dev/null 2>&1    
+            aos ${s} -j4 ${i} COMPILER=${t} > ${s}_${i}_${t}@${branch}.log 2>&1
+                        
+            if [ $? -eq 0 ]; then
+                echo -e "build aos ${s} ${i} COMPILER=${t} at ${branch} branch succeed"
+                rm -f ${s}_${i}_${t}@${branch}.log
+            else
+                echo -e "build aos ${s} ${i} COMPILER=${t} at ${branch} branch failed, log:\n"
+                cat ${s}_${i}_${t}@${branch}.log
+                echo -e "\nbuild aos ${s} ${i} COMPILER=${t} at ${branch} branch failed"
+                aos make clean > /dev/null 2>&1
+                exit 1
+            fi            
+        done
     done
 done
 
-#scons tmp
+#scons+gcc  linux&windows
 aos make clean > /dev/null 2>&1
 for target in ${scons_build_targets}; do
-    aos scons ${target} > ${target}@${branch}.log 2>&1
+    aos scons -j4 ${target} > ${target}@${branch}.log 2>&1
     if [ $? -eq 0 ]; then
         echo "build scons ${target} at ${branch} branch succeed"
         rm -f ${target}@${branch}.log
@@ -94,10 +104,10 @@ for target in ${scons_build_targets}; do
     fi
 done
 
-#tarsfer test
+#scons tarsfer test
 aos make clean > /dev/null 2>&1
-for target in ${scons_ide_targets}; do
-    for ide in ${ide_types}; do
+for target in ${scons_build_targets}; do
+    for ide in ${build_ide}; do
         aos scons ${target} IDE=${ide} > ${target}2IDE_${ide}@${branch}.log 2>&1
         if [ $? -eq 0 ]; then
             echo "build scons ${target} IDE=${ide} at ${branch} branch succeed"
