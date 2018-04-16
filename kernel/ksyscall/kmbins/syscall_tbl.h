@@ -176,6 +176,16 @@ SYSCALL(SYS_CANCEL_WORK, aos_cancel_work)
 /* ----------------end YLOOP------------------ */
 
 /* ------------------ALINK---------------------- */
+#define OTA_BASE 80
+
+#define SYS_AIS_OTA_BT_STORAGE_INIT (OTA_BASE + 0)
+SYSCALL(SYS_AIS_OTA_BT_STORAGE_INIT, ais_ota_bt_storage_init)
+
+#define SYS_AIS_OTA_GET_LOCAL_ADDR (OTA_BASE + 1)
+SYSCALL(SYS_AIS_OTA_GET_LOCAL_ADDR, ais_ota_get_local_addr)
+
+
+/* ------------------ALINK---------------------- */
 #define ALINK_BASE 90
 
 #define SYS_ALINK_START (ALINK_BASE + 0)

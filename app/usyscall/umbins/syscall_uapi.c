@@ -328,6 +328,19 @@ void aos_cancel_work(void *work, aos_call_t action, void *arg1)
 }
 #endif
 
+
+/* --------------------OTA-------------------- */
+
+int ais_ota_bt_storage_init(void)
+{
+    return SYS_CALL0(SYS_AIS_OTA_BT_STORAGE_INIT, int);
+}
+
+int ais_ota_get_local_addr(bt_addr_le_t *addr)
+{
+    return SYS_CALL1(SYS_AIS_OTA_GET_LOCAL_ADDR, int, bt_addr_le_t *, addr);
+}
+
 /* --------------------ALINK-------------------- */
 
 int alink_start(struct device_config *dev_conf)
