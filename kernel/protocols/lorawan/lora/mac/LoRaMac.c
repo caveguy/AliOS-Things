@@ -1956,6 +1956,10 @@ static LoRaMacStatus_t ScheduleTx( void )
         nextChan.Datarate = LoRaMacParams.ChannelsDatarate;
     }
 
+#ifdef CONFIG_LINKLORA
+    LoRaMacParams.freqband = nextChan.freqband;
+#endif
+
     // Compute Rx1 windows parameters
     RegionComputeRxWindowParameters( LoRaMacRegion,
                                      RegionApplyDrOffset( LoRaMacRegion, LoRaMacParams.DownlinkDwellTime, LoRaMacParams.ChannelsDatarate, LoRaMacParams.Rx1DrOffset ),

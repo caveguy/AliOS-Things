@@ -34,6 +34,8 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 #include "RegionCN470S.h"
 #include "debug.h"
 
+#include "linklora.h"
+
 // Definitions
 #define CHANNELS_MASK_SIZE 1
 
@@ -66,7 +68,6 @@ static uint16_t ChannelsMask[CHANNELS_MASK_SIZE];
  */
 static uint16_t ChannelsDefaultMask[CHANNELS_MASK_SIZE];
 
-node_freq_type_t node_freq_type = FREQ_TYPE_INTRA;
 uint8_t  NumFreqBand;
 uint8_t  FreqBandNum[1 + 16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0,8,16,24,100,108,116,124,68,76,84,92,166,174,182,190};
@@ -138,10 +139,8 @@ static uint8_t CountNbOfEnabledChannels( bool joined, uint8_t datarate, uint16_t
             if (channels[j].Frequency == 0) {
                 continue;
             }
-            if (joined == false) {
-                if ((CN470S_JOIN_CHANNELS & (1 << j)) == 0) {
-                    continue;
-                }
+            if (joined == false && (CN470S_JOIN_CHANNELS & (1 << j)) == 0) {
+                continue;
             }
             //Check if the current channel selection supports the given datarate
             if (RegionCommonValueInRange(datarate, channels[j].DrRange.Fields.Min,
@@ -327,8 +326,8 @@ void RegionCN470SInitDefaults( InitType_t type )
             Channels[4] = ( ChannelParams_t ) CN470S_LC5;
             Channels[5] = ( ChannelParams_t ) CN470S_LC6;
             Channels[6] = ( ChannelParams_t ) CN470S_LC7;            
-            Channels[7] = ( ChannelParams_t ) CN470S_LC8;            
-            
+            Channels[7] = ( ChannelParams_t ) CN470S_LC8;
+
             // Initialize the channels default mask
             ChannelsDefaultMask[0] = LC( 1 ) + LC( 2 ) + LC( 3 ) + LC( 4 ) + LC( 5 ) + LC( 6 ) + LC( 7 ) + LC( 8 ) ;
             // Update the channels mask
@@ -944,12 +943,16 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
     static uint8_t RxFreqBandNum = 0;
     static uint8_t TxFreqBandNum = 0;
     uint8_t band_index = 0;
+    lora_config_t *lora_config = get_lora_config();
 
     mib_req.Type = MIB_NETWORK_JOINED;
     LoRaMacMibGetRequestConfirm(&mib_req);
 
     if (mib_req.Param.IsNetworkJoined == false) {
         if (nextChanParams->joinmethod == STORED_JOIN_METHOD) {
+            if (nextChanParams->freqband > 15) {
+                nextChanParams->freqband = 1;  // reset to defautl value
+            }
             RxFreqBandNum = nextChanParams->freqband;
             TxFreqBandNum = nextChanParams->freqband;
         } else {
@@ -960,7 +963,7 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
                     NextAvailableFreqBandIdx = 1;
                 }
             }
-            if(node_freq_type == FREQ_TYPE_INTER) {
+            if(lora_config->freqtype == FREQ_TYPE_INTER) {
                 if(FreqBandNum[band_index] > 7) {
                     RxFreqBandNum = FreqBandNum[band_index] - 8;
                 } else {
@@ -971,6 +974,7 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
             }
             TxFreqBandNum = FreqBandNum[band_index];
         }
+        nextChanParams->freqband = TxFreqBandNum;
     }
 
     nextChanParams->NextAvailableRxFreqBandNum = RxFreqBandNum;
@@ -982,19 +986,17 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
         Channels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableRxFreqBandNum]+i) * 200000;
         TxChannels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableTxFreqBandNum]+i) * 200000;
     }
-    
-    if( RegionCommonCountChannels( ChannelsMask, 0, 1 ) == 0 )
-    { // Reactivate default channels
+
+    if (RegionCommonCountChannels( ChannelsMask, 0, 1) == 0 ) { // Reactivate default channels
         ChannelsMask[0] |= LC( 1 ) + LC( 2 ) + LC( 3 );
     }
 
-    if( nextChanParams->AggrTimeOff <= TimerGetElapsedTime( nextChanParams->LastAggrTx ) )
-    {
+    if (nextChanParams->AggrTimeOff <= TimerGetElapsedTime( nextChanParams->LastAggrTx)) {
         // Reset Aggregated time off
         *aggregatedTimeOff = 0;
 
         // Update bands Time OFF
-        nextTxDelay = RegionCommonUpdateBandTimeOff(nextChanParams->Joined, nextChanParams->DutyCycleEnabled, Bands, CN470S_MAX_NB_BANDS );
+        nextTxDelay = RegionCommonUpdateBandTimeOff(nextChanParams->Joined, nextChanParams->DutyCycleEnabled, Bands, CN470S_MAX_NB_BANDS);
 
         // Search how many channels are enabled
         nbEnabledChannels = CountNbOfEnabledChannels( nextChanParams->Joined, nextChanParams->Datarate,

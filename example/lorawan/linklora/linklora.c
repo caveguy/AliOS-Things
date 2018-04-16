@@ -38,7 +38,6 @@ static LoRaMainCallback_t LoRaMainCallbacks = {
 static LoRaParam_t LoRaParamInit = {
     TX_ON_TIMER,
     APP_TX_DUTYCYCLE,
-    CLASS_A,
     LORAWAN_ADR_ON,
     DR_0,
     LORAWAN_PUBLIC_NETWORK,

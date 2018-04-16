@@ -39,7 +39,7 @@ ifeq ($(linklora), 1)
 GLOBAL_DEFINES += CONFIG_LINKLORA
 GLOBAL_DEFINES += CONFIG_DEBUG_LINKLORA
 $(NAME)_SOURCES += linklora/region/RegionCN470S.c
-$(NAME)_SOURCES += linklora/linklora_class_a.c
+$(NAME)_SOURCES += linklora/linklora.c
 
 GLOBAL_INCLUDES +=  linklora
 GLOBAL_INCLUDES +=  linklora/region
