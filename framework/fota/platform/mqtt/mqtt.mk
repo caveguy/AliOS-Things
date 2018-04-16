@@ -7,4 +7,9 @@ $(NAME)_INCLUDES := ../ \
                     ../../connectivity/mqtt/ \
                     ../../../protocol/alink-ilop/sdk-encap \
                     ../../../protocol/alink-ilop/base/utils
-$(NAME)_COMPONENTS  += activation                  
+
+vcall ?= rhino
+ifeq ($(vcall),rhino)
+GLOBAL_DEFINES += VCALL_RHINO
+$(NAME)_COMPONENTS  += activation
+endif                  
