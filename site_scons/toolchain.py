@@ -106,8 +106,8 @@ class gcc_tool_chain(tool_chain):
         board_name = config.board
         self.prefix = ''
         self.cppflags = ''
-        self.linkcom = '$LINK -o $TARGET $LDFLAGS $SOURCES -Wl,-Map,$MAPFILE -Wl,--whole-archive -Wl,--start-group $LIBS  -Wl,--end-group -Wl,--no-whole-archive -Wl,--gc-sections -Wl,--cref $LINKFLAGS'
-        
+        self.linkcom = '$LINK -o $TARGET -Wl,-Map,$MAPFILE -Wl,--start-group $LIBS  -Wl,--end-group -Wl,--no-whole-archive -Wl,--gc-sections -Wl,--cref $LDFLAGS $LINKFLAGS'
+
         self.cc = 'gcc'
         self.cxx = 'g++'
         self.ass = 'gcc'

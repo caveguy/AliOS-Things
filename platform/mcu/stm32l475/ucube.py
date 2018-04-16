@@ -72,7 +72,7 @@ if aos_global_config.ide != 'keil':
     src.append( 'Middlewares/USB_Device/Core/Src/usbd_ctlreq.c' )
     src.append( 'Middlewares/USB_Device/Core/Src/usbd_ioreq.c' )
 
-component = aos_mcu_component('stm32l475', src)
+component = aos_mcu_component('stm32l475', 'arm-none-eabi-', src)
 if aos_global_config.compiler == 'armcc':
     component.add_prebuilt_objs('src/B-L475E-IOT01/runapp/startup_stm32l475xx_armcc.o')
     component.add_prebuilt_objs('src/B-L475E-IOT01/runapp/stm32l4xx_it.o')
@@ -210,13 +210,3 @@ else:
 
 for i in ldflags_tmp:
     component.add_global_ldflags(i)
-
-tool_chain = aos_global_config.create_tool_chain()
-if aos_global_config.compiler == 'armcc':
-    pass
-elif aos_global_config.compiler == 'iar':
-    pass
-else:
-    tool_chain.set_prefix('arm-none-eabi-')
-
-aos_global_config.tool_chain_config(tool_chain)
