@@ -56,6 +56,30 @@
 #define MM_GET_THIS_BLK(buf)    \
     ((k_mm_list_t *)((char *)(buf) - MMLIST_HEAD_SIZE))
 
+/* MM critical */
+#if (RHINO_CONFIG_MM_REGION_MUTEX == 0)
+#define MM_CRITICAL_ALLOC()         \
+        CPSR_ALLOC()
+#define MM_CRITICAL_ENTER(pMutex)   \
+        RHINO_CRITICAL_ENTER()
+#define MM_CRITICAL_EXIT(pMutex)    \
+        RHINO_CRITICAL_EXIT()
+#else  //(RHINO_CONFIG_MM_REGION_MUTEX != 0)
+#define MM_CRITICAL_ALLOC()         \
+        CPSR_ALLOC()
+#define MM_CRITICAL_ENTER(pMutex)   \
+    do {                            \
+        RHINO_CRITICAL_ENTER();     \
+        if (g_intrpt_nested_level[cpu_cur_get()] > 0u) { \
+            k_err_proc(RHINO_NOT_CALLED_BY_INTRPT); \
+        }                           \
+        RHINO_CRITICAL_EXIT();      \
+        krhino_mutex_lock(pMutex, RHINO_WAIT_FOREVER); \
+    }while(0);
+#define MM_CRITICAL_EXIT(pMutex)    \
+    krhino_mutex_unlock(pMutex)
+#endif
+
 /*struct of memory list ,every memory block include this information*/
 typedef struct free_ptr_struct {
     struct k_mm_list_struct *prev;

@@ -8,40 +8,6 @@
 
 #if (RHINO_CONFIG_MM_TLF > 0)
 
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 0)
-
-#ifdef NMI_INTLOCK_SUPPORTED
-#define MM_CRITICAL_ALLOC()         \
-        CPSR_ALLOC_NMI()
-#define MM_CRITICAL_ENTER(pMutex)   \
-        RHINO_CPU_INTRPT_DISABLE_NMI()
-#define MM_CRITICAL_EXIT(pMutex)    \
-        RHINO_CPU_INTRPT_ENABLE_NMI()
-#else   //not define NMI_INTLOCK_SUPPORTED
-#define MM_CRITICAL_ALLOC()         \
-        CPSR_ALLOC()
-#define MM_CRITICAL_ENTER(pMutex)   \
-        RHINO_CRITICAL_ENTER()
-#define MM_CRITICAL_EXIT(pMutex)    \
-        RHINO_CRITICAL_EXIT()
-#endif
-
-#else  //(RHINO_CONFIG_MM_REGION_MUTEX != 0)
-#define MM_CRITICAL_ALLOC()         \
-        CPSR_ALLOC()
-#define MM_CRITICAL_ENTER(pMutex)   \
-    do {                            \
-        RHINO_CRITICAL_ENTER();     \
-        if (g_intrpt_nested_level[cpu_cur_get()] > 0u) { \
-            k_err_proc(RHINO_NOT_CALLED_BY_INTRPT); \
-        }                           \
-        RHINO_CRITICAL_EXIT();      \
-        krhino_mutex_lock(pMutex, RHINO_WAIT_FOREVER); \
-    }while(0);
-#define MM_CRITICAL_EXIT(pMutex)    \
-    krhino_mutex_unlock(pMutex)
-#endif
-
 #define MM_IS_FIXEDBLK(mh,ptr) \
         (mh->fixedmblk && ((void *)ptr > (void *)(mh->fixedmblk->mbinfo.buffer))            \
         && ((void *)ptr < (void *)(mh->fixedmblk->mbinfo.buffer + mh->fixedmblk->buf_size)))
