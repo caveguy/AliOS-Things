@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 linux_posix_targets="alinkapp networkapp"
-linux_targets="alinkapp networkapp helloworld linuxapp yts"
+linux_targets="alinkapp networkapp helloworld linuxapp yts linkkitapp"
 linux_platforms="linuxhost linuxhost@debug linuxhost@release"
 mk3060_targets="alinkapp helloworld linuxapp meshapp uDataapp networkapp"
 mk3060_platforms="mk3060 mk3060@release"
@@ -13,7 +13,7 @@ lpcxpresso54102_targets="helloworld alinkapp mqttapp networkapp"
 lpcxpresso54102_platforms="lpcxpresso54102"
 esp32_targets="alinkapp helloworld meshapp bluetooth.bleadv bluetooth.bleperipheral networkapp"
 esp32_platforms="esp32devkitc"
-esp8266_targets="helloworld"
+esp8266_targets="helloworld linkkitapp"
 esp8266_platforms="esp8266"
 mk3239_targets="bluetooth.ble_advertisements bluetooth.ble_show_system_time"
 mk3239_platforms="mk3239"

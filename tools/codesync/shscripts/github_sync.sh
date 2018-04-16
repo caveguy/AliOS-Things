@@ -123,7 +123,7 @@ cp -f ${aosdir}/framework/ywss/awss.h ${githubdir}/framework/ywss/
 find ${githubdir}/framework/ywss4linkkit/ -name "*.h" | xargs chmod -x
 find ${githubdir}/framework/ywss4linkkit/libywss/ -name "*.c" | xargs rm -f
 rm -f ${githubdir}/framework/ywss4linkkit/libywss/*.h
-rm -f ${githubdir}/framework/ywss4linkkit/libywss/libywss.mk.b
+mv -f ${githubdir}/framework/ywss4linkkit/libywss/libywss.mk.b ${githubdir}/framework/ywss4linkkit/libywss/libywss.mk
 rm -rf ${githubdir}/framework/ywss4linkkit/libywss/utility
 
 #mesh folder
@@ -304,7 +304,6 @@ if [ $? -ne 0 ]; then
     echo "error: build ${target} failed"
     exit 1
 fi
-
 cd ${aosdir}/out/${target}/libraries/
 arm-none-eabi-strip --strip-debug ali_lib.a
 arm-none-eabi-strip --strip-debug ble_app_ali.a
@@ -312,6 +311,54 @@ mkdir -p ${githubdir}/framework/bluetooth/ais_ilop/ali_lib/lib/cortex-m4
 mv ali_lib.a ${githubdir}/framework/bluetooth/ais_ilop/ali_lib/lib/cortex-m4/
 mkdir -p ${githubdir}/framework/bluetooth/ais_ilop/ble_app_ali/lib/cortex-m4
 mv ble_app_ali.a ${githubdir}/framework/bluetooth/ais_ilop/ble_app_ali/lib/cortex-m4/
+
+cd ${aosdir}
+target=linkkitapp@mk3060
+aos make ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+arm-none-eabi-strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/arm968es
+cp libywss.a ${githubdir}/framework/ywss/lib/arm968es/libywss.a
+
+cd ${aosdir}
+target=linkkitapp@esp8266
+aos make -e ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+xtensa-lx106-elf-strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/xtensa
+cp libywss.a ${githubdir}/framework/ywss/lib/xtensa/libywss.a
+
+cd ${aosdir}
+target=linkkitapp@linuxhost
+aos make ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/linux
+cp libywss.a ${githubdir}/framework/ywss/lib/linux/libywss.a
+
+cd ${aosdir}
+target=linkkitapp@amebaz_dev
+aos make ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+arm-none-eabi-strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/cortex-m4
+cp libywss.a ${githubdir}/framework/ywss/lib/cortex-m4/libywss.a
 
 cd ${githubdir}
 grep -rl "AOS-R-[0-9]\.[0-9]\.[0-9]" | xargs sed -i "s|AOS-R-[0-9].[0-9].[0-9]|AOS-R-${version}|g"
