@@ -417,11 +417,15 @@ int8_t platform_ota_result_post(void)
         OTA_LOG_E("Report version failed");
         return -1;
     }
+
+#ifdef VCALL_RHINO
     ret = version_report();
     if (0 != ret) {
         OTA_LOG_E("Report detail version failed");
         return -1;
     }
+#endif
+
     return ret;
 }
 
