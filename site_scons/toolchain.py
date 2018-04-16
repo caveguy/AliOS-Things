@@ -1,4 +1,5 @@
 import os
+import sys
 
 class tool_chain:
     def __init__(self, config, tools_path=''):
@@ -6,7 +7,42 @@ class tool_chain:
         self.tools_path = tools_path
         self.binary_raw = os.path.join(self.config.out_dir, 'binary', self.config.app + '@' + self.config.board)
 
+    @staticmethod
+    def __get_os():
+        os = ''
+        if sys.platform.startswith('linux'):
+            os = 'Linux64' if sys.maxsize > 2**32 else 'Linux32'
+        elif sys.platform.startswith('darwin'):
+            os = 'OSX'
+        elif sys.platform.startswith('win'):
+            os = 'Win32'
+        else:
+            print('%s encrypt unsupported...' % sys.platform)
+        return os
+
+    def __tools_path(self):
+        tools_chain_root = os.path.join(self.config.project_path, 'build/compiler')
+        path = ''
+
+        if not self.tools_path:
+            if self.prefix == 'arm-none-eabi-':
+                path = os.path.join(tools_chain_root, 'arm-none-eabi-5_4-2016q3-20160926', self.__get_os(), 'bin')
+            elif self.prefix == 'xtensa-esp32-elf-':
+                path = os.path.join(tools_chain_root, 'gcc-xtensa-esp32', self.__get_os(), 'bin')
+            elif self.prefix == 'xtensa-lx106-elf-':
+                path = os.path.join(self.config.project_path, 'gcc-xtensa-lx106', self.__get_os(), 'bin')
+            elif self.prefix == 'csky-abiv2-elf-':
+                path = os.path.join(tools_chain_root, 'csky-abiv2-elf-tools-x86_64-minilibc-20160704', self.__get_os(), 'bin')
+            else:
+                print("tool chain is not support")
+
+        if os.path.isdir(path):
+            self.tools_path = path
+        elif os.getenv('TOOLCHAIN_PATH'):
+            self.tools_path = os.getenv('TOOLCHAIN_PATH')
+
     def tools_name_config(self):
+        self.__tools_path()
         self.config.aos_env['CC'] = os.path.join(self.tools_path, self.prefix + self.cc)
         self.config.aos_env['CXX'] = os.path.join(self.tools_path, self.prefix + self.cxx)
         self.config.aos_env['AS'] = os.path.join(self.tools_path, self.prefix + self.ass)

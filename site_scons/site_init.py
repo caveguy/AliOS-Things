@@ -34,6 +34,7 @@ class aos_global_config:
     mcu_family = ''
     config_observers = {}
     enable_vfp = 0
+    project_path = Dir('#').abspath
 
     @staticmethod
     def set_append(key, value):
