@@ -43,6 +43,7 @@ extern "C" {
 #define TOPIC_GETDEVICEINFO_MCAST       "/sys/device/info/get"
 #define TOPIC_GETDEVICEINFO_UCAST       "/sys/%s/%s/device/info/get"
 #define TOPIC_AWSS_NOTIFY               "/sys/awss/device/info/notify"
+#define TOPIC_AWSS_CONNECTAP_NOTIFY     "/sys/awss/event/connectap/notify"
 #define TOPIC_NOTIFY                    "/sys/device/info/notify"
 #define TOPIC_SWITCHAP                  "/sys/%s/%s/thing/awss/device/switchap"
 #define TOPIC_SWITCHAP_REPLY            "/sys/%s/%s/thing/awss/device/switchap_reply"
@@ -59,6 +60,7 @@ extern "C" {
 
 #define METHOD_DEV_INFO_NOTIFY          "device.info.notify"
 #define METHOD_AWSS_DEV_INFO_NOTIFY     "awss.device.info.notify"
+#define METHOD_AWSS_CONNECTAP_NOTIFY    "awss.event.connectap.notify"
 #define METHOD_EVENT_ZC_SWITCHAP        "thing.awss.device.switchap"
 #define METHOD_EVENT_ZC_ENROLLEE        "thing.awss.enrollee.found"
 #define METHOD_EVENT_ZC_CHECKIN         "thing.awss.enrollee.checkin"
