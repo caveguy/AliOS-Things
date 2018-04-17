@@ -31,7 +31,12 @@ src =Split('''
     aos/soc_impl.c
     aos/trace_impl.c
 ''')
-component =aos_mcu_component('stm32l4xx', 'arm-none-eabi-', src)
+
+prefix = ''
+if aos_global_config.compiler == "gcc":
+    prefix = 'arm-none-eabi-'
+
+component =aos_mcu_component('stm32l4xx', prefix, src)
 component.set_global_arch("Cortex-M4")
 
 HOST_MCU_NAME = aos_global_config.get('HOST_MCU_NAME')
