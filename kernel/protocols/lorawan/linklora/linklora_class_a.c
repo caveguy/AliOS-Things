@@ -32,7 +32,6 @@ static TimerEvent_t TxNextPacketTimer;
 static DeviceState_t device_state = DEVICE_STATE_INIT;
 
 lora_config_t g_lora_config = {1, DR_5, NODE_MODE_NORMAL, VALID_LORA_CONFIG};
-//lora_config_t g_lora_config = {2, DR_2, NODE_MODE_NORMAL, INVALID_LORA_CONFIG};
 join_method_t g_join_method;
 
 static void prepare_tx_frame(void)
@@ -88,9 +87,6 @@ static void on_tx_next_packet_timer_event(void)
         if (mibReq.Param.IsNetworkJoined == true) {
             device_state = DEVICE_STATE_SEND;
             next_tx = true;
-        } else {
-            g_join_method = (g_join_method + 1) % JOIN_METHOD_NUM;
-            device_state = DEVICE_STATE_JOIN;
         }
     }
 }
@@ -231,7 +227,9 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
             } else {
                 // Join was not successful. Try to join again
                 reset_join_state();
-                g_join_method = (g_join_method + 1) % JOIN_METHOD_NUM;
+                if (g_join_method != SCAN_JOIN_METHOD) {
+                    g_join_method = (g_join_method + 1) % JOIN_METHOD_NUM;
+                }
                 DBG_LINKLORA("Rejoin\r\n");
             }
             break;
@@ -401,13 +399,13 @@ void lora_fsm( void )
                     mlmeReq.Req.Join.NbTrials = 2;
                 }
 
-                if ( next_tx == true )
-                {
-                    LoRaMacMlmeRequest(&mlmeReq);
+                if (next_tx == true) {
+                    if (LoRaMacMlmeRequest(&mlmeReq) == LORAMAC_STATUS_OK) {
+                        next_tx = false;
+                    }
                     DBG_LINKLORA("Start to Join, method %d, nb_trials:%d\r\n",
                                  g_join_method, mlmeReq.Req.Join.NbTrials);
                 }
-
                 device_state = DEVICE_STATE_SLEEP;
 #else
                 mibReq.Type = MIB_NET_ID;

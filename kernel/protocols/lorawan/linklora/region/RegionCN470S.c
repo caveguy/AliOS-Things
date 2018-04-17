@@ -37,7 +37,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 // Definitions
 #define CHANNELS_MASK_SIZE 1
 
-uint16_t LoRaMacFreqBandMask = 0x0100;
+uint16_t LoRaMacFreqBandMask = 0xffff;
 
 #define RADIO_WAKEUP_TIME 2
 
@@ -68,7 +68,7 @@ static uint16_t ChannelsDefaultMask[CHANNELS_MASK_SIZE];
 
 node_freq_type_t node_freq_type = FREQ_TYPE_INTRA;
 uint8_t  NumFreqBand;
-uint8_t  FreqBandNum[1+16] = {0};
+uint8_t  FreqBandNum[1 + 16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0,8,16,24,100,108,116,124,68,76,84,92,166,174,182,190};
 uint8_t  NextAvailableFreqBandIdx;
 
@@ -336,8 +336,8 @@ void RegionCN470SInitDefaults( InitType_t type )
 
             //set default freqband = 1A2(No.=1,471.9Mhz)
             NumFreqBand = 1;
-            FreqBandNum[0] = 1;//1A2
-            NextAvailableFreqBandIdx = 0;
+            FreqBandNum[0] = 1; //1A2
+            NextAvailableFreqBandIdx = 1;
 
             //save other freqband from mask
             for( uint8_t i = 0; i < 16; i++ ) {
@@ -943,6 +943,7 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
     MibRequestConfirm_t mib_req;
     static uint8_t RxFreqBandNum = 0;
     static uint8_t TxFreqBandNum = 0;
+    uint8_t band_index = 0;
 
     mib_req.Type = MIB_NETWORK_JOINED;
     LoRaMacMibGetRequestConfirm(&mib_req);
@@ -952,21 +953,23 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
             RxFreqBandNum = nextChanParams->freqband;
             TxFreqBandNum = nextChanParams->freqband;
         } else {
+            if (nextChanParams->joinmethod == SCAN_JOIN_METHOD) {
+                band_index = NextAvailableFreqBandIdx;
+                NextAvailableFreqBandIdx++;
+                if (NextAvailableFreqBandIdx >= NumFreqBand) {
+                    NextAvailableFreqBandIdx = 1;
+                }
+            }
             if(node_freq_type == FREQ_TYPE_INTER) {
-                if(FreqBandNum[NextAvailableFreqBandIdx] > 7) {
-                    RxFreqBandNum = FreqBandNum[NextAvailableFreqBandIdx] - 8;
+                if(FreqBandNum[band_index] > 7) {
+                    RxFreqBandNum = FreqBandNum[band_index] - 8;
                 } else {
-                    RxFreqBandNum = FreqBandNum[NextAvailableFreqBandIdx] + 8;
+                    RxFreqBandNum = FreqBandNum[band_index] + 8;
                 }
             } else { //IntraFreq
-                RxFreqBandNum = FreqBandNum[NextAvailableFreqBandIdx];
+                RxFreqBandNum = FreqBandNum[band_index];
             }
-
-            NextAvailableFreqBandIdx++;
-            if (NextAvailableFreqBandIdx >= NumFreqBand) {
-                NextAvailableFreqBandIdx = 0;
-            }
-            TxFreqBandNum = FreqBandNum[NextAvailableFreqBandIdx];
+            TxFreqBandNum = FreqBandNum[band_index];
         }
     }
 
