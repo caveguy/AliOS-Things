@@ -61,6 +61,10 @@ typedef struct {
 int cnt = 0;
 static int is_subscribed = 0;
 
+#ifdef MQTT_PRESS_TEST 
+static int sub_counter = 0;
+static int pub_counter = 0;
+#endif
 char msg_pub[128];
 
 static void ota_init(void *pclient);
@@ -79,8 +83,29 @@ static void wifi_service_event(input_event_t *event, void *priv_data) {
 
 static void mqtt_sub_callback(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
 {
-    LOG("mqtt_sub_callback,payload=%s\n", payload);
+    LOG("----");
+    LOG("Topic: '%s' (Length: %d)",
+                  topic,
+                  topic_len);
+    LOG("Payload: '%s' (Length: %d)",
+                  (char*)payload,
+                  payload_len);
+    LOG("----");
+
+#ifdef MQTT_PRESS_TEST 
+    sub_counter++;
+    int rc = mqtt_publish(TOPIC_DATA, IOTX_MQTT_QOS1, payload, payload_len);
+    if(rc < 0) {
+        LOG("IOT_MQTT_Publish fail, ret=%d", rc);
+    }
+    else {
+        pub_counter++; 
+    }
+    LOG("RECV=%d, SEND=%d", sub_counter, pub_counter);
+#endif MQTT_PRESS_TEST 
 }
+
+
 
 /*
  * Subscribe the topic: IOT_MQTT_Subscribe(pclient, TOPIC_DATA, IOTX_MQTT_QOS1, _demo_message_arrive, NULL);
@@ -99,8 +124,8 @@ static void mqtt_work(void *parms) {
         }
         is_subscribed = 1;
         aos_schedule_call(ota_init, NULL);
-        //aos_post_delayed_action(100, ota_init,NULL);
     }
+#ifndef MQTT_PRESS_TEST    
     else{
         /* Generate topic message */
         int msg_len = snprintf(msg_pub, sizeof(msg_pub), "{\"attr_name\":\"temperature\", \"attr_value\":\"%d\"}", cnt);
@@ -124,6 +149,7 @@ static void mqtt_work(void *parms) {
         is_subscribed = 0;
         cnt = 0;
     }
+#endif    
 }
 
 
