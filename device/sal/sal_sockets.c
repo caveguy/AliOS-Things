@@ -2088,6 +2088,19 @@ int sal_setsockopt(int s, int level, int optname,
                     break;
             }
             break;
+        case IPPROTO_IP:
+            switch (optname){
+                case IP_MULTICAST_IF:
+                    break;
+                case IP_MULTICAST_LOOP:
+                    break;
+                default:
+                    SAL_DEBUG("sal_setsockopt(%d, SOL_SOCKET:, UNIMPL: "
+                              "optname=0x%x, ..)\n", s, optname);
+                    err = ENOPROTOOPT;
+                    break;
+            }
+            break;
         default:
             SAL_DEBUG("sal_setsockopt(%d, level=0x%x, UNIMPL: optname=0x%x, ..)\n",
                       s, level, optname);
