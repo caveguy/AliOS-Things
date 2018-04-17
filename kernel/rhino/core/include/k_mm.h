@@ -15,11 +15,8 @@
 #define MM_ALIGN_UP(a)      (((a) + MM_ALIGN_MASK) & ~MM_ALIGN_MASK)
 #define MM_ALIGN_DOWN(a)    ((a) & ~MM_ALIGN_MASK)
 
-/* mm_blk: */
-#define DEF_FIX_BLK_SIZE    32
-
 /* mm bitmask freelist: */
-#define MM_MAX_BIT          24
+#define MM_MAX_BIT          RHINO_CONFIG_MM_MAXMSIZEBIT
 #define MM_MAX_SIZE         (1<<MM_MAX_BIT)
 
 #define MM_MIN_BIT          6
