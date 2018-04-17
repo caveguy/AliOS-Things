@@ -106,13 +106,6 @@ extern "C" {
  */
 void DBG_Init(void);
 
-/**
- * @brief  Error_Handler
- * @param  None
- * @retval None
- */
-void Error_Handler(void);
-
 #ifdef __cplusplus
 }
 #endif

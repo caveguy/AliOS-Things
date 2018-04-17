@@ -8,6 +8,10 @@
 #include "LoRaMac.h"
 #include "Region.h"
 #include "timeServer.h"
+#ifdef AOS_KV
+#include <assert.h>
+#include "kvmgr.h"
+#endif
 
 static uint8_t dev_eui[8] = LORAWAN_DEVICE_EUI;
 static uint8_t app_eui[8] = LORAWAN_APPLICATION_EUI;
@@ -31,7 +35,7 @@ static LoRaParam_t *LoRaParamInit;
 static TimerEvent_t TxNextPacketTimer;
 static DeviceState_t device_state = DEVICE_STATE_INIT;
 
-lora_config_t g_lora_config = {1, DR_5, NODE_MODE_NORMAL, VALID_LORA_CONFIG};
+lora_config_t g_lora_config = {1, DR_2, NODE_MODE_NORMAL, INVALID_LORA_CONFIG};
 join_method_t g_join_method;
 
 static void prepare_tx_frame(void)
@@ -93,9 +97,44 @@ static void on_tx_next_packet_timer_event(void)
 
 static void reset_join_state(void)
 {
-    g_lora_config.flag = INVALID_LORA_CONFIG;
-    // TODO: reset lora config
+    if (g_lora_config.flag == VALID_LORA_CONFIG) {
+        g_lora_config.flag = INVALID_LORA_CONFIG;
+#ifdef AOS_KV
+        aos_kv_set("lora", &g_lora_config, sizeof(g_lora_config));
+#endif
+    }
     device_state = DEVICE_STATE_JOIN;
+}
+
+static void store_lora_config(void)
+{
+    MibRequestConfirm_t mibReq;
+    LoRaMacStatus_t status;
+    uint32_t freqband;
+    int8_t datarate;
+
+    mibReq.Type = MIB_FREQ_BAND;
+    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    if (status == LORAMAC_STATUS_OK) {
+        freqband = mibReq.Param.freqband;
+    } else {
+        return;
+    }
+
+    mibReq.Type = MIB_CHANNELS_DATARATE;
+    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    if (status == LORAMAC_STATUS_OK) {
+        datarate = mibReq.Param.ChannelsDatarate;
+    } else {
+        return;
+    }
+
+    g_lora_config.freqband = freqband;
+    g_lora_config.datarate = datarate;
+    g_lora_config.flag = VALID_LORA_CONFIG;
+#ifdef AOS_KV
+    aos_kv_set("lora", &g_lora_config, sizeof(g_lora_config));
+#endif
 }
 
 static void mcps_confirm(McpsConfirm_t *mcpsConfirm)
@@ -255,6 +294,10 @@ void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
     LoRaParamInit = LoRaParam;
     app_callbacks = callbacks;
 
+#ifdef AOS_KV
+    assert(aos_kv_init() == 0);
+#endif
+
 #if (STATIC_DEVICE_EUI != 1)
     app_callbacks->BoardGetUniqueId(dev_eui);
 #endif
@@ -300,6 +343,11 @@ void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
 
 void lora_fsm( void )
 {
+#ifdef CONFIG_LINKLORA
+    int len = sizeof(g_lora_config);
+    int ret;
+#endif
+
     while (1) {
         switch (device_state) {
             case DEVICE_STATE_INIT:
@@ -372,9 +420,16 @@ void lora_fsm( void )
 #endif
 
 #endif
-                // TODO: get config from flash
+#ifdef AOS_KV
+                ret = aos_kv_get("lora", &g_lora_config, &len);
+                if (ret != 0) {
+                    g_lora_config.flag = INVALID_LORA_CONFIG;
+                }
+#endif
                 if (g_lora_config.flag == VALID_LORA_CONFIG) {
                     g_join_method = STORED_JOIN_METHOD;
+                } else {
+                    g_join_method = DEF_JOIN_METHOD;
                 }
                 device_state = DEVICE_STATE_JOIN;
                 break;
@@ -435,7 +490,7 @@ void lora_fsm( void )
             case DEVICE_STATE_JOINED:
             {
                 DBG_LINKLORA("Joined\n\r");
-                // TODO: store lora config
+                store_lora_config();
                 device_state = DEVICE_STATE_SEND;
                 break;
             }
