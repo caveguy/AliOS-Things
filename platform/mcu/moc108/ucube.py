@@ -277,7 +277,12 @@ global_incs = Split('''
         mx108/mx378/driver/entry
         #security/alicrypto/libalicrypto/inc/
 ''')
-component = aos_mcu_component('moc108', 'arm-none-eabi-', src)
+
+prefix = ''
+if aos_global_config.compiler == "gcc":
+    prefix = 'arm-none-eabi-'
+
+component = aos_mcu_component('moc108', prefix, src)
 component.add_includes(*incs)
 component.add_global_includes(*global_incs)
 
