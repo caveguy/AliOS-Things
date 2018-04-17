@@ -54,7 +54,6 @@ typedef struct {
 #define TOPIC_UPDATE            "/"PRODUCT_KEY"/"DEVICE_NAME"/update"
 #define TOPIC_ERROR             "/"PRODUCT_KEY"/"DEVICE_NAME"/update/error"
 #define TOPIC_GET               "/"PRODUCT_KEY"/"DEVICE_NAME"/get"
-#define TOPIC_DATA              "/"PRODUCT_KEY"/"DEVICE_NAME"/data"
 
 #define MSG_LEN_MAX             (2048)
 
@@ -94,7 +93,7 @@ static void mqtt_sub_callback(char *topic, int topic_len, void *payload, int pay
 
 #ifdef MQTT_PRESS_TEST 
     sub_counter++;
-    int rc = mqtt_publish(TOPIC_DATA, IOTX_MQTT_QOS1, payload, payload_len);
+    int rc = mqtt_publish(TOPIC_UPDATE, IOTX_MQTT_QOS1, payload, payload_len);
     if(rc < 0) {
         LOG("IOT_MQTT_Publish fail, ret=%d", rc);
     }
@@ -117,7 +116,7 @@ static void mqtt_work(void *parms) {
 
     if(is_subscribed == 0) {
         /* Subscribe the specific topic */
-        rc = mqtt_subscribe(TOPIC_DATA, mqtt_sub_callback, NULL);
+        rc = mqtt_subscribe(TOPIC_GET, mqtt_sub_callback, NULL);
         if (rc<0) {
             // IOT_MQTT_Destroy(&pclient);
              LOG("IOT_MQTT_Subscribe() failed, rc = %d", rc);
@@ -132,7 +131,7 @@ static void mqtt_work(void *parms) {
         if (msg_len < 0) {
             LOG("Error occur! Exit program");
         }
-        rc = mqtt_publish(TOPIC_DATA, IOTX_MQTT_QOS1, msg_pub, msg_len);
+        rc = mqtt_publish(TOPIC_UPDATE, IOTX_MQTT_QOS1, msg_pub, msg_len);
         if (rc < 0) {
             LOG("error occur when publish");
         }
@@ -143,7 +142,7 @@ static void mqtt_work(void *parms) {
     if(cnt < 200) {
         aos_post_delayed_action(3000, mqtt_work, NULL);
     } else {
-        mqtt_unsubscribe(TOPIC_DATA);
+        mqtt_unsubscribe(TOPIC_GET);
         aos_msleep(200);
         mqtt_deinit_instance();
         is_subscribed = 0;
