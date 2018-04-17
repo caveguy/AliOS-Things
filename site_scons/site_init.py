@@ -4,6 +4,7 @@ import re
 import abc
 import toolchain
 import sys
+import time
 
 
 class aos_global_config:
@@ -26,7 +27,7 @@ class aos_global_config:
     external_obj = []
     verbose = ''
     ide = ''
-    current_time = '123'
+    current_time = time.strftime("%Y%m%d.%H%M", time.localtime())
     ld_files = []
     ld_targets = []
     testcases = []
