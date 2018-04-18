@@ -317,6 +317,10 @@ class dependency_process_impl(process):
 
     def __search_dfl(self, mod_dir):
         dfl_paths = [ 'device', 'framework', 'kernel', 'platform', 'experimental', '3rdparty.experimental' ]
+        
+        # for ./ situation 
+        if os.path.exists(mod_dir):
+            return mod_dir
 
         mod_dir = mod_dir.replace('.', os.sep)
         if os.path.exists(mod_dir):
