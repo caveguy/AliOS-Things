@@ -2691,6 +2691,13 @@ LoRaMacStatus_t LoRaMacMibGetRequestConfirm( MibRequestConfirm_t *mibGet )
             mibGet->Param.AntennaGain = LoRaMacParams.AntennaGain;
             break;
         }
+#ifdef CONFIG_LINKLORA
+        case MIB_FREQ_BAND:
+        {
+            mibGet->Param.freqband = LoRaMacParams.freqband;
+            break;
+        }
+#endif
         default:
             status = LORAMAC_STATUS_SERVICE_UNKNOWN;
             break;
