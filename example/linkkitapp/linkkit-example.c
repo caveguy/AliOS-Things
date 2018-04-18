@@ -83,9 +83,7 @@ static void cloud_service_event(input_event_t *event, void *priv_data) {
 
     if (event->code == CODE_YUNIO_ON_CONNECTED) {
         LOG("user sub and pub here");
-#ifndef WITH_SAL
         awss_report_cloud();
-#endif
         return;
     }
 
