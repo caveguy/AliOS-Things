@@ -256,7 +256,6 @@ static void handle_udp_broadcast_data()
 
     if (strcmp(ipaddr, localipaddr) != 0) { 
         if (g_netconn_data_input_cb && (g_link[linkid].fd >= 0)){
-            /* TODO get recv data src ip and port*/
             if (g_netconn_data_input_cb(g_link[linkid].fd, recvdata, len, ipaddr, remoteport)){
                 LOGE(TAG, " %s socket %d get data len %d fail to post to sal, drop it\n",
                      __func__, g_link[linkid].fd, len);
@@ -294,7 +293,7 @@ static void mk3060_get_local_ip_addr()
 
 static void mk3060wifi_event_handler(void *arg, char *buf, int buflen)
 {
-    char eventhead[3] = {0};
+    char eventhead[4] = {0};
     char eventotal[16] = {0};
     
     at.read(eventhead, 3);
