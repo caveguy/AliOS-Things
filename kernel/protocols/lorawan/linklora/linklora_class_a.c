@@ -302,170 +302,174 @@ void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
 
 void lora_fsm( void )
 {
-    switch (device_state) {
-        case DEVICE_STATE_INIT:
-        {
-            LoRaMacPrimitives.MacMcpsConfirm = mcps_confirm;
-            LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
-            LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
-            LoRaMacCallbacks.GetBatteryLevel = app_callbacks->BoardGetBatteryLevel;
+    while (1) {
+        switch (device_state) {
+            case DEVICE_STATE_INIT:
+            {
+                LoRaMacPrimitives.MacMcpsConfirm = mcps_confirm;
+                LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
+                LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
+                LoRaMacCallbacks.GetBatteryLevel = app_callbacks->BoardGetBatteryLevel;
 #if defined(REGION_AS923)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_AS923);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_AS923);
 #elif defined(REGION_AS923)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_AU915);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_AU915);
 #elif defined(REGION_CN470)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470);
 #elif defined(REGION_CN779)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN779);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN779);
 #elif defined(REGION_EU433)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_EU433);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_EU433);
 #elif defined(REGION_IN865)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_IN865);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_IN865);
 #elif defined(REGION_EU868)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_EU868);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_EU868);
 #elif defined(REGION_KR920)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_KR920);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_KR920);
 #elif defined(REGION_US915)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915);
 #elif defined(REGION_US915_HYBRID)
-            LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915_HYBRID);
+                LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915_HYBRID);
 #elif defined( REGION_CN470S )
-            LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470S);
+                LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470S);
 #else
 #error "Please define a region in the compiler options."
 #endif
 
-            TimerInit( &TxNextPacketTimer, on_tx_next_packet_timer_event );
+                TimerInit( &TxNextPacketTimer, on_tx_next_packet_timer_event );
 
-            mibReq.Type = MIB_ADR;
-            mibReq.Param.AdrEnable = LoRaParamInit->AdrEnable;
-            LoRaMacMibSetRequestConfirm( &mibReq );
+                mibReq.Type = MIB_ADR;
+                mibReq.Param.AdrEnable = LoRaParamInit->AdrEnable;
+                LoRaMacMibSetRequestConfirm( &mibReq );
 
-            mibReq.Type = MIB_PUBLIC_NETWORK;
-            mibReq.Param.EnablePublicNetwork = LoRaParamInit->EnablePublicNetwork;
-            LoRaMacMibSetRequestConfirm( &mibReq );
+                mibReq.Type = MIB_PUBLIC_NETWORK;
+                mibReq.Param.EnablePublicNetwork = LoRaParamInit->EnablePublicNetwork;
+                LoRaMacMibSetRequestConfirm( &mibReq );
 
-            mibReq.Type = MIB_DEVICE_CLASS;
-            mibReq.Param.Class = LoRaParamInit->Class;
-            LoRaMacMibSetRequestConfirm( &mibReq );
+                mibReq.Type = MIB_DEVICE_CLASS;
+                mibReq.Param.Class = LoRaParamInit->Class;
+                LoRaMacMibSetRequestConfirm( &mibReq );
 
 #if defined(REGION_EU868)
-            lora_config_duty_cycle_set(LORAWAN_DUTYCYCLE_ON ? ENABLE : DISABLE);
+                lora_config_duty_cycle_set(LORAWAN_DUTYCYCLE_ON ? ENABLE : DISABLE);
 
 #if (USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1)
-            LoRaMacChannelAdd(3, (ChannelParams_t)LC4);
-            LoRaMacChannelAdd(4, (ChannelParams_t)LC5);
-            LoRaMacChannelAdd(5, (ChannelParams_t)LC6);
-            LoRaMacChannelAdd(6, (ChannelParams_t)LC7);
-            LoRaMacChannelAdd(7, (ChannelParams_t)LC8);
-            LoRaMacChannelAdd(8, (ChannelParams_t)LC9);
-            LoRaMacChannelAdd(9, (ChannelParams_t)LC10);
+                LoRaMacChannelAdd(3, (ChannelParams_t)LC4);
+                LoRaMacChannelAdd(4, (ChannelParams_t)LC5);
+                LoRaMacChannelAdd(5, (ChannelParams_t)LC6);
+                LoRaMacChannelAdd(6, (ChannelParams_t)LC7);
+                LoRaMacChannelAdd(7, (ChannelParams_t)LC8);
+                LoRaMacChannelAdd(8, (ChannelParams_t)LC9);
+                LoRaMacChannelAdd(9, (ChannelParams_t)LC10);
 
-            mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
-            mibReq.Param.Rx2DefaultChannel = (Rx2ChannelParams_t)
-            {   869525000, DR_3};
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
+                mibReq.Param.Rx2DefaultChannel = (Rx2ChannelParams_t)
+                {   869525000, DR_3};
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            mibReq.Type = MIB_RX2_CHANNEL;
-            mibReq.Param.Rx2Channel = (Rx2ChannelParams_t)
-            {   869525000, DR_3};
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_RX2_CHANNEL;
+                mibReq.Param.Rx2Channel = (Rx2ChannelParams_t)
+                {   869525000, DR_3};
+                LoRaMacMibSetRequestConfirm(&mibReq);
 #endif
 
 #endif
-            // TODO: get config from flash
-            if (g_lora_config.flag == VALID_LORA_CONFIG) {
-                g_join_method = STORED_JOIN_METHOD;
+                // TODO: get config from flash
+                if (g_lora_config.flag == VALID_LORA_CONFIG) {
+                    g_join_method = STORED_JOIN_METHOD;
+                }
+                device_state = DEVICE_STATE_JOIN;
+                break;
             }
-            device_state = DEVICE_STATE_JOIN;
-            break;
-        }
 
-        case DEVICE_STATE_JOIN:
-        {
+            case DEVICE_STATE_JOIN:
+            {
 #if (OVER_THE_AIR_ACTIVATION != 0)
-            MlmeReq_t mlmeReq;
+                MlmeReq_t mlmeReq;
 
-            mlmeReq.Type = MLME_JOIN;
-            mlmeReq.Req.Join.DevEui = dev_eui;
-            mlmeReq.Req.Join.AppEui = app_eui;
-            mlmeReq.Req.Join.AppKey = app_key;
+                mlmeReq.Type = MLME_JOIN;
+                mlmeReq.Req.Join.DevEui = dev_eui;
+                mlmeReq.Req.Join.AppEui = app_eui;
+                mlmeReq.Req.Join.AppKey = app_key;
 
-            mlmeReq.Req.Join.method = g_join_method;
-            if (g_join_method == STORED_JOIN_METHOD) {
-                mlmeReq.Req.Join.freqband = g_lora_config.freqband;
-                mlmeReq.Req.Join.NbTrials = 3;
-                mlmeReq.Req.Join.datarate = g_lora_config.datarate;
-            } else {
-                mlmeReq.Req.Join.NbTrials = 2;
-            }
+                mlmeReq.Req.Join.method = g_join_method;
+                if (g_join_method == STORED_JOIN_METHOD) {
+                    mlmeReq.Req.Join.freqband = g_lora_config.freqband;
+                    mlmeReq.Req.Join.NbTrials = 3;
+                    mlmeReq.Req.Join.datarate = g_lora_config.datarate;
+                } else {
+                    mlmeReq.Req.Join.NbTrials = 2;
+                }
 
-            if ( next_tx == true )
-            {
-                LoRaMacMlmeRequest(&mlmeReq);
-                DBG_LINKLORA("Start to Join, method %d, nb_trials:%d\r\n",
-                             g_join_method, mlmeReq.Req.Join.NbTrials);
-            }
+                if ( next_tx == true )
+                {
+                    LoRaMacMlmeRequest(&mlmeReq);
+                    DBG_LINKLORA("Start to Join, method %d, nb_trials:%d\r\n",
+                                 g_join_method, mlmeReq.Req.Join.NbTrials);
+                }
 
-            device_state = DEVICE_STATE_SLEEP;
+                device_state = DEVICE_STATE_SLEEP;
 #else
-            mibReq.Type = MIB_NET_ID;
-            mibReq.Param.NetID = LORAWAN_NETWORK_ID;
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_NET_ID;
+                mibReq.Param.NetID = LORAWAN_NETWORK_ID;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            mibReq.Type = MIB_DEV_ADDR;
-            mibReq.Param.DevAddr = DevAddr;
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_DEV_ADDR;
+                mibReq.Param.DevAddr = DevAddr;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            mibReq.Type = MIB_NWK_SKEY;
-            mibReq.Param.NwkSKey = NwkSKey;
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_NWK_SKEY;
+                mibReq.Param.NwkSKey = NwkSKey;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            mibReq.Type = MIB_APP_SKEY;
-            mibReq.Param.AppSKey = AppSKey;
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_APP_SKEY;
+                mibReq.Param.AppSKey = AppSKey;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            mibReq.Type = MIB_NETWORK_JOINED;
-            mibReq.Param.IsNetworkJoined = true;
-            LoRaMacMibSetRequestConfirm(&mibReq);
+                mibReq.Type = MIB_NETWORK_JOINED;
+                mibReq.Param.IsNetworkJoined = true;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
-            device_state = DEVICE_STATE_SEND;
+                device_state = DEVICE_STATE_SEND;
 #endif
-            break;
-        }
-        case DEVICE_STATE_JOINED:
-        {
-            DBG_LINKLORA("Joined\n\r");
-            // TODO: store lora config
-            device_state = DEVICE_STATE_SEND;
-            break;
-        }
-        case DEVICE_STATE_SEND:
-            {
-            if ( next_tx == true )
-            {
-                prepare_tx_frame();
-                next_tx = send_frame( );
+                break;
             }
-            if ( LoRaParamInit->TxEvent == TX_ON_TIMER )
+            case DEVICE_STATE_JOINED:
             {
-                // Schedule next packet transmission
-                TimerSetValue( &TxNextPacketTimer, LoRaParamInit->TxDutyCycleTime );
-                TimerStart( &TxNextPacketTimer );
+                DBG_LINKLORA("Joined\n\r");
+                // TODO: store lora config
+                device_state = DEVICE_STATE_SEND;
+                break;
             }
-
-            device_state = DEVICE_STATE_SLEEP;
-            break;
-        }
-        case DEVICE_STATE_SLEEP:
+            case DEVICE_STATE_SEND:
+                {
+                if ( next_tx == true )
+                {
+                    prepare_tx_frame();
+                    next_tx = send_frame( );
+                }
+                if ( LoRaParamInit->TxEvent == TX_ON_TIMER )
+                {
+                    // Schedule next packet transmission
+                    TimerSetValue( &TxNextPacketTimer, LoRaParamInit->TxDutyCycleTime );
+                    TimerStart( &TxNextPacketTimer );
+                }
+                device_state = DEVICE_STATE_SLEEP;
+                break;
+            }
+            case DEVICE_STATE_SLEEP:
             {
-            // Wake up through events
-            break;
-        }
-        default:
-        {
-            device_state = DEVICE_STATE_INIT;
-            break;
+                // Wake up through events
+#ifndef LOW_POWER_DISABLE
+                LowPower_Handler( );
+#endif
+                break;
+            }
+            default:
+            {
+                device_state = DEVICE_STATE_INIT;
+                break;
+            }
         }
     }
 }

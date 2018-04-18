@@ -54,6 +54,8 @@
 #include "stm32l0xx_hal_dma.h"
 #include "stm32l0xx_hal_uart.h"
 
+#include <k_api.h>
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -187,11 +189,11 @@ void DBG_Send( const char *format, ... )
     uint16_t current_len;
     int start;
     int stop;
+    CPSR_ALLOC();
 
     va_start( args, format );
 
-    BACKUP_PRIMASK();
-    DISABLE_IRQ();
+    RHINO_CPU_INTRPT_DISABLE();
     if ( len != 0 )
     {
         if ( len != sizeof(uart_context.buffTx) )
@@ -201,7 +203,7 @@ void DBG_Send( const char *format, ... )
                                            sizeof(dbgTxBuff) - current_len,
                                            format, args );
         }
-        RESTORE_PRIMASK();
+        RHINO_CPU_INTRPT_ENABLE();
         va_end( args );
         return;
     }
@@ -211,7 +213,7 @@ void DBG_Send( const char *format, ... )
     }
 
     current_len = len;
-    RESTORE_PRIMASK();
+    RHINO_CPU_INTRPT_ENABLE();
 
     start = 0;
 
@@ -220,18 +222,17 @@ void DBG_Send( const char *format, ... )
         stop = dbg_buffer_transmit( start, current_len );
 
         {
-            BACKUP_PRIMASK();
-            DISABLE_IRQ();
+            RHINO_CPU_INTRPT_DISABLE();
             if ( len == stop )
             {
                 len = 0;
-                RESTORE_PRIMASK();
+                RHINO_CPU_INTRPT_ENABLE();
             }
             else
             {
                 start = stop;
                 current_len = len;
-                RESTORE_PRIMASK();
+                RHINO_CPU_INTRPT_ENABLE();
             }
         }
     } while ( current_len != stop );
@@ -321,11 +322,11 @@ void vcom_Send( const char *format, ... )
     uint16_t current_len;
     int start;
     int stop;
+    CPSR_ALLOC();
 
     va_start( args, format );
 
-    BACKUP_PRIMASK();
-    DISABLE_IRQ();
+    RHINO_CPU_INTRPT_DISABLE();
     if ( len != 0 )
     {
         if ( len != sizeof(uart_context.buffTx) )
@@ -335,7 +336,7 @@ void vcom_Send( const char *format, ... )
                                            sizeof(uart_context.buffTx) - current_len,
                                            format, args );
         }
-        RESTORE_PRIMASK();
+        RHINO_CPU_INTRPT_ENABLE();
         va_end( args );
         return;
     }
@@ -345,7 +346,7 @@ void vcom_Send( const char *format, ... )
     }
 
     current_len = len;
-    RESTORE_PRIMASK();
+    RHINO_CPU_INTRPT_ENABLE();
 
     start = 0;
 
@@ -354,18 +355,17 @@ void vcom_Send( const char *format, ... )
         stop = buffer_transmit( start, current_len );
 
         {
-            BACKUP_PRIMASK();
-            DISABLE_IRQ();
+            RHINO_CPU_INTRPT_DISABLE();
             if ( len == stop )
             {
                 len = 0;
-                RESTORE_PRIMASK();
+                RHINO_CPU_INTRPT_ENABLE();
             }
             else
             {
                 start = stop;
                 current_len = len;
-                RESTORE_PRIMASK();
+                RHINO_CPU_INTRPT_ENABLE();
             }
         }
     } while ( current_len != stop );
@@ -436,27 +436,25 @@ void vcom_IoDeInit( void )
 FlagStatus IsNewCharReceived( void )
 {
     FlagStatus status;
-
-    BACKUP_PRIMASK();
-    DISABLE_IRQ();
+    CPSR_ALLOC();
+    RHINO_CPU_INTRPT_DISABLE();
 
     status = ((uart_context.rx_idx_toread == uart_context.rx_idx_free) ? RESET : SET);
 
-    RESTORE_PRIMASK();
+    RHINO_CPU_INTRPT_ENABLE();
     return status;
 }
 
 uint8_t GetNewChar( void )
 {
     uint8_t NewChar;
-
-    BACKUP_PRIMASK();
-    DISABLE_IRQ();
+    CPSR_ALLOC();
+    RHINO_CPU_INTRPT_DISABLE();
 
     NewChar = uart_context.buffRx[uart_context.rx_idx_toread];
     uart_context.rx_idx_toread = (uart_context.rx_idx_toread + 1) % sizeof(uart_context.buffRx);
 
-    RESTORE_PRIMASK();
+    RHINO_CPU_INTRPT_ENABLE();
     return NewChar;
 }
 
