@@ -213,7 +213,7 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
         curblk = MM_GET_THIS_BLK(mmblk_pool);
         stat = krhino_mblk_pool_init(mmblk_pool, "fixed_mm_blk",
                                      (void *)((size_t)mmblk_pool + MM_ALIGN_UP(sizeof(mblk_pool_t))),
-                                     DEF_FIX_BLK_SIZE, RHINO_CONFIG_MM_TLF_BLK_SIZE);
+                                     RHINO_CONFIG_MM_BLK_SIZE, RHINO_CONFIG_MM_TLF_BLK_SIZE);
         if (stat == RHINO_SUCCESS) {
             pmmhead->fixedmblk = curblk;
         } else {
@@ -304,7 +304,7 @@ static void *k_mm_smallblk_alloc(k_mm_head *mmhead, size_t size)
         return NULL;
     }
 
-    stats_addsize(mmhead, DEF_FIX_BLK_SIZE, size);
+    stats_addsize(mmhead, RHINO_CONFIG_MM_BLK_SIZE, size);
 
     return tmp;
 }
@@ -321,7 +321,7 @@ static void k_mm_smallblk_free(k_mm_head *mmhead, void *ptr)
         k_err_proc(RHINO_SYS_FATAL_ERR);
     }
 
-    stats_removesize(mmhead, DEF_FIX_BLK_SIZE);
+    stats_removesize(mmhead, RHINO_CONFIG_MM_BLK_SIZE);
 }
 #endif
 
@@ -426,7 +426,7 @@ void *k_mm_alloc(k_mm_head *mmhead, size_t size)
     /* little blk, try to get from mm_pool */
     if(mmhead->fixedmblk != NULL) {
         mm_pool = (mblk_pool_t *)mmhead->fixedmblk->mbinfo.buffer;
-        if (size <= DEF_FIX_BLK_SIZE && mm_pool->blk_avail > 0) {
+        if (size <= RHINO_CONFIG_MM_BLK_SIZE && mm_pool->blk_avail > 0) {
             retptr =  k_mm_smallblk_alloc(mmhead, size);
             if (retptr) {
                 MM_CRITICAL_EXIT(&(mmhead->mm_mutex));
@@ -617,12 +617,12 @@ void *k_mm_realloc(k_mm_head *mmhead, void *oldmem, size_t new_size)
     /*begin of oldmem in mmblk case*/
     if (MM_IS_FIXEDBLK(mmhead, oldmem)) {
         /*it's fixed size memory block*/
-        if (new_size <= DEF_FIX_BLK_SIZE) {
+        if (new_size <= RHINO_CONFIG_MM_BLK_SIZE) {
             ptr_aux = oldmem;
         } else {
             ptr_aux  = k_mm_alloc(mmhead, new_size);
             if (ptr_aux) {
-                memcpy(ptr_aux, oldmem, DEF_FIX_BLK_SIZE);
+                memcpy(ptr_aux, oldmem, RHINO_CONFIG_MM_BLK_SIZE);
                 k_mm_smallblk_free(mmhead, oldmem);
             }
         }

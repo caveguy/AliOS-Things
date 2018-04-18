@@ -63,6 +63,10 @@
 #define RHINO_CONFIG_MM_BLK                  1
 #endif
 
+#ifndef RHINO_CONFIG_MM_BLK_SIZE
+#define RHINO_CONFIG_MM_BLK_SIZE             32
+#endif
+
 #ifndef RHINO_CONFIG_MM_TLF
 #define RHINO_CONFIG_MM_TLF                  1
 #endif
