@@ -237,7 +237,7 @@ static int storage_clear(const bt_addr_le_t *addr)
 
 }
 
-int ais_ota_bt_storage_init()
+int ais_ota_bt_storage_init(void)
 {
         static const struct bt_storage storage = {
                 .read  = storage_read,
