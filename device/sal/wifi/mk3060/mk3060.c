@@ -239,7 +239,6 @@ static void handle_udp_broadcast_data()
     }
     
     len = atoi(reader);
-    printf("get socket data len %d \r\n", len);
     if (len > MAX_DATA_LEN){
         LOGE(TAG, "invalid input socket data len %d \r\n", len);
         return;
