@@ -744,11 +744,19 @@ static err_t salnetconn_connect(sal_netconn_t *conn, int8_t *addr, u16_t port)
         statconn.addr = ipv4anyadrr;
     }
 
+    
     switch (NETCONNTYPE_GROUP(conn->type)) {
         case NETCONN_UDP:
-            statconn.type = UDP_UNICAST;
+            if (strcmp (IPADDR_BROADCAST_STRING, statconn.addr) != 0){
+                statconn.type = UDP_UNICAST;
+            } else {
+                statconn.type = UDP_BROADCAST;
+            }
+            
             if (conn->pcb.udp->local_port == 0) {
                 statconn.l_port = sal_udp_new_port();
+            } else {
+                statconn.l_port = conn->pcb.udp->local_port;
             }
             err = sal_module_start(&statconn);
             if (ERR_OK != err) {
@@ -1335,7 +1343,6 @@ int sal_sendto(int s, const void *data, size_t size, int flags,
     if (NETCONNTYPE_GROUP(pstsalsock->conn->type) == NETCONN_TCP) {
         if (pstsalsock->conn->state == NETCONN_NONE) {
             SAL_ERROR("sal_sendto socket %d connect state is %d\n", s, pstsalsock->conn->state);
-            
             return ERR_VAL;
         }
     }
@@ -1349,7 +1356,6 @@ int sal_sendto(int s, const void *data, size_t size, int flags,
                 err = salnetconn_connect(pstsalsock->conn, ip_str, remote_port);
                 if (ERR_OK != err) {
                     SAL_ERROR("sal_sendto fail to connect socket %d\n", s);
-                    
                     return err;
                 }
             }
