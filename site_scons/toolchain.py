@@ -26,13 +26,13 @@ class tool_chain:
 
         if not self.tools_path:
             if self.prefix == 'arm-none-eabi-':
-                path = os.path.join(tools_chain_root, 'arm-none-eabi-5_4-2016q3-20160926', self.__get_os(), 'bin')
+                path = os.path.join(tools_chain_root, 'gcc-arm-none-eabi', self.__get_os(), 'bin')
             elif self.prefix == 'xtensa-esp32-elf-':
                 path = os.path.join(tools_chain_root, 'gcc-xtensa-esp32', self.__get_os(), 'bin')
             elif self.prefix == 'xtensa-lx106-elf-':
                 path = os.path.join(self.config.project_path, 'gcc-xtensa-lx106', self.__get_os(), 'bin')
             elif self.prefix == 'csky-abiv2-elf-':
-                path = os.path.join(tools_chain_root, 'csky-abiv2-elf-tools-x86_64-minilibc-20160704', self.__get_os(), 'bin')
+                path = os.path.join(tools_chain_root, 'gcc-csky-abiv2', self.__get_os(), 'bin')
             else:
                 print("tool chain is not support")
 
@@ -173,7 +173,7 @@ class iar_tool_chain(tool_chain):
         self.cc = 'iccarm'
         self.cxx = 'iccarm'
         self.ass = 'iasmarm'
-        self.ar = 'iarchive'  
+        self.ar = 'iarchive'
         self.ld = 'ilinkarm'
         self.objdump = 'ielfdumparm'
         self.objcopy = 'ielftool'
@@ -182,7 +182,7 @@ class iar_tool_chain(tool_chain):
         self.cflags = '-e --dlib_config=full -D_TIMESPEC_DEFINED --silent --only_stdout --no_warnings --diag_warning=Pe167,Pe144,Pe513'
         self.cxxflags = ''
         self.cppflags = ''
-        self.asflags = ''            
+        self.asflags = ''
         self.ldflags = ''
         self.arflags = '--create'
         self.extend_flag_dict = {}
@@ -198,7 +198,7 @@ class armcc_tool_chain(tool_chain):
         self.cc = 'armcc'
         self.cxx = 'armcc'
         self.ass = 'armasm'
-        self.ar = 'armar'  
+        self.ar = 'armar'
         self.ld = 'armlink'
         self.objdump = 'fromelf'
         self.objcopy = 'fromelf'
@@ -207,7 +207,7 @@ class armcc_tool_chain(tool_chain):
         self.cflags = '--c90 --gnu --library_type=microlib -W'
         self.cxxflags = ''
         self.cppflags = ''
-        self.asflags = '--library_type=microlib'            
+        self.asflags = '--library_type=microlib'
         self.ldflags = ''
         self.arflags = '-rcs'
         self.extend_flag_dict = {}

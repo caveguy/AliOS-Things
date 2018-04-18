@@ -21,15 +21,17 @@ pca10056_targets="bluetooth.bleperipheral bluetooth.aisilopapp"
 pca10056_platforms="pca10056"
 eml3047_targets="lorawan.lorawanapp lorawan.linklora"
 eml3047_platforms="eml3047"
+csky_targets="helloworld coapapp"
+csky_platforms=""
 
 #scons+gcc more to add
 scons_build_targets="nano@b_l475e helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 
 keil_iar_targets="helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 compiler_types="armcc iar"
-build_system="make scons"  
+build_system="make scons"
 build_tools="iar armcc"
-build_ide="iar keil" 
+build_ide="iar keil"
 
 
 if [ "$(uname)" = "Linux" ]; then
@@ -67,13 +69,13 @@ fi
 branch=`git status | grep "On branch" | sed -r 's/.*On branch //g'`
 cd $(git rev-parse --show-toplevel)
 
-    
+
 for s in ${build_system}; do
-    for i in ${keil_iar_targets}; do    
-        for t in ${build_tools}; do            
-            aos make clean > /dev/null 2>&1    
+    for i in ${keil_iar_targets}; do
+        for t in ${build_tools}; do
+            aos make clean > /dev/null 2>&1
             aos ${s} -j4 ${i} COMPILER=${t} > ${s}_${i}_${t}@${branch}.log 2>&1
-                        
+
             if [ $? -eq 0 ]; then
                 echo -e "build aos ${s} ${i} COMPILER=${t} at ${branch} branch succeed"
                 rm -f ${s}_${i}_${t}@${branch}.log
@@ -83,7 +85,7 @@ for s in ${build_system}; do
                 echo -e "\nbuild aos ${s} ${i} COMPILER=${t} at ${branch} branch failed"
                 aos make clean > /dev/null 2>&1
                 exit 1
-            fi            
+            fi
         done
     done
 done
@@ -158,7 +160,7 @@ for target in ${linux_targets}; do
     done
 done
 
-#single-bin, mk3060
+#mk3060
 aos make clean > /dev/null 2>&1
 for target in ${mk3060_targets}; do
     for platform in ${mk3060_platforms}; do
@@ -203,7 +205,7 @@ for target in ${mk3060_targets}; do
 done
 `
 
-#single-bin, lpc54102
+#lpc54102
 aos make clean > /dev/null 2>&1
 for target in ${lpcxpresso54102_targets}; do
     for platform in ${lpcxpresso54102_platforms}; do
@@ -222,7 +224,7 @@ for target in ${lpcxpresso54102_targets}; do
     done
 done
 
-#single-bin, b_l475e
+#b_l475e
 aos make clean > /dev/null 2>&1
 for target in ${b_l475e_targets}; do
     for platform in ${b_l475e_platforms}; do
@@ -241,7 +243,7 @@ for target in ${b_l475e_targets}; do
     done
 done
 
-#single-bin, starterkit
+#starterkit
 aos make clean > /dev/null 2>&1
 for target in ${starterkit_targets}; do
     for platform in ${starterkit_platforms}; do
@@ -260,7 +262,7 @@ for target in ${starterkit_targets}; do
     done
 done
 
-#single-bin, esp32
+#esp32
 aos make clean > /dev/null 2>&1
 for target in ${esp32_targets}; do
     for platform in ${esp32_platforms}; do
@@ -279,7 +281,7 @@ for target in ${esp32_targets}; do
     done
 done
 
-#single-bin, esp8266
+#esp8266
 aos make clean > /dev/null 2>&1
 for target in ${esp8266_targets}; do
     for platform in ${esp8266_platforms}; do
@@ -298,7 +300,7 @@ for target in ${esp8266_targets}; do
     done
 done
 
-#single-bin, mk3239
+#mk3239
 aos make clean > /dev/null 2>&1
 for target in ${mk3239_targets}; do
     for platform in ${mk3239_platforms}; do
@@ -317,7 +319,7 @@ for target in ${mk3239_targets}; do
     done
 done
 
-#single-bin, pca10056
+#pca10056
 aos make clean > /dev/null 2>&1
 for target in ${pca10056_targets}; do
     for platform in ${pca10056_platforms}; do
@@ -336,7 +338,7 @@ for target in ${pca10056_targets}; do
     done
 done
 
-#single-bin, eml3047
+#eml3047
 aos make clean > /dev/null 2>&1
 for target in ${eml3047_targets}; do
     for platform in ${eml3047_platforms}; do
@@ -355,6 +357,24 @@ for target in ${eml3047_targets}; do
     done
 done
 
+#csky
+aos make clean > /dev/null 2>&1
+for target in ${csky_targets}; do
+    for platform in ${csky_platforms}; do
+        aos make ${target}@${platform} JOBS=${JNUM} > ${target}@${platform}@${branch}.log 2>&1
+        if [ $? -eq 0 ]; then
+            rm -f ${target}@${platform}@${branch}.log
+            echo "build ${target}@${platform} at ${branch} branch succeed"
+        else
+            echo -e "build ${target}@${platform} at ${branch} branch failed, log:\n"
+            cat ${target}@${platform}@${branch}.log
+            rm -f ${target}@${platform}@${branch}.log
+            echo -e "\nbuild ${target}@${platform} at ${branch} branch failed"
+            aos make clean > /dev/null 2>&1
+            exit 1
+        fi
+    done
+done
 
 aos make clean > /dev/null 2>&1
 echo "build ${branch} branch succeed"

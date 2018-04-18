@@ -456,8 +456,8 @@ class meshlib:
         win = ""
 
         if self.srcbase == "1.0.1" or self.srcbase == "1.1.0":
-            src = self.srcdir + "/out/alinkapp@mk3060/libraries/mesh.a"		 
-            dst = self.dstdir + "/kernel/protocols/mesh/lib/mk3060/libmesh.a"		 
+            src = self.srcdir + "/out/alinkapp@mk3060/libraries/mesh.a"
+            dst = self.dstdir + "/kernel/protocols/mesh/lib/mk3060/libmesh.a"
             linux = "cp -f " + src + " " + dst
             cmd = mac if sys.platform == 'darwin' else (linux if sys.platform == 'linux2' else (win if sys.platform == 'win32' else None))
             if not cmd:
@@ -465,7 +465,7 @@ class meshlib:
             popen(cmd, shell=True, cwd=os.getcwd())
 
             src = self.srcdir + "/out/meshapp@linuxhost/libraries/mesh.a"
-            dst = self.dstdir + "/kernel/protocols/mesh/lib/linuxhost/libmesh.a"		 
+            dst = self.dstdir + "/kernel/protocols/mesh/lib/linuxhost/libmesh.a"
             linux = "cp -f " + src + " " + dst
             cmd = mac if sys.platform == 'darwin' else (linux if sys.platform == 'linux2' else (win if sys.platform == 'win32' else None))
             if not cmd:
@@ -1237,9 +1237,9 @@ class bekenlib:
 
     def make_lib(self):
         if self.srcbase == "1.0.1" or self.srcbase == "1.1.0":
-            build_tool = self.srcdir + "/build/compiler/arm-none-eabi-5_4-2016q2-20160622/Linux64/bin/"
+            build_tool = self.srcdir + "/build/compiler/gcc-arm-none-eabi/Linux64/bin/"
         else:
-            build_tool = self.srcdir + "/build/compiler/arm-none-eabi-5_4-2016q3-20160926/Linux64/bin/"
+            build_tool = self.srcdir + "/build/compiler/gcc-arm-none-eabi/Linux64/bin/"
         mac = ""
         win = ""
 
