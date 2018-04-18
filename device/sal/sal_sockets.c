@@ -1459,13 +1459,11 @@ static int salnetconn_packet_input(sal_netconn_t *conn, void *data, size_t len, 
     }
     memcpy(buf->payload, data, len);
     buf->len = len;
-    #if 0
-    if (NULL != addr){
-        ip_addr_set(&buf->addr, addr);
+    buf->addr.type = IPADDR_TYPE_V4;
+    if (NULL != remote_ip){
+        ipstr_to_u32(remote_ip, &buf->addr.u_addr.ip4.addr);
     }
-    #endif
     buf->port = remote_port;
-    
     
     if(sal_mbox_trypost(&conn->recvmbox, buf) != ERR_OK){
         aos_free(buf->payload);
