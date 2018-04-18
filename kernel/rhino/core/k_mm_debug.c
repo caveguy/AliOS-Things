@@ -243,9 +243,7 @@ uint32_t dump_mmleak()
     k_mm_region_info_t *reginfo, *nextreg;
     k_mm_list_t *next, *cur;
 
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 1)
-    krhino_mutex_lock(&g_kmm_head->mm_mutex, RHINO_WAIT_FOREVER);
-#endif
+    MM_CRITICAL_ENTER(g_kmm_head);
 
     reginfo = g_kmm_head->regioninfo;
     while (reginfo) {
@@ -272,9 +270,7 @@ uint32_t dump_mmleak()
         reginfo = nextreg;
     }
 
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 1)
-    krhino_mutex_unlock(&g_kmm_head->mm_mutex);
-#endif
+    MM_CRITICAL_EXIT(g_kmm_head);
 
     return 0;
 }
@@ -410,9 +406,7 @@ void dump_kmm_statistic_info(k_mm_head *mmhead)
 
 uint32_t dumpsys_mm_info_func(char *buf, uint32_t len)
 {
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 1)
-    krhino_mutex_lock(&g_kmm_head->mm_mutex, RHINO_WAIT_FOREVER);
-#endif
+    MM_CRITICAL_ENTER(g_kmm_head);
 
     print("\r\n");
     print("------------------------------- all memory blocks --------------------------------- \r\n");
@@ -426,9 +420,7 @@ uint32_t dumpsys_mm_info_func(char *buf, uint32_t len)
     print("------------------------- memory allocation statistic ------------------------------ \r\n");
     dump_kmm_statistic_info(g_kmm_head);
 
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 1)
-    krhino_mutex_unlock(&g_kmm_head->mm_mutex);
-#endif
+    MM_CRITICAL_EXIT(g_kmm_head);
 
     return RHINO_SUCCESS;
 }
