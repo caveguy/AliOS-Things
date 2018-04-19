@@ -228,7 +228,6 @@ int aos_poll(struct pollfd *fds, int nfds, int timeout)
 
 
 /* --------------------Framework-------------------- */
-#if 1
 typedef void (*aos_event_cb)(input_event_t *event, void *private_data);
 typedef void (*aos_call_t)(void *arg);
 typedef void (*aos_poll_call_t)(int fd, void *arg);
@@ -326,7 +325,6 @@ void aos_cancel_work(void *work, aos_call_t action, void *arg1)
     return SYS_CALL3(SYS_CANCEL_WORK, void, void *, work, aos_call_t, action,
                      void *, arg1);
 }
-#endif
 
 
 /* --------------------OTA-------------------- */
