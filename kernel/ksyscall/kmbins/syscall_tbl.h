@@ -123,7 +123,7 @@ SYSCALL(SYS_AOS_POLL, aos_poll)
 
 /* --------------------yloop-------------------- */
 #if 1
-#define YLOOP_BASE 70
+#define YLOOP_BASE 60
 
 #define SYS_REGISTER_EVENT_FILTER (YLOOP_BASE + 0)
 SYSCALL(SYS_REGISTER_EVENT_FILTER, aos_register_event_filter)
