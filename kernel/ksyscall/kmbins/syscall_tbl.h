@@ -122,7 +122,6 @@ SYSCALL(SYS_AOS_POLL, aos_poll)
 
 
 /* --------------------yloop-------------------- */
-#if 1
 #define YLOOP_BASE 60
 
 #define SYS_REGISTER_EVENT_FILTER (YLOOP_BASE + 0)
@@ -172,7 +171,6 @@ SYSCALL(SYS_LOOP_SCHEDULE_WORK, aos_loop_schedule_work)
 
 #define SYS_CANCEL_WORK (YLOOP_BASE + 15)
 SYSCALL(SYS_CANCEL_WORK, aos_cancel_work)
-#endif
 /* ----------------end YLOOP------------------ */
 
 /* ------------------ALINK---------------------- */
