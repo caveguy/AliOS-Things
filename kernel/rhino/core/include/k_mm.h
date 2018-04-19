@@ -55,26 +55,22 @@
 
 /* MM critical */
 #if (RHINO_CONFIG_MM_REGION_MUTEX == 0)
-#define MM_CRITICAL_ALLOC()         \
-        CPSR_ALLOC()
-#define MM_CRITICAL_ENTER(pMutex)   \
-        RHINO_CRITICAL_ENTER()
-#define MM_CRITICAL_EXIT(pMutex)    \
-        RHINO_CRITICAL_EXIT()
+#define MM_CRITICAL_ENTER(pmmhead)   \
+        krhino_spin_lock_irq_save(&(pmmhead->mm_lock));
+#define MM_CRITICAL_EXIT(pmmhead)    \
+        krhino_spin_unlock_irq_restore(&(pmmhead->mm_lock));
 #else  //(RHINO_CONFIG_MM_REGION_MUTEX != 0)
-#define MM_CRITICAL_ALLOC()         \
-        CPSR_ALLOC()
-#define MM_CRITICAL_ENTER(pMutex)   \
+#define MM_CRITICAL_ENTER(pmmhead)   \
     do {                            \
         RHINO_CRITICAL_ENTER();     \
         if (g_intrpt_nested_level[cpu_cur_get()] > 0u) { \
             k_err_proc(RHINO_NOT_CALLED_BY_INTRPT); \
         }                           \
         RHINO_CRITICAL_EXIT();      \
-        krhino_mutex_lock(pMutex, RHINO_WAIT_FOREVER); \
+        krhino_mutex_lock(&(pmmhead->mm_mutex), RHINO_WAIT_FOREVER); \
     }while(0);
-#define MM_CRITICAL_EXIT(pMutex)    \
-    krhino_mutex_unlock(pMutex)
+#define MM_CRITICAL_EXIT(pmmhead)    \
+    krhino_mutex_unlock(&(pmmhead->mm_mutex))
 #endif
 
 /*struct of memory list ,every memory block include this information*/
@@ -105,8 +101,10 @@ typedef struct k_mm_region_info_struct {
 
 
 typedef struct {
-#if (RHINO_CONFIG_MM_REGION_MUTEX == 1)
+#if (RHINO_CONFIG_MM_REGION_MUTEX > 0)
     kmutex_t            mm_mutex;
+#else
+    kspinlock_t         mm_lock;
 #endif
     k_mm_region_info_t *regioninfo;
     k_mm_list_t        *fixedmblk;

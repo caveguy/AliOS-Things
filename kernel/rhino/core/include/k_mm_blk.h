@@ -11,6 +11,7 @@ typedef struct {
     size_t        blk_avail;
     size_t        blk_whole;
     uint8_t      *avail_list;
+    kspinlock_t   blk_lock;
 #if (RHINO_CONFIG_SYSTEM_STATS > 0)
     klist_t       mblkpool_stats_item;
 #endif
