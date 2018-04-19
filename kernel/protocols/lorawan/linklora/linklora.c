@@ -35,7 +35,7 @@ static LoRaParam_t *LoRaParamInit;
 static TimerEvent_t TxNextPacketTimer;
 static DeviceState_t device_state = DEVICE_STATE_INIT;
 
-lora_config_t g_lora_config = {1, DR_2, NODE_MODE_NORMAL, INVALID_LORA_CONFIG};
+lora_config_t g_lora_config = {CLASS_A, FREQ_TYPE_INTRA, 1, DR_5, NODE_MODE_NORMAL, INVALID_LORA_CONFIG};
 join_method_t g_join_method;
 
 static void prepare_tx_frame(void)
@@ -288,6 +288,18 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
     next_tx = true;
 }
 
+static char *get_class_name(int8_t class)
+{
+    if (g_lora_config.class == CLASS_B) {
+        return "class_b";
+    } else if (g_lora_config.class == CLASS_C) {
+        return "class_c";
+    } else {
+        g_lora_config.class = CLASS_A;
+        return "class_a";
+    }
+}
+
 void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
 {
     device_state = DEVICE_STATE_INIT;
@@ -302,6 +314,9 @@ void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
     app_callbacks->BoardGetUniqueId(dev_eui);
 #endif
 
+    DBG_LINKLORA("class type %s\r\n", get_class_name(g_lora_config.class));
+    DBG_LINKLORA("freq type %s\r\n", g_lora_config.freqtype == FREQ_TYPE_INTER? "inter": "intra");
+
 #if (OVER_THE_AIR_ACTIVATION != 0)
     DBG_LINKLORA("OTAA\r\n" );
     DBG_LINKLORA("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
@@ -312,20 +327,10 @@ void lora_init(LoRaMainCallback_t *callbacks, LoRaParam_t *LoRaParam)
                  app_key[0], app_key[1], app_key[2], app_key[3], app_key[4], app_key[5], app_key[6], app_key[7],
                  app_key[8], app_key[9], app_key[10], app_key[11], app_key[12], app_key[13], app_key[14], app_key[15]);
 #else
-#if (STATIC_DEVICE_ADDRESS != 1)
-    // Random seed initialization
-    srand1(app_callbacks->BoardGetRandomSeed());
-    // Choose a random device address
-    DevAddr = randr(0, 0x01FFFFFF);
-#endif
     DBG_LINKLORA("ABP\r\n");
-    DBG_LINKLORA("DevEui= %02X", dev_eui[0]);
-    for (int i = 1; i < 8; i++)
-    {
-        DBG_LINKLORA("-%02X", dev_eui[i]);
-    };
-    DBG_LINKLORA("\r\n");
     DBG_LINKLORA("DevAdd=  %08X\n\r", DevAddr);
+    DBG_LINKLORA("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
+                 dev_eui[0], dev_eui[1], dev_eui[2], dev_eui[3], dev_eui[4], dev_eui[5], dev_eui[6], dev_eui[7]);
     DBG_LINKLORA("NwkSKey= %02X", NwkSKey[0]);
     for (int i = 1; i < 16; i++)
     {
@@ -346,6 +351,7 @@ void lora_fsm( void )
 #ifdef CONFIG_LINKLORA
     int len = sizeof(g_lora_config);
     int ret;
+    lora_config_t lora_config;
 #endif
 
     while (1) {
@@ -384,6 +390,20 @@ void lora_fsm( void )
 
                 TimerInit( &TxNextPacketTimer, on_tx_next_packet_timer_event );
 
+#ifdef AOS_KV
+                ret = aos_kv_get("lora", &lora_config, &len);
+                if (ret != 0) {
+                    g_lora_config.flag = INVALID_LORA_CONFIG;
+                } else if (lora_config.flag == VALID_LORA_CONFIG) {
+                    memcpy(&g_lora_config, &lora_config, sizeof(g_lora_config));
+                }
+#endif
+                if (g_lora_config.flag == VALID_LORA_CONFIG) {
+                    g_join_method = STORED_JOIN_METHOD;
+                } else {
+                    g_join_method = DEF_JOIN_METHOD;
+                }
+
                 mibReq.Type = MIB_ADR;
                 mibReq.Param.AdrEnable = LoRaParamInit->AdrEnable;
                 LoRaMacMibSetRequestConfirm( &mibReq );
@@ -393,8 +413,8 @@ void lora_fsm( void )
                 LoRaMacMibSetRequestConfirm( &mibReq );
 
                 mibReq.Type = MIB_DEVICE_CLASS;
-                mibReq.Param.Class = LoRaParamInit->Class;
-                LoRaMacMibSetRequestConfirm( &mibReq );
+                mibReq.Param.Class = g_lora_config.class;
+                LoRaMacMibSetRequestConfirm(&mibReq);
 
 #if defined(REGION_EU868)
                 lora_config_duty_cycle_set(LORAWAN_DUTYCYCLE_ON ? ENABLE : DISABLE);
@@ -420,17 +440,6 @@ void lora_fsm( void )
 #endif
 
 #endif
-#ifdef AOS_KV
-                ret = aos_kv_get("lora", &g_lora_config, &len);
-                if (ret != 0) {
-                    g_lora_config.flag = INVALID_LORA_CONFIG;
-                }
-#endif
-                if (g_lora_config.flag == VALID_LORA_CONFIG) {
-                    g_join_method = STORED_JOIN_METHOD;
-                } else {
-                    g_join_method = DEF_JOIN_METHOD;
-                }
                 device_state = DEVICE_STATE_JOIN;
                 break;
             }
@@ -530,4 +539,9 @@ void lora_fsm( void )
 DeviceState_t lora_getDeviceState( void )
 {
     return device_state;
+}
+
+lora_config_t *get_lora_config(void)
+{
+    return &g_lora_config;
 }
