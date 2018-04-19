@@ -780,7 +780,7 @@ void *krhino_mm_alloc(size_t size)
             return tmp;
         }
         dumped = 1;
-        dumpsys_mm_info_func(NULL, 0);
+        dumpsys_mm_info_func(0);
 #if (RHINO_CONFIG_MM_LEAKCHECK > 0)
         dump_mmleak();
 #endif
@@ -838,7 +838,7 @@ void *krhino_mm_realloc(void *oldmem, size_t newsize)
             return tmp;
         }
         reallocdumped = 1;
-        dumpsys_mm_info_func(NULL, 0);
+        dumpsys_mm_info_func(0);
 #if (RHINO_CONFIG_MM_LEAKCHECK > 0)
         dump_mmleak();
 #endif

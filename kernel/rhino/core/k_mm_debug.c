@@ -419,7 +419,7 @@ void dump_kmm_statistic_info(k_mm_head *mmhead)
 #endif
 }
 
-uint32_t dumpsys_mm_info_func(char *buf, uint32_t len)
+uint32_t dumpsys_mm_info_func(uint32_t len)
 {
     MM_CRITICAL_ENTER(g_kmm_head);
 
