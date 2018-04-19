@@ -391,10 +391,9 @@ void lora_fsm( void )
                 TimerInit( &TxNextPacketTimer, on_tx_next_packet_timer_event );
 
 #ifdef AOS_KV
-                ret = aos_kv_get("lora", &lora_config, &len);
-                if (ret != 0) {
-                    g_lora_config.flag = INVALID_LORA_CONFIG;
-                } else if (lora_config.flag == VALID_LORA_CONFIG) {
+                memset(&lora_config, 0, sizeof(lora_config));
+                aos_kv_get("lora", &lora_config, &len);
+                if (lora_config.flag == VALID_LORA_CONFIG) {
                     memcpy(&g_lora_config, &lora_config, sizeof(g_lora_config));
                 }
 #endif
