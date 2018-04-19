@@ -321,7 +321,7 @@ class Autotest:
             return False
         return True
 
-    def device_allocate(self, model, number, timeout, purpose='general'):
+    def device_allocate(self, model, number, timeout, purpose='general', reserve='yes'):
         """ request server to allocte free/ilde devices to do autotest
 
         arguments:
@@ -334,7 +334,7 @@ class Autotest:
         """
         if self.connected == False:
             return []
-        content = ','.join([model, str(number), purpose])
+        content = ','.join([model, str(number), purpose, reserve])
         allocated = []
         timeout += time.time()
         while time.time() < timeout:

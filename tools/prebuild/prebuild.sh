@@ -32,6 +32,8 @@ if [ -d prebuild ] || [ -f prebuild ]; then
     rm -rf prebuild
 fi
 mkdir prebuild
+mkdir testscripts
+cp -f tools/testbed/testscripts/*.py testscripts/
 
 arraylength=${#targets[@]}
 if [ $((arraylength%3)) -ne 0 ];then
