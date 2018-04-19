@@ -106,15 +106,19 @@ static void addsize(k_mm_head *mmhead, size_t size, size_t req_size)
     } else {
         mmhead->free_size = 0;
     }
+    
     mmhead->used_size += size;
     if (mmhead->used_size > mmhead->maxused_size) {
         mmhead->maxused_size = mmhead->used_size;
     }
 
-    level = size_to_level(req_size);
-    if (level != -1)
+    if ( req_size > 0 )
     {
-        mmhead->mm_size_stats[level]++;
+        level = size_to_level(req_size);
+        if (level != -1)
+        {
+            mmhead->alloc_times[level]++;
+        }
     }
 }
 
@@ -126,14 +130,15 @@ static void removesize(k_mm_head *mmhead, size_t size)
         mmhead->used_size = 0;
     }
     mmhead->free_size += size;
-
 }
 
+/* used_size++, free_size--, maybe maxused_size++ */
 #define stats_addsize(mmhead,size, req_size)    addsize(mmhead,size, req_size)
-#define stats_removesize(mmhead,size) removesize(mmhead,size)
+/* used_size--, free_size++ */
+#define stats_removesize(mmhead,size)           removesize(mmhead,size)
 #else
 #define stats_addsize(mmhead,size, req_size)    do{}while(0)
-#define stats_removesize(mmhead,size) do{}while(0)
+#define stats_removesize(mmhead,size)           do{}while(0)
 #endif
 
 kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
@@ -142,7 +147,7 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
     k_mm_list_t *firstblk;
     k_mm_head   *pmmhead;
     void        *orig_addr;
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
+#if (RHINO_CONFIG_MM_BLK > 0)
     k_mm_list_t *curblk;
     mblk_pool_t *mmblk_pool;
     kstat_t      stat;
@@ -207,7 +212,8 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
     /* default no fixblk */
     pmmhead->fixedmblk = NULL;
 
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
+#if (RHINO_CONFIG_MM_BLK > 0)
+    /* note: stats_addsize inside */
     mmblk_pool = k_mm_alloc(pmmhead,
                             RHINO_CONFIG_MM_TLF_BLK_SIZE + MM_ALIGN_UP(sizeof(mblk_pool_t)));
     if (mmblk_pool) {
@@ -217,12 +223,15 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
                                      RHINO_CONFIG_MM_BLK_SIZE, RHINO_CONFIG_MM_TLF_BLK_SIZE);
         if (stat == RHINO_SUCCESS) {
             pmmhead->fixedmblk = curblk;
+#if (K_MM_STATISTIC > 0)
+            stats_removesize(pmmhead, RHINO_CONFIG_MM_TLF_BLK_SIZE);
+#endif
         } else {
+            /* note: stats_removesize inside */
             k_mm_free(pmmhead, mmblk_pool);
         }
 #if (K_MM_STATISTIC > 0)
-        stats_removesize(pmmhead, RHINO_CONFIG_MM_TLF_BLK_SIZE);
-        pmmhead->maxused_size = pmmhead->used_size;
+            pmmhead->maxused_size = pmmhead->used_size;
 #endif
     }
 #endif
@@ -277,10 +286,12 @@ kstat_t krhino_add_mm_region(k_mm_head *mmhead, void *addr, size_t len)
     nextblk->owner = 0;
 #endif
 
-    /* change used_size with nextblk size*/
 #if (K_MM_STATISTIC > 0)
-    mmhead->used_size += len;
+    /* keep "used_size" not changed.
+       change "used_size" here then k_mm_free will decrease it. */
+    mmhead->used_size += MM_GET_BLK_SIZE(nextblk);
 #endif
+
     /*mark nextblk as free*/
     k_mm_free(mmhead, nextblk->mbinfo.buffer);
 
@@ -289,7 +300,7 @@ kstat_t krhino_add_mm_region(k_mm_head *mmhead, void *addr, size_t len)
     return RHINO_SUCCESS;
 }
 
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
+#if (RHINO_CONFIG_MM_BLK > 0)
 static void *k_mm_smallblk_alloc(k_mm_head *mmhead, size_t size)
 {
     kstat_t sta;
@@ -304,7 +315,7 @@ static void *k_mm_smallblk_alloc(k_mm_head *mmhead, size_t size)
         return NULL;
     }
 
-    stats_addsize(mmhead, RHINO_CONFIG_MM_BLK_SIZE, size);
+    stats_addsize(mmhead, RHINO_CONFIG_MM_BLK_SIZE, 0);
 
     return tmp;
 }
@@ -405,7 +416,7 @@ void *k_mm_alloc(k_mm_head *mmhead, size_t size)
     int32_t      level;
     size_t       left_size;
     size_t       req_size = size;
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
+#if (RHINO_CONFIG_MM_BLK > 0)
     mblk_pool_t *mm_pool;
 #endif
 
@@ -421,7 +432,7 @@ void *k_mm_alloc(k_mm_head *mmhead, size_t size)
 
     MM_CRITICAL_ENTER(mmhead);
     
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
+#if (RHINO_CONFIG_MM_BLK > 0)
     /* little blk, try to get from mm_pool */
     if(mmhead->fixedmblk != NULL) {
         mm_pool = (mblk_pool_t *)mmhead->fixedmblk->mbinfo.buffer;

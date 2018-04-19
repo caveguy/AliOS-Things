@@ -390,15 +390,15 @@ void dump_kmm_statistic_info(k_mm_head *mmhead)
     }
 #if (K_MM_STATISTIC > 0)
     print("     free     |     used     |     maxused\r\n");
-    print("  %10d  |  %10d  |  %10d\r\n", mmhead->free_size, mmhead->used_size,
-          mmhead->maxused_size);
+    print("  %10d  |  %10d  |  %10d\r\n", 
+          mmhead->free_size, mmhead->used_size, mmhead->maxused_size);
     print("\r\n");
-    print("-----------------alloc size statistic:-----------------\r\n");
+    print("-----------------number of alloc times:-----------------\r\n");
     for (i = 0; i < MM_BIT_LEVEL; i++) {
         if (i % 4 == 0 && i != 0) {
             print("\r\n");
         }
-        print("[2^%02d] bytes: %5d   |", (i+MM_MIN_BIT), mmhead->mm_size_stats[i]);
+        print("[2^%02d] bytes: %5d   |", (i+MM_MIN_BIT), mmhead->alloc_times[i]);
     }
     print("\r\n");
 #endif

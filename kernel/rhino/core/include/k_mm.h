@@ -113,7 +113,8 @@ typedef struct {
     size_t              used_size;
     size_t              maxused_size;
     size_t              free_size;
-    size_t              mm_size_stats[MM_BIT_LEVEL];
+    /* number of times for each TLF level */
+    size_t              alloc_times[MM_BIT_LEVEL];
 #endif
     /* msb (MM_BIT_LEVEL-1) <-> lsb 0, one bit match one freelist */
     uint32_t            free_bitmap;
