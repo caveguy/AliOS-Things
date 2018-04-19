@@ -6,12 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if (RHINO_CONFIG_MM_TLF > 0)
-
-#define MM_IS_FIXEDBLK(mh,ptr) \
-        (mh->fixedmblk && ((void *)ptr > (void *)(mh->fixedmblk->mbinfo.buffer))            \
-        && ((void *)ptr < (void *)(mh->fixedmblk->mbinfo.buffer + mh->fixedmblk->buf_size)))
-        
+#if (RHINO_CONFIG_MM_TLF > 0)        
 extern k_mm_region_t   g_mm_region[];
 extern int             g_region_num;
 extern void aos_mm_leak_region_init(void);
@@ -148,7 +143,6 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
     k_mm_head   *pmmhead;
     void        *orig_addr;
 #if (RHINO_CONFIG_MM_BLK > 0)
-    k_mm_list_t *curblk;
     mblk_pool_t *mmblk_pool;
     kstat_t      stat;
 #endif
@@ -210,19 +204,18 @@ kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len )
     pmmhead->maxused_size = pmmhead->used_size;
 #endif
     /* default no fixblk */
-    pmmhead->fixedmblk = NULL;
+    pmmhead->fix_pool = NULL;
 
 #if (RHINO_CONFIG_MM_BLK > 0)
     /* note: stats_addsize inside */
     mmblk_pool = k_mm_alloc(pmmhead,
                             RHINO_CONFIG_MM_TLF_BLK_SIZE + MM_ALIGN_UP(sizeof(mblk_pool_t)));
     if (mmblk_pool) {
-        curblk = MM_GET_THIS_BLK(mmblk_pool);
         stat = krhino_mblk_pool_init(mmblk_pool, "fixed_mm_blk",
                                      (void *)((size_t)mmblk_pool + MM_ALIGN_UP(sizeof(mblk_pool_t))),
                                      RHINO_CONFIG_MM_BLK_SIZE, RHINO_CONFIG_MM_TLF_BLK_SIZE);
         if (stat == RHINO_SUCCESS) {
-            pmmhead->fixedmblk = curblk;
+            pmmhead->fix_pool = mmblk_pool;
 #if (K_MM_STATISTIC > 0)
             stats_removesize(pmmhead, RHINO_CONFIG_MM_TLF_BLK_SIZE);
 #endif
@@ -310,7 +303,7 @@ static void *k_mm_smallblk_alloc(k_mm_head *mmhead, size_t size)
         return NULL;
     }
 
-    sta = krhino_mblk_alloc((mblk_pool_t *)mmhead->fixedmblk->mbinfo.buffer, &tmp);
+    sta = krhino_mblk_alloc((mblk_pool_t *)mmhead->fix_pool, &tmp);
     if (sta != RHINO_SUCCESS) {
         return NULL;
     }
@@ -327,7 +320,7 @@ static void k_mm_smallblk_free(k_mm_head *mmhead, void *ptr)
         return;
     }
 
-    sta = krhino_mblk_free((mblk_pool_t *)mmhead->fixedmblk->mbinfo.buffer, ptr);
+    sta = krhino_mblk_free((mblk_pool_t *)mmhead->fix_pool, ptr);
     if (sta != RHINO_SUCCESS) {
         k_err_proc(RHINO_SYS_FATAL_ERR);
     }
@@ -434,8 +427,8 @@ void *k_mm_alloc(k_mm_head *mmhead, size_t size)
     
 #if (RHINO_CONFIG_MM_BLK > 0)
     /* little blk, try to get from mm_pool */
-    if(mmhead->fixedmblk != NULL) {
-        mm_pool = (mblk_pool_t *)mmhead->fixedmblk->mbinfo.buffer;
+    if(mmhead->fix_pool != NULL) {
+        mm_pool = (mblk_pool_t *)mmhead->fix_pool;
         if (size <= RHINO_CONFIG_MM_BLK_SIZE && mm_pool->blk_avail > 0) {
             retptr =  k_mm_smallblk_alloc(mmhead, size);
             if (retptr) {
@@ -525,9 +518,9 @@ void  k_mm_free(k_mm_head *mmhead, void *ptr)
 
     MM_CRITICAL_ENTER(mmhead);
 
-#if (RHINO_CONFIG_MM_TLF_BLK_SIZE > 0)
-    /* little blk, free to mm_pool */
-    if (MM_IS_FIXEDBLK(mmhead, ptr)) {
+#if (RHINO_CONFIG_MM_BLK > 0)
+    /* fix blk, free to mm_pool */
+    if (krhino_mblk_check(mmhead->fix_pool, ptr)) {
         /*it's fixed size memory block*/
         k_mm_smallblk_free(mmhead, ptr);
         MM_CRITICAL_EXIT(mmhead);
@@ -623,7 +616,7 @@ void *k_mm_realloc(k_mm_head *mmhead, void *oldmem, size_t new_size)
     
 #if (RHINO_CONFIG_MM_BLK > 0)
     /*begin of oldmem in mmblk case*/
-    if (MM_IS_FIXEDBLK(mmhead, oldmem)) {
+    if (krhino_mblk_check(mmhead->fix_pool, oldmem)) {
         /*it's fixed size memory block*/
         if (new_size <= RHINO_CONFIG_MM_BLK_SIZE) {
             ptr_aux = oldmem;
@@ -748,18 +741,17 @@ void krhino_owner_attach(k_mm_head *mmhead, void *addr, size_t allocator)
         return;
     }
 
+#if (RHINO_CONFIG_MM_BLK > 0)
+    /* fix blk, do not support debug info */
+    if (krhino_mblk_check(mmhead->fix_pool, addr)) {
+        return;
+    }
+#endif
+
     MM_CRITICAL_ENTER(mmhead);
 
-    if (mmhead->fixedmblk == NULL) {
-        blk = MM_GET_THIS_BLK(addr);
-        blk->owner = allocator;
-    }
-    else {
-        if (!MM_IS_FIXEDBLK(mmhead, addr)) {
-            blk = MM_GET_THIS_BLK(addr);
-            blk->owner = allocator;
-        }
-    }
+    blk = MM_GET_THIS_BLK(addr);
+    blk->owner = allocator;
 
     MM_CRITICAL_EXIT(mmhead);
 }

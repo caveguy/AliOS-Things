@@ -107,8 +107,9 @@ typedef struct {
     kspinlock_t         mm_lock;
 #endif
     k_mm_region_info_t *regioninfo;
-    k_mm_list_t        *fixedmblk;
-
+#if (RHINO_CONFIG_MM_BLK > 0)
+    void               *fix_pool;
+#endif
 #if (K_MM_STATISTIC > 0)
     size_t              used_size;
     size_t              maxused_size;
