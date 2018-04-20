@@ -1,10 +1,14 @@
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "esp_common.h"
 #include "lwip/mem.h"
 #include "upgrade.h"
 #include "aos/kernel.h"
 #include "k_api.h"
 #include "aos/log.h"
+
 #define taskENTER_CRITICAL()  RHINO_CRITICAL_ENTER()
 #define taskEXIT_CRITICAL()    RHINO_CRITICAL_EXIT()
 
