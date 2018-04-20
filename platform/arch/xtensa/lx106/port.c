@@ -162,8 +162,7 @@ void xPortSysTickHandle (void)
 /*
  * See header file for description.
  */
-void 
-cpu_first_task_start( void )
+void cpu_first_task_start( void )
 {
 	//set pendsv and systemtick as lowest priority ISR.
 	//pendsv setting
@@ -185,8 +184,7 @@ cpu_first_task_start( void )
 	/* Should not get here as the tasks are now running! */
 }
 
-void 
-vPortEndScheduler( void )
+void vPortEndScheduler( void )
 {
 	/* It is unlikely that the CM3 port will require this function as there
 	is nothing to return to.  */
@@ -196,7 +194,6 @@ vPortEndScheduler( void )
 
 /*-----------------------------------------------------------*/
 
-static unsigned int tick_lock=0;
 static char ClosedLv1Isr = 0;
 
 void vPortEnterCritical( void )
@@ -206,7 +203,6 @@ void vPortEnterCritical( void )
 		_espos_enter_critical(NULL);
 	}
 }
-/*-----------------------------------------------------------*/
 
 void vPortExitCritical( void )
 {
@@ -303,8 +299,7 @@ void  ResetCcountVal( unsigned int cnt_val )
 _xt_isr_entry isr[16];
 char _xt_isr_status = 0;
 
-void 
-_xt_isr_attach(uint8_t i, _xt_isr func, void *arg)
+void _xt_isr_attach(uint8_t i, _xt_isr func, void *arg)
 {
     isr[i].handler = func;
     isr[i].arg = arg;

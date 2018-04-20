@@ -232,6 +232,7 @@ UART_SetParity(UART_Port uart_no, UART_ParityMode Parity_mode)
 void
 UART_SetBaudrate(UART_Port uart_no, uint32 baud_rate)
 {
+    extern void uart_div_modify(uint8_t uart_no, uint32_t DivLatchValue);
     uart_div_modify(uart_no, UART_CLK_FREQ / baud_rate);
 }
 
