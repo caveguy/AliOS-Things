@@ -255,9 +255,7 @@ static void *worker_thread(void *arg)
             g_wq_current = work;
             HAL_MutexUnlock(g_wq_mutex);
 
-            log_debug("work queue:%s, begin", work->name);
             work->func(work);
-            log_debug("work queue:%s, done", work->name);
 
             g_wq_current = NULL;
             min_time_left = 0;
