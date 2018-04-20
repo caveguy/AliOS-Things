@@ -1,4 +1,4 @@
-NAME := alink-ilop
+NAME := iotkit
 $(NAME)_TYPE := framework
 GLOBAL_INCLUDES += sdk-encap \
                   sdk-encap/imports \
@@ -10,11 +10,11 @@ GLOBAL_INCLUDES += sdk-encap \
                   iotkit-system \
                           
 
-include framework/protocol/alink-ilop/base/log/iot-log.mk
-include framework/protocol/alink-ilop/base/utils/iot-utils.mk
-include framework/protocol/alink-ilop/hal-impl/iot-hal.mk
-include framework/protocol/alink-ilop/iotkit-system/iotkit-system.mk
-include framework/protocol/alink-ilop/layers/iot-layers.mk
+include framework/protocol/linkkit/iotkit/base/log/iot-log.mk
+include framework/protocol/linkkit/iotkit/base/utils/iot-utils.mk
+include framework/protocol/linkkit/iotkit/hal-impl/iot-hal.mk
+include framework/protocol/linkkit/iotkit/iotkit-system/iotkit-system.mk
+include framework/protocol/linkkit/iotkit/layers/iot-layers.mk
 
 ifeq ($(COMPILER),gcc)
 $(NAME)_CFLAGS  += -Wall -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-implicit-function-declaration
@@ -24,5 +24,6 @@ $(NAME)_CFLAGS  += -Wno-unused-value -Wno-strict-aliasing
 endif
 
 
-$(NAME)_COMPONENTS += digest_algorithm cjson base64 hashtable log yloop modules.fs.kv cloud hal mbedtls
-GLOBAL_DEFINES += CONFIG_ALINK_ILOP
+$(NAME)_COMPONENTS += digest_algorithm cjson base64 log modules.fs.kv  hal mbedtls
+
+GLOBAL_DEFINES += CONFIG_IOT_KIT

@@ -4,7 +4,7 @@ $(NAME)_TYPE := framework
 
 $(NAME)_COMPONENTS += ywss4linkkit.libywss 
 
-$(NAME)_COMPONENTS += digest_algorithm protocol.alink-ilop connectivity.link-coap connectivity.mqtt
+$(NAME)_COMPONENTS += digest_algorithm protocol.linkkit.iotkit connectivity.link-coap connectivity.mqtt
 
 GLOBAL_DEFINES += CONFIG_YWSS
 
