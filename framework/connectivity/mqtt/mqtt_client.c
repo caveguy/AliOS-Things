@@ -2083,6 +2083,10 @@ static int iotx_mc_attempt_reconnect(iotx_mc_client_t *pClient)
              pClient->connect_data.keepAliveInterval,
              pClient->connect_data.username.cstring);
 
+    if(pClient == NULL){
+        return FAIL_RETURN;
+    }
+    pClient->ipstack->disconnect(pClient->ipstack); 
     /* Ignoring return code. failures expected if network is disconnected */
     rc = iotx_mc_connect(pClient);
 
