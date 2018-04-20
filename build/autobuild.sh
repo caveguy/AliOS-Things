@@ -3,7 +3,7 @@
 linux_posix_targets="alinkapp meshapp networkapp"
 linux_targets="alinkapp networkapp helloworld linuxapp meshapp tls yts linkkitapp"
 linux_platforms="linuxhost linuxhost@debug linuxhost@release"
-mk3060_targets="alinkapp helloworld linuxapp meshapp tls uDataapp networkapp"
+mk3060_targets="alinkapp helloworld linuxapp meshapp tls uDataapp networkapp linkkitapp"
 mk3060_platforms="mk3060 mk3060@release"
 b_l475e_targets="nano helloworld mqttapp alinkapp tls uDataapp networkapp"
 b_l475e_platforms="b_l475e"
@@ -30,10 +30,10 @@ build_system="make"
 build_tools="iar armcc"
 build_ide="iar keil"
 
-
 if [ "$(uname)" = "Linux" ]; then
     CUR_OS="Linux"
     keil_iar_targets=""
+    csky_platforms="hobbit1_evb"
 elif [ "$(uname)" = "Darwin" ]; then
     CUR_OS="OSX"
     linux_platforms=""
@@ -48,7 +48,6 @@ else
 fi
 echo "CUR_OS: ${CUR_OS}"
 
-
 git status > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "error: not in any git repository"
@@ -56,8 +55,6 @@ if [ $? -ne 0 ]; then
 fi
 
 JNUM=`cat /proc/cpuinfo | grep processor | wc -l`
-
-
 
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
@@ -161,7 +158,7 @@ for target in ${mk3060_targets}; do
 done
 
 #multi-bins, mk3060
-:`
+bins_type=""
 aos make clean > /dev/null 2>&1
 for target in ${mk3060_targets}; do
     for platform in ${mk3060_platforms}; do
@@ -184,7 +181,6 @@ for target in ${mk3060_targets}; do
         done
     done
 done
-`
 
 #lpc54102
 aos make clean > /dev/null 2>&1

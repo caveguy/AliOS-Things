@@ -3,8 +3,8 @@
 version=1.3.0
 GITHUB_HEAD_SHA=9cf94a65537ba76dffc7325514bb04394b69125e
 
-aosdir=~/githubsync/aos
-githubdir=~/githubsync/AliOS
+aosdir=${HOME}/githubsync/aos
+githubdir=${HOME}/githubsync/AliOS
 branch=aos${version}
 branch_specific_files=${aosdir}/tools/codesync/shscripts/specific
 
@@ -16,34 +16,23 @@ if [ ! -d githubsync ]; then
     mkdir githubsync
 fi
 
-dirs="aos AliOS"
-for dir in ${dirs}; do
-    cd ~/githubsync
-    if [ -d ${dir} ]; then
-        cd ${dir}
-        git status > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            cd ../
-            rm -rf ${dir}
-        fi
-    fi
-done
-
-if [ -d ~/githubsync/aos ]; then
-    cd ~/githubsync/aos
-    git reset --hard HEAD
-    git checkout master
-    if [ "$(git branch | grep ${branch})" != "" ]; then
-        git branch -D ${branch}
-    fi
-    git fetch
-else
-    cd ~/githubsync
-    git clone git@code.aliyun.com:keepwalking.zeng/aos.git
+if [ -d ${aosdir} ]; then
+    rm -rf ${aosdir}
 fi
-if [ -d ~/githubsync/AliOS ];then
-    cd ~/githubsync/AliOS
-    git pull
+git clone git@code.aliyun.com:keepwalking.zeng/aos.git ${aosdir}
+
+if [ -d ${githubdir} ]; then
+    cd ${githubdir}
+    git status > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        cd ../
+        rm -rf ${dir}
+    fi
+fi
+if [ -d ${githubdir} ];then
+    cd ${githubdir}
+    git reset --hard HEAD
+    git fetch
 else
     cd ~/githubsync
     git clone git@github.com:alibaba/AliOS-Things.git AliOS
@@ -94,7 +83,8 @@ cp -rf ${aosdir}/tools/ci ${githubdir}/tools/
 cp -rf ${aosdir}/tools/cli ${githubdir}/tools/
 cp -rf ${aosdir}/tools/Doxyfile ${githubdir}/tools/
 cp -rf ${aosdir}/tools/doxygen.sh ${githubdir}/tools/
-cp -rf ${aosdir}/tools/prebuild ${githubdir}/tools/
+mkdir -p ${githubdir}/tools/prebuild
+cp -rf ${branch_specific_files}/prebuild.sh ${githubdir}/tools/prebuild/
 
 #testbed
 #cp -rf ${aosdir}/tools/testbed ${githubdir}/tools/
@@ -120,11 +110,10 @@ cp -f ${aosdir}/framework/ywss/enrollee.h ${githubdir}/framework/ywss/
 cp -f ${aosdir}/framework/ywss/awss.h ${githubdir}/framework/ywss/
 
 #ywss4linkkit folder
-find ${githubdir}/framework/ywss4linkkit/ -name "*.h" | xargs chmod -x
-find ${githubdir}/framework/ywss4linkkit/libywss/ -name "*.c" | xargs rm -f
-rm -f ${githubdir}/framework/ywss4linkkit/libywss/*.h
-mv -f ${githubdir}/framework/ywss4linkkit/libywss/libywss.mk.b ${githubdir}/framework/ywss4linkkit/libywss/libywss.mk
-rm -rf ${githubdir}/framework/ywss4linkkit/libywss/utility
+rm -rf ${githubdir}/framework/ywss4linkkit/*
+cp -f ${aosdir}/framework/ywss4linkkit/libywss/os/os.h ${githubdir}/framework/ywss4linkkit/
+cp -f ${aosdir}/framework/ywss4linkkit/libywss/os/product/product.h ${githubdir}/framework/ywss4linkkit/
+cp -f ${branch_specific_files}/ywss4linkkit.mk ${githubdir}/framework/ywss4linkkit/
 
 #mesh folder
 rm -rf ${githubdir}/kernel/protocols/mesh/*
@@ -182,6 +171,9 @@ sed -i "/^#include <ali_core.h>/d" ${githubdir}/example/bluetooth/aisilopapp/ais
 rm -rf ${githubdir}/kernel/rhino/posix
 rm -rf ${githubdir}/example/legacy_linkkitapp
 rm -rf ${githubdir}/framework/protocol/legacy_linkkit
+rm -rf ${githubdir}/framework/protocol/alink
+rm -rf ${githubdir}/example/alinkapp
+rm -rf ${githubdir}/build/scons_enabled.*
 
 #branch specofic files
 cp ${branch_specific_files}/k_config_linuxhost.h ${githubdir}/board/linuxhost/k_config.h
@@ -322,7 +314,7 @@ fi
 cd ${aosdir}/out/${target}/libraries/
 arm-none-eabi-strip --strip-debug libywss.a
 mkdir -p ${githubdir}/framework/ywss4linkkit/lib/arm968es
-cp libywss.a ${githubdir}/framework/ywss/lib/arm968es/libywss.a
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/arm968es/libywss.a
 
 cd ${aosdir}
 target=linkkitapp@esp8266
@@ -334,7 +326,7 @@ fi
 cd ${aosdir}/out/${target}/libraries/
 xtensa-lx106-elf-strip --strip-debug libywss.a
 mkdir -p ${githubdir}/framework/ywss4linkkit/lib/xtensa
-cp libywss.a ${githubdir}/framework/ywss/lib/xtensa/libywss.a
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/xtensa/libywss.a
 
 cd ${aosdir}
 target=linkkitapp@linuxhost
@@ -346,7 +338,7 @@ fi
 cd ${aosdir}/out/${target}/libraries/
 strip --strip-debug libywss.a
 mkdir -p ${githubdir}/framework/ywss4linkkit/lib/linux
-cp libywss.a ${githubdir}/framework/ywss/lib/linux/libywss.a
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/linux/libywss.a
 
 cd ${aosdir}
 target=linkkitapp@amebaz_dev
@@ -358,7 +350,7 @@ fi
 cd ${aosdir}/out/${target}/libraries/
 arm-none-eabi-strip --strip-debug libywss.a
 mkdir -p ${githubdir}/framework/ywss4linkkit/lib/cortex-m4
-cp libywss.a ${githubdir}/framework/ywss/lib/cortex-m4/libywss.a
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/cortex-m4/libywss.a
 
 cd ${githubdir}
 grep -rl "AOS-R-[0-9]\.[0-9]\.[0-9]" | xargs sed -i "s|AOS-R-[0-9].[0-9].[0-9]|AOS-R-${version}|g"
