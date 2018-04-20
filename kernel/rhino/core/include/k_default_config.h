@@ -92,7 +92,7 @@
 #endif
 
 #ifndef K_MM_STATISTIC
-#define K_MM_STATISTIC                       0
+#define K_MM_STATISTIC                       1
 #endif
 
 #ifndef RHINO_CONFIG_TASK_SEM

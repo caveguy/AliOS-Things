@@ -64,6 +64,8 @@ kstat_t krhino_mblk_pool_init(mblk_pool_t *pool, const name_t *name,
     *((uint8_t **)blk_cur) = NULL;
 
     pool->pool_name  = name;
+    pool->pool_start = pool_start;
+    pool->pool_end   = pool_end;
     pool->blk_whole  = blks;
     pool->blk_avail  = blks;
     pool->blk_size   = blk_size;
