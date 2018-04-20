@@ -268,6 +268,9 @@ class base_process_impl(process):
         aos_global_config.out_dir = self.args.get('OUT_DIR') if self.args.get('OUT_DIR') else 'out'
         aos_global_config.ide = self.args.get('IDE') if self.args.get('IDE') else ''
         
+        if self.args.get('vcall'):
+            aos_global_config.set('vcall', self.args.get('vcall'))
+
         if aos_global_config.ide == 'keil':
             aos_global_config.compiler = 'armcc'
         elif aos_global_config.ide == 'iar':
@@ -339,8 +342,13 @@ class dependency_process_impl(process):
             print('module %s not found'%mod_dir)
             return
 
+        py_path = os.path.join(m, 'ucube.py')    
+        if not os.path.exists(py_path):
+            print('file %s not found'%py_path)
+            return
+
         self.config.component_directories.append(m)
-        self.config.aos_env.SConscript(os.path.join(m, 'ucube.py'))
+        self.config.aos_env.SConscript(py_path)
 
     def __add_components_dependency(self, dependency):
         if dependency not in aos_global_config.component_directories:

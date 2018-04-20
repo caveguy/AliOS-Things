@@ -15,4 +15,9 @@ include_tmp = Split('''
 for i in include_tmp:
     component.add_global_includes(i)
     
-component.add_comp_deps("framework/activation")
+if aos_global_config.get('vcall') == None:
+    aos_global_config.set('vcall', 'rhino')
+
+if aos_global_config.get('vcall') == 'rhino':
+    component.add_macros("VCALL_RHINO") 
+    component.add_comp_deps("framework/activation")

@@ -25,6 +25,7 @@ src =Split('''
     iotkit-system/src/guider.c
     iotkit-system/src/id2_guider.c
     iotkit-system/src/report.c
+    iotkit-system/src/class_interface.c
     layers/config/src/dev_conf.c
 ''')
 component =aos_component('alink-ilop', src)
@@ -60,6 +61,7 @@ global_includes =Split('''
     base/utils/LITE-utils/src/
     base/utils/misc/
     base/utils/digest
+    hal-impl
 ''')
 for i in global_includes:
     component.add_global_includes(i)
@@ -93,3 +95,11 @@ for i in cflags:
     component.add_cflags(i)
 
 component.add_global_macros('LITE_UTILS_CONFIG_H=\\"'+'ilop_utils_config.h'+'\\"')
+
+@post_config
+def alink_ilop_post_config(component):
+    comp_names = [comp.name for comp in aos_global_config.components]
+    if 'ywss4linkkit' in comp_names:
+        component.add_sources('hal-impl/rhino/HAL_AWSS_rhino.c')
+
+alink_ilop_post_config(component)
