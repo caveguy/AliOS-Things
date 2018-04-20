@@ -17,12 +17,12 @@ $(NAME)_SOURCES := \
 
 
 ifeq ($(LINK_COAP_ALONE),1)
-$(NAME)_INCLUDES +=./platform    ../../protocol/alink-ilop/iotkit-system 
+$(NAME)_INCLUDES +=./platform   
 $(NAME)_SOURCES :+=  \
     platform/HAL_UDP_rhino.c \
     platform/HAL_OS_rhino.c 
 else
-$(NAME)_COMPONENTS := protocol.alink-ilop 
+$(NAME)_COMPONENTS := protocol.linkkit.iotkit
 endif
 ifeq ($(COMPILER),)
 $(NAME)_CFLAGS := $(filter-out -Werror,$(CFLAGS))

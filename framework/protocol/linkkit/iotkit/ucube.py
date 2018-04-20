@@ -27,7 +27,7 @@ src =Split('''
     iotkit-system/src/report.c
     layers/config/src/dev_conf.c
 ''')
-component =aos_component('alink-ilop', src)
+component =aos_component('iotkit', src)
 
 if aos_global_config.ide != 'keil':
     component.add_sources( "base/utils//misc/utils_epoch_time.c" )
@@ -65,7 +65,7 @@ for i in global_includes:
     component.add_global_includes(i)
 
 global_macros =Split(''' 
-    CONFIG_ALINK_ILOP
+    CONFIG_IOT_KIT
 ''')
 for i in global_macros:
     component.add_global_macros(i)
