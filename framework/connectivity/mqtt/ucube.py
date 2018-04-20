@@ -6,15 +6,15 @@ component =aos_component('mqtt', src)
 
 dependencis =Split(''' 
     framework/connectivity/mqtt/MQTTPacket
-    framework/protocol/linkkit
+    framework/protocol/linkkit/iotkit
 ''')
 for i in dependencis:
     component.add_comp_deps(i)
 
 global_includes =Split(''' 
     ./
-    ../../protocol/linkkit/sdk-encap
-    ../../protocol/linkkit/base/utils
+    ../../protocol/linkkit/iotkit/sdk-encap
+    ../../protocol/linkkit/iotkit/base/utils
 ''')
 for i in global_includes:
     component.add_global_includes(i)
@@ -28,11 +28,11 @@ for i in global_macros:
     component.add_global_macros(i)
 
 includes =Split(''' 
-    ../../protocol/linkkit/iotkit-system
-    ../../protocol/linkkit/base/log/LITE-log
-    ../../protocol/linkkit/base/utils/LITE-utils/src
-    ../../protocol/linkkit/base/utils/misc/
-    ../../protocol/linkkit/base/utils/digest
+    ../../protocol/linkkit/iotkit/iotkit-system
+    ../../protocol/linkkit/iotkit/base/log/LITE-log
+    ../../protocol/linkkit/iotkit/base/utils/LITE-utils/src
+    ../../protocol/linkkit/iotkit/base/utils/misc/
+    ../../protocol/linkkit/iotkit/base/utils/digest
 ''')
 for i in includes:
     component.add_includes(i)
