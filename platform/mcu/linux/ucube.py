@@ -1,4 +1,4 @@
-aos_global_config.set('no_with_lwip', '1')
+aos_global_config.set('no_with_lwip', 1)
 
 src = Split('''
     soc/soc_impl.c
@@ -26,8 +26,6 @@ global_cflags = Split('''
     -lrt
     -DDEBUG
     -ggdb
-    -lreadline
-    -lncurses
 ''')
 
 global_macros = Split('''
@@ -48,9 +46,8 @@ component.set_global_arch('linux')
 
 component.add_global_cflags(*global_cflags)
 component.add_global_asflags('-m32')
-component.add_global_ldflags('-m32', '-lpthread', '-lm', '-lrt')
+component.add_global_ldflags('-m32', '-lpthread', '-lm', '-lrt', '-lreadline', '-lncurses')
 component.add_global_macros(*global_macros)
-
 
 @post_config
 def linuximpl_post_config(component):
@@ -59,13 +56,13 @@ def linuximpl_post_config(component):
         component.add_sources('main/sdmmc.c')
 
     if 'net' in comp_names:
-        aos_global_config.set('LWIP', '1')
+        aos_global_config.set('LWIP', 1)
 
 
 linuximpl_post_config(component)
 
 LWIP = aos_global_config.get('LWIP')
-if LWIP == '1':
+if LWIP == 1:
     lwip_src = Split('''
         csp/lwip/netif/delif.c 
         csp/lwip/netif/fifo.c 

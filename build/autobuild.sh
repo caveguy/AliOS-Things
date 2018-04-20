@@ -5,9 +5,9 @@ linux_targets="alinkapp networkapp helloworld linuxapp meshapp tls yts linkkitap
 linux_platforms="linuxhost linuxhost@debug linuxhost@release"
 mk3060_targets="alinkapp helloworld linuxapp meshapp tls uDataapp networkapp"
 mk3060_platforms="mk3060 mk3060@release"
-b_l475e_targets="mqttapp helloworld tls uDataapp networkapp"
+b_l475e_targets="nano helloworld mqttapp alinkapp tls uDataapp networkapp"
 b_l475e_platforms="b_l475e"
-starterkit_targets="ldapp"
+starterkit_targets="ldapp helloworld mqttapp"
 starterkit_platforms="starterkit"
 lpcxpresso54102_targets="helloworld alinkapp mqttapp tls networkapp"
 lpcxpresso54102_platforms="lpcxpresso54102"
@@ -24,12 +24,9 @@ eml3047_platforms="eml3047"
 csky_targets="helloworld coapapp"
 csky_platforms=""
 
-#scons+gcc more to add
-scons_build_targets="nano@b_l475e helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
-
-keil_iar_targets="helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
+keil_iar_targets="nano@b_l475e helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 compiler_types="armcc iar"
-build_system="make scons"
+build_system="make"  
 build_tools="iar armcc"
 build_ide="iar keil"
 
@@ -71,10 +68,10 @@ cd $(git rev-parse --show-toplevel)
 
 
 for s in ${build_system}; do
-    for i in ${keil_iar_targets}; do
-        for t in ${build_tools}; do
-            aos make clean > /dev/null 2>&1
-            aos ${s} -j4 ${i} COMPILER=${t} > ${s}_${i}_${t}@${branch}.log 2>&1
+    for i in ${keil_iar_targets}; do    
+        for t in ${build_tools}; do            
+            aos make clean > /dev/null 2>&1    
+            aos ${s} ${i} COMPILER=${t} > ${s}_${i}_${t}@${branch}.log 2>&1
 
             if [ $? -eq 0 ]; then
                 echo -e "build aos ${s} ${i} COMPILER=${t} at ${branch} branch succeed"
@@ -90,34 +87,18 @@ for s in ${build_system}; do
     done
 done
 
-#scons+gcc  linux&windows
-aos make clean > /dev/null 2>&1
-for target in ${scons_build_targets}; do
-    aos scons -j4 ${target} > ${target}@${branch}.log 2>&1
-    if [ $? -eq 0 ]; then
-        echo "build scons ${target} at ${branch} branch succeed"
-        rm -f ${target}@${branch}.log
-    else
-        echo -e "build scons ${target} at ${branch} branch failed, log:\n"
-        cat ${target}@${branch}.log
-        echo -e "\nbuild ${target} at ${branch} branch failed"
-        aos make clean > /dev/null 2>&1
-        exit 1
-    fi
-done
-
-#scons tarsfer test
-aos make clean > /dev/null 2>&1
-for target in ${scons_build_targets}; do
+#ide tarsfer test
+for target in ${keil_iar_targets}; do
     for ide in ${build_ide}; do
-        aos scons ${target} IDE=${ide} > ${target}2IDE_${ide}@${branch}.log 2>&1
+        aos make clean > /dev/null 2>&1
+        aos make ${target} IDE=${ide} > ${target}2IDE_${ide}@${branch}.log 2>&1
         if [ $? -eq 0 ]; then
-            echo "build scons ${target} IDE=${ide} at ${branch} branch succeed"
+            echo "build aos make ${target} IDE=${ide} at ${branch} branch succeed"
             rm -f ${target}2IDE_${ide}@${branch}.log
         else
-            echo -e "build scons ${target} IDE=${ide} at ${branch} branch failed, log:\n"
+            echo -e "build aos make ${target} IDE=${ide} at ${branch} branch failed, log:\n"
             cat ${target}2IDE_${ide}@${branch}.log
-            echo -e "\nbuild scons ${target} IDE=${ide} at ${branch} branch failed"
+            echo -e "\nbuild make ${target} IDE=${ide} at ${branch} branch failed"
             aos make clean > /dev/null 2>&1
             exit 1
         fi
