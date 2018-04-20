@@ -28,7 +28,7 @@ src =Split('''
     iotkit-system/src/class_interface.c
     layers/config/src/dev_conf.c
 ''')
-component =aos_component('alink-ilop', src)
+component =aos_component('iotkit', src)
 
 if aos_global_config.ide != 'keil':
     component.add_sources( "base/utils//misc/utils_epoch_time.c" )
@@ -67,7 +67,7 @@ for i in global_includes:
     component.add_global_includes(i)
 
 global_macros =Split(''' 
-    CONFIG_ALINK_ILOP
+    CONFIG_IOT_KIT
 ''')
 for i in global_macros:
     component.add_global_macros(i)
@@ -96,6 +96,7 @@ for i in cflags:
 
 component.add_global_macros('LITE_UTILS_CONFIG_H=\\"'+'ilop_utils_config.h'+'\\"')
 
+
 @post_config
 def alink_ilop_post_config(component):
     comp_names = [comp.name for comp in aos_global_config.components]
@@ -103,3 +104,4 @@ def alink_ilop_post_config(component):
         component.add_sources('hal-impl/rhino/HAL_AWSS_rhino.c')
 
 alink_ilop_post_config(component)
+

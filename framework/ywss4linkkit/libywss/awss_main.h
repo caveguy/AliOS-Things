@@ -43,7 +43,7 @@ extern "C"
 {
 #endif
 
-#define AWSS_DEBUG 1
+#define AWSS_DEBUG 0
 #if (AWSS_DEBUG == 1)
     #define awss_debug(fmt, args...) printf(fmt, ##args)
 #else
