@@ -64,6 +64,8 @@
 #include "low_power.h"
 #include "vcom.h"
 
+#include <k_api.h>
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -114,6 +116,9 @@ void USART4_5_IRQHandler(void)
     int rx_ready = 0;
     char rx;
 
+    CPSR_ALLOC();
+    RHINO_CPU_INTRPT_DISABLE();
+
     if ( LL_USART_IsActiveFlag_RXNE(USART4) && (LL_USART_IsEnabledIT_RXNE(USART4 ) != RESET) )
     {
         /* no need to clear the RXNE flag because it is auto cleared by reading the data*/
@@ -127,6 +132,8 @@ void USART4_5_IRQHandler(void)
         linklora_test_cli_cb(rx);
 #endif
     }
+
+    RHINO_CPU_INTRPT_ENABLE();
 }
 
 /* Private functions ---------------------------------------------------------*/

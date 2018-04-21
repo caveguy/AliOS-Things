@@ -49,7 +49,7 @@ uint16_t LoRaMacFreqBandMask = 0xffff;
  */
 static ChannelParams_t Channels[CN470S_MAX_NB_CHANNELS];
 static ChannelParams_t TxChannels[CN470S_MAX_NB_CHANNELS];
-static uint8_t RxFreqBandNum = 0;
+static uint8_t TxFreqBandNum = 0;
 
 /*!
  * LoRaMac bands
@@ -74,6 +74,7 @@ uint8_t FreqBandNum[1 + 16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0, 8, 16, 24, 100, 108, 116, 124, 68, 76, 84, 92, 166, 174, 182, 190};
 uint8_t NextAvailableFreqBandIdx;
 uint8_t InterFreqRx2Chan[16] = {75, 83, 91, 99, 173, 181, 189, 197, 7, 15, 23, 31, 107, 115, 123, 131};
+uint8_t IntraFreqRx2Chan[16] = {7, 15, 75, 83, 23, 31, 91, 99, 107, 115, 173, 181, 123, 131, 189, 197};
 
 // Static functions
 static int8_t GetNextLowerTxDr( int8_t dr, int8_t minDr )
@@ -546,7 +547,6 @@ bool RegionCN470SRxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     uint8_t maxPayload = 0;
     int8_t phyDr = 0;
     uint32_t frequency = rxConfig->Frequency;
-    lora_config_t *lora_config = get_lora_config();
 
     TimerTime_t curTime = TimerGetCurrentTime( );
     bool iqInverted;
@@ -567,8 +567,12 @@ bool RegionCN470SRxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
         }
     }
 
-    if (rxConfig->Window == 1 && lora_config->freqtype == FREQ_TYPE_INTER) {
-        frequency = 470300000 + (InterFreqRx2Chan[RxFreqBandNum]) * 200000;
+    if (rxConfig->Window == 1) {
+        if (get_lora_freq_type() == FREQ_TYPE_INTER) {
+            frequency = 470300000 + (InterFreqRx2Chan[TxFreqBandNum]) * 200000;
+        } else {
+            frequency = 470300000 + (IntraFreqRx2Chan[TxFreqBandNum]) * 200000;
+        }
     }
 
     // Read the physical datarate from the datarates table
@@ -584,10 +588,7 @@ bool RegionCN470SRxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
         iqInverted = true;
     }
 
-    DBG_LINKLORA("Rx, Freq: %d, DR:%d, WndIdx: %d, at %d\r\n", frequency, dr, rxConfig->Window, curTime);
-
     Radio.SetChannel( frequency );
-
 
     // Radio configuration
     if( dr == DR_7 )
@@ -612,6 +613,7 @@ bool RegionCN470SRxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     Radio.SetMaxPayloadLength( modem, maxPayload + LORA_MAC_FRMPAYLOAD_OVERHEAD );
 
     *datarate = (uint8_t) dr;
+    rxConfig->Frequency = frequency;
     return true;
 }
 
@@ -646,8 +648,6 @@ bool RegionCN470STxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTim
         iqInverted = false;
     }
 
-    DBG_LINKLORA("Tx, Freq: %d,DR: %d, preambleLen: %d, at %d\r\n", frequency, txConfig->Datarate, preambleLen, curTime);
-
     // Setup the radio frequency
     Radio.SetChannel( frequency);
     
@@ -667,6 +667,9 @@ bool RegionCN470STxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTim
     *txTimeOnAir = Radio.TimeOnAir( modem,  txConfig->PktLen );
 
     *txPower = txConfig->TxPower;
+
+    DBG_LINKLORA("Tx, Freq: %d,DR: %d, len: %d, duration %d, at %d\r\n",
+                 frequency, txConfig->Datarate, txConfig->PktLen, *txTimeOnAir, curTime);
     return true;
 }
 
@@ -906,8 +909,6 @@ int8_t RegionCN470SAlternateDr( AlternateDrParams_t* alternateDr )
             datarate = DR_5;
         break;
     }
-    DBG_LINKLORA("%s, method %d, trials %d, datarate %d\r\n",
-                 __func__, alternateDr->joinmethod, alternateDr->NbTrials, datarate);
 
     return datarate;
 }
@@ -946,9 +947,8 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
     uint8_t enabledChannels[CN470S_MAX_NB_CHANNELS] = { 0 };
     TimerTime_t nextTxDelay = 0;
     MibRequestConfirm_t mib_req;
-    static uint8_t TxFreqBandNum = 0;
+    static uint8_t RxFreqBandNum = 0;
     uint8_t band_index = 0;
-    lora_config_t *lora_config = get_lora_config();
 
     mib_req.Type = MIB_NETWORK_JOINED;
     LoRaMacMibGetRequestConfirm(&mib_req);
@@ -958,7 +958,6 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
             if (nextChanParams->freqband > 15) {
                 nextChanParams->freqband = 1;  // reset to defautl value
             }
-            RxFreqBandNum = nextChanParams->freqband;
             TxFreqBandNum = nextChanParams->freqband;
         } else {
             if (nextChanParams->joinmethod == SCAN_JOIN_METHOD) {
@@ -968,20 +967,21 @@ bool RegionCN470SNextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
                     NextAvailableFreqBandIdx = 1;
                 }
             }
-            if(lora_config->freqtype == FREQ_TYPE_INTER) {
-                if(FreqBandNum[band_index] > 7) {
-                    RxFreqBandNum = FreqBandNum[band_index] - 8;
-                } else {
-                    RxFreqBandNum = FreqBandNum[band_index] + 8;
-                }
-            } else { //IntraFreq
-                RxFreqBandNum = FreqBandNum[band_index];
-            }
             TxFreqBandNum = FreqBandNum[band_index];
         }
-        nextChanParams->freqband = TxFreqBandNum;
     }
 
+    if(get_lora_freq_type() == FREQ_TYPE_INTER) {
+        if(FreqBandNum[band_index] > 7) {
+            RxFreqBandNum = TxFreqBandNum - 8;
+        } else {
+            RxFreqBandNum = TxFreqBandNum + 8;
+        }
+    } else { //IntraFreq
+        RxFreqBandNum = TxFreqBandNum;
+    }
+
+    nextChanParams->freqband = TxFreqBandNum;
     nextChanParams->NextAvailableRxFreqBandNum = RxFreqBandNum;
     nextChanParams->NextAvailableTxFreqBandNum = TxFreqBandNum;
 

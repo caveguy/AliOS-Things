@@ -415,6 +415,10 @@ static uint8_t RxSlot = 0;
  */
 LoRaMacFlags_t LoRaMacFlags;
 
+#ifdef CONFIG_DEBUG_LINKLORA
+bool not_print_debug = false;
+#endif
+
 /*!
  * \brief Function to be executed on Radio Tx Done event
  */
@@ -631,9 +635,15 @@ static void OnRadioTxDone( void )
     }
     else
     {
+#ifdef CONFIG_DEBUG_LINKLORA
+        not_print_debug = true;
+#endif
         OnRxWindow2TimerEvent( );
     }
 
+#ifdef CONFIG_DEBUG_LINKLORA
+        not_print_debug = false;
+#endif
     // Setup timers
     if( IsRxWindowsEnabled == true )
     {
@@ -1474,6 +1484,7 @@ static void OnRxWindow1TimerEvent( void )
 
     RegionRxConfig( LoRaMacRegion, &RxWindow1Config, ( int8_t* )&McpsIndication.RxDatarate );
     RxWindowSetup( RxWindow1Config.RxContinuous, LoRaMacParams.MaxRxWindow );
+    DBG_LINKLORA("Rx, Freq %d, DR %d, window 1\r\n", RxWindow1Config.Frequency, McpsIndication.RxDatarate);
 }
 
 static void OnRxWindow2TimerEvent( void )
@@ -1500,6 +1511,11 @@ static void OnRxWindow2TimerEvent( void )
         RxWindowSetup( RxWindow2Config.RxContinuous, LoRaMacParams.MaxRxWindow );
         RxSlot = RxWindow2Config.Window;
     }
+#ifdef CONFIG_DEBUG_LINKLORA
+    if (not_print_debug == false) {
+        DBG_LINKLORA("Rx, Freq %d, DR %d, window 2\r\n", RxWindow2Config.Frequency, McpsIndication.RxDatarate);
+    }
+#endif
 }
 
 static void OnAckTimeoutTimerEvent( void )
@@ -1723,6 +1739,7 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 MlmeConfirm.Status = LORAMAC_EVENT_INFO_STATUS_OK;
                 MlmeConfirm.DemodMargin = payload[macIndex++];
                 MlmeConfirm.NbGateways = payload[macIndex++];
+                DBG_LINKLORA("margin %d, gateways %d\r\n", MlmeConfirm.DemodMargin, MlmeConfirm.NbGateways);
                 break;
             case SRV_MAC_LINK_ADR_REQ:
                 {
