@@ -26,14 +26,13 @@ csky_platforms=""
 
 keil_iar_targets="nano@b_l475e helloworld@b_l475e mqttapp@b_l475e alinkapp@b_l475e helloworld@starterkit mqttapp@starterkit"
 compiler_types="armcc iar"
-build_system="make"  
+build_system="make"
 build_tools="iar armcc"
 build_ide="iar keil"
 
 if [ "$(uname)" = "Linux" ]; then
     CUR_OS="Linux"
     keil_iar_targets=""
-    csky_platforms="hobbit1_evb"
 elif [ "$(uname)" = "Darwin" ]; then
     CUR_OS="OSX"
     linux_platforms=""
@@ -65,9 +64,9 @@ cd $(git rev-parse --show-toplevel)
 
 
 for s in ${build_system}; do
-    for i in ${keil_iar_targets}; do    
-        for t in ${build_tools}; do            
-            aos make clean > /dev/null 2>&1    
+    for i in ${keil_iar_targets}; do
+        for t in ${build_tools}; do
+            aos make clean > /dev/null 2>&1
             aos ${s} ${i} COMPILER=${t} > ${s}_${i}_${t}@${branch}.log 2>&1
 
             if [ $? -eq 0 ]; then
