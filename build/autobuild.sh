@@ -33,6 +33,7 @@ build_ide="iar keil"
 if [ "$(uname)" = "Linux" ]; then
     CUR_OS="Linux"
     keil_iar_targets=""
+    csky_platforms="hobbit1_evb"
 elif [ "$(uname)" = "Darwin" ]; then
     CUR_OS="OSX"
     linux_platforms=""
