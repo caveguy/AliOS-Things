@@ -1,7 +1,7 @@
 #!/bin/sh
 
 version=1.3.0
-GITHUB_HEAD_SHA=9cf94a65537ba76dffc7325514bb04394b69125e
+GITHUB_HEAD_SHA=44239bf7888abffe4f4350fcffb174c4ca5968a4
 
 aosdir=${HOME}/githubsync/aos
 githubdir=${HOME}/githubsync/AliOS
