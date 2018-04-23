@@ -160,7 +160,6 @@ static int awss_report_token_to_cloud()
 {
 #define REPORT_TOKEN_PARAM_LEN  (64)
     if (awss_report_token_suc || awss_report_token_cnt ++ > MATCH_REPORT_CNT_MAX) {
-        awss_report_token_suc = 1;
         return 0;
     }
 
