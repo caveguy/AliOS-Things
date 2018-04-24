@@ -181,21 +181,45 @@ int awss_connectap_notify_stop()
     return 0;
 }
 
-static int online_get_device_info(void *ctx, void *resource, void *remote, void *request, char is_mcast)
+typedef struct get_dev_info_arg_s {
+    void *remote;
+    void *request;
+    char is_mcast
+} get_dev_info_arg_t;
+
+static void online_get_device_info_helper(void *arg)
 {
     char *buf = NULL;
     char *dev_info = NULL;
     int len = 0, id_len = 0;
     char *msg = NULL, *id = NULL;
     char req_msg_id[MSG_REQ_ID_LEN];
+    get_dev_info_arg_t *info;
+    void *remote, *request;
+    char is_mcast;
 
+    if (!arg) {
+        printf("Invalid argument.\r\n");
+        return;
+    }
 
-    produce_random(aes_random, sizeof(aes_random));
-    awss_report_token();
+    info = (get_dev_info_arg_t *)arg;
+    if (NULL == info->remote || NULL == info->request) {
+        printf("Invalid info argument.\r\n");
+        goto end;
+    }
+
     /*
      * wait for token is send to cloud success
      */
-    while (awss_report_token_suc == 0) {aos_msleep(1000);};
+    if (awss_report_token_suc == 0) {
+        aos_post_delayed_action(100, online_get_device_info_helper, info);
+        return;
+    }
+
+    remote = info->remote;
+    request = info->request;
+    is_mcast = info->is_mcast;
 
     buf = os_zalloc(DEV_INFO_LEN_MAX);
     if (buf == NULL)
@@ -225,12 +249,50 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
         awss_debug("sending failed.");
     }
     os_free(buf);
-    return 0;
+    goto end;
 
 DEV_INFO_ERR:
     if (buf) os_free(buf);
     if (dev_info) os_free(dev_info);
-    return -1;
+
+end:
+    if (info->remote) os_free(info->remote);
+    if (info->request) os_free(info->request);
+    if (info) os_free(info);
+    return;
+}
+
+#define DEV_INFO_REMOTE_MAX 32
+#define DEV_INFO_REQUEST_MAX 256
+static int online_get_device_info(void *ctx, void *resource, void *remote, void *request, char is_mcast)
+{
+    get_dev_info_arg_t *info;
+
+    info = (get_dev_info_arg_t *)os_zalloc(sizeof(get_dev_info_arg_t));
+    if (NULL == info) return -1;
+
+    info->remote = (void *)os_zalloc(DEV_INFO_REMOTE_MAX);
+    if (NULL == info->remote) {
+        os_free(info);
+        return -1;
+    }
+
+    info->request = (void *)os_zalloc(DEV_INFO_REQUEST_MAX);
+    if (NULL == info->request) {
+        os_free(info->remote);
+        os_free(info);
+        return -1;
+    }
+
+    memcpy(info->remote, remote, DEV_INFO_REMOTE_MAX);
+    memcpy(info->request, request, DEV_INFO_REQUEST_MAX);
+    info->is_mcast = is_mcast;
+
+    produce_random(aes_random, sizeof(aes_random));
+    awss_report_token();
+    aos_post_delayed_action(100, online_get_device_info_helper, info);
+
+    return 0;
 }
 
 int online_mcast_get_device_info(void *ctx, void *resource, void *remote, void *request)
