@@ -195,7 +195,7 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
     /*
      * wait for token is send to cloud success
      */
-    while (awss_report_token_suc == 0);
+    while (awss_report_token_suc == 0) {aos_msleep(1000);};
 
     buf = os_zalloc(DEV_INFO_LEN_MAX);
     if (buf == NULL)
