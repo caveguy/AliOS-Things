@@ -686,7 +686,6 @@ bool set_lora_app_key(uint8_t *key)
     memcpy(g_lora_dev.app_key, key, 16);
     g_lora_dev.flag = VALID_LORA_CONFIG;
 #ifdef AOS_KV
-PRINTF("%s,%d\r\n",__func__,__LINE__);
     aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
 #endif
     return true;

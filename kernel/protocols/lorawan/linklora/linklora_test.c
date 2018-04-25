@@ -82,6 +82,7 @@ void linklora_test_cli_cb(uint8_t cmd)
             PRINTF("a: dev eui\r\n");
             PRINTF("b: app eui\r\n");
             PRINTF("c: app key\r\n");
+            PRINTF("d: delete stored info\r\n");
             break;
         case '0':
             value = strtol(&rx_cmd[1], NULL, 0);
@@ -216,6 +217,10 @@ void linklora_test_cli_cb(uint8_t cmd)
                        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], \
                        buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
             }
+            break;
+        case 'd':
+            aos_kv_del("lora");
+            aos_kv_del("lora_dev");
             break;
         default:
             PRINTF("press ? for help\r\n");
