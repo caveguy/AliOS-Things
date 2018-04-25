@@ -1,7 +1,7 @@
 #!/bin/sh
 
 version=1.3.0
-GITHUB_HEAD_SHA=44239bf7888abffe4f4350fcffb174c4ca5968a4
+GITHUB_HEAD_SHA=14f23d03db1363dc1bd71382b0f18affeb3ef78e
 
 aosdir=${HOME}/githubsync/aos
 githubdir=${HOME}/githubsync/AliOS
@@ -32,10 +32,17 @@ fi
 if [ -d ${githubdir} ];then
     cd ${githubdir}
     git reset --hard HEAD
+    git branch -m master
     git fetch
 else
     cd ~/githubsync
     git clone git@github.com:alibaba/AliOS-Things.git AliOS
+fi
+cd ${githubdir}
+if [ "$(git remote | grep gitlab)" = "" ]; then
+    git remote add review git@code.aliyun.com:alios-things/aos_github_sync.git
+else
+    git remote set-url review git@code.aliyun.com:alios-things/aos_github_sync.git
 fi
 
 cd ~/githubsync
@@ -357,4 +364,5 @@ grep -rl "AOS-R-[0-9]\.[0-9]\.[0-9]" | xargs sed -i "s|AOS-R-[0-9].[0-9].[0-9]|A
 git add -A
 datetime=`date +%F@%H:%M`
 git commit -m "code synchronization at ${datetime}" > /dev/null
-#git push -f origin master
+git push -f review master
+git branch -m dev_licheng
