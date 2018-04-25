@@ -4,7 +4,7 @@
 
 #include "LoRaMac.h"
 #include "Region.h"
-#include "linklora.h"
+#include "linkwan.h"
 
 #define RX_CMD_SIZE 35
 uint8_t rx_cmd[RX_CMD_SIZE + 1];
@@ -44,7 +44,7 @@ static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
     return cur - bin;
 }
 
-void linklora_test_cli_cb(uint8_t cmd)
+void linkwan_test_cli_cb(uint8_t cmd)
 {
     bool ret = true;
     int value;

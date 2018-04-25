@@ -415,7 +415,7 @@ static uint8_t RxSlot = 0;
  */
 LoRaMacFlags_t LoRaMacFlags;
 
-#ifdef CONFIG_DEBUG_LINKLORA
+#ifdef CONFIG_DEBUG_LINKWAN
 bool not_print_debug = false;
 #endif
 
@@ -635,13 +635,13 @@ static void OnRadioTxDone( void )
     }
     else
     {
-#ifdef CONFIG_DEBUG_LINKLORA
+#ifdef CONFIG_DEBUG_LINKWAN
         not_print_debug = true;
 #endif
         OnRxWindow2TimerEvent( );
     }
 
-#ifdef CONFIG_DEBUG_LINKLORA
+#ifdef CONFIG_DEBUG_LINKWAN
         not_print_debug = false;
 #endif
     // Setup timers
@@ -1444,7 +1444,7 @@ static void OnTxDelayedTimerEvent( void )
         ResetMacParameters( );
 
         altDr.NbTrials = JoinRequestTrials + 1;
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
         altDr.joinmethod = LoRaMacParams.method;
         altDr.datarate = LoRaMacParams.ChannelsDatarate;
 #endif
@@ -1484,7 +1484,7 @@ static void OnRxWindow1TimerEvent( void )
 
     RegionRxConfig( LoRaMacRegion, &RxWindow1Config, ( int8_t* )&McpsIndication.RxDatarate );
     RxWindowSetup( RxWindow1Config.RxContinuous, LoRaMacParams.MaxRxWindow );
-    DBG_LINKLORA("Rx, Freq %d, DR %d, window 1\r\n", RxWindow1Config.Frequency, McpsIndication.RxDatarate);
+    DBG_LINKWAN("Rx, Freq %d, DR %d, window 1\r\n", RxWindow1Config.Frequency, McpsIndication.RxDatarate);
 }
 
 static void OnRxWindow2TimerEvent( void )
@@ -1511,9 +1511,9 @@ static void OnRxWindow2TimerEvent( void )
         RxWindowSetup( RxWindow2Config.RxContinuous, LoRaMacParams.MaxRxWindow );
         RxSlot = RxWindow2Config.Window;
     }
-#ifdef CONFIG_DEBUG_LINKLORA
+#ifdef CONFIG_DEBUG_LINKWAN
     if (not_print_debug == false) {
-        DBG_LINKLORA("Rx, Freq %d, DR %d, window 2\r\n", RxWindow2Config.Frequency, McpsIndication.RxDatarate);
+        DBG_LINKWAN("Rx, Freq %d, DR %d, window 2\r\n", RxWindow2Config.Frequency, McpsIndication.RxDatarate);
     }
 #endif
 }
@@ -1739,7 +1739,7 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 MlmeConfirm.Status = LORAMAC_EVENT_INFO_STATUS_OK;
                 MlmeConfirm.DemodMargin = payload[macIndex++];
                 MlmeConfirm.NbGateways = payload[macIndex++];
-                DBG_LINKLORA("margin %d, gateways %d\r\n", MlmeConfirm.DemodMargin, MlmeConfirm.NbGateways);
+                DBG_LINKWAN("margin %d, gateways %d\r\n", MlmeConfirm.DemodMargin, MlmeConfirm.NbGateways);
                 break;
             case SRV_MAC_LINK_ADR_REQ:
                 {
@@ -1959,7 +1959,7 @@ static LoRaMacStatus_t ScheduleTx( void )
     nextChan.DutyCycleEnabled = DutyCycleOn;
     nextChan.Joined = IsLoRaMacNetworkJoined;
     nextChan.LastAggrTx = AggregatedLastTxDoneTime;
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
     nextChan.joinmethod = LoRaMacParams.method;
     nextChan.freqband = LoRaMacParams.freqband;
 #endif
@@ -1973,7 +1973,7 @@ static LoRaMacStatus_t ScheduleTx( void )
         nextChan.Datarate = LoRaMacParams.ChannelsDatarate;
     }
 
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
     LoRaMacParams.freqband = nextChan.freqband;
 #endif
 
@@ -2712,7 +2712,7 @@ LoRaMacStatus_t LoRaMacMibGetRequestConfirm( MibRequestConfirm_t *mibGet )
             mibGet->Param.AntennaGain = LoRaMacParams.AntennaGain;
             break;
         }
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
         case MIB_FREQ_BAND:
         {
             mibGet->Param.freqband = LoRaMacParams.freqband;
@@ -3214,7 +3214,7 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t *mlmeRequest )
             ResetMacParameters( );
 
             altDr.NbTrials = JoinRequestTrials + 1;
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
             altDr.joinmethod = mlmeRequest->Req.Join.method;
             altDr.datarate = mlmeRequest->Req.Join.datarate;
             LoRaMacParams.method = altDr.joinmethod;

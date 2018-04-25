@@ -127,9 +127,9 @@ void USART4_5_IRQHandler(void)
         //PRINTF("%c\r\n", rx);
     }
     if (rx_ready) {
-#ifdef CONFIG_LINKLORA_TEST
-        extern void linklora_test_cli_cb(uint8_t cmd);
-        linklora_test_cli_cb(rx);
+#ifdef CONFIG_LINKWAN_TEST
+        extern void linkwan_test_cli_cb(uint8_t cmd);
+        linkwan_test_cli_cb(rx);
 #endif
     }
 

@@ -4,7 +4,7 @@
 
 #include "hw.h"
 #include "low_power.h"
-#include "linklora.h"
+#include "linkwan.h"
 #include "timeServer.h"
 #include "version.h"
 #include "radio.h"
@@ -55,11 +55,11 @@ static void LoraTxData(lora_AppData_t *AppData)
     for (index = 0; index < AppData->BuffSize; index++) {
         AppData->Buff[index] = '0' + index;
     }
-    DBG_LINKLORA("tx, port %d, size %d\r\n", AppData->Port, AppData->BuffSize);
+    DBG_LINKWAN("tx, port %d, size %d\r\n", AppData->Port, AppData->BuffSize);
     AppData->Port = LORAWAN_APP_PORT;
 }
 
 static void LoraRxData(lora_AppData_t *AppData)
 {
-    DBG_LINKLORA( "rx, port %d, size %d\r\n", AppData->Port, AppData->BuffSize);
+    DBG_LINKWAN( "rx, port %d, size %d\r\n", AppData->Port, AppData->BuffSize);
 }

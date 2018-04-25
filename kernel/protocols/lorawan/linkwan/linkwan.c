@@ -2,7 +2,7 @@
  * Copyright (C) 2015-2017 Alibaba Group Holding Limited
  */
 
-#include "linklora.h"
+#include "linkwan.h"
 #include "commissioning.h"
 #include "utilities.h"
 #include "LoRaMac.h"
@@ -191,7 +191,7 @@ static void mcps_confirm(McpsConfirm_t *mcpsConfirm)
 
                 reset_join_state();
                 g_join_method = DEF_JOIN_METHOD;
-                DBG_LINKLORA("Not receive Ack,Start to Join...\r\n");
+                DBG_LINKWAN("Not receive Ack,Start to Join...\r\n");
                 break;
             }
             case MCPS_PROPRIETARY:
@@ -228,7 +228,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
         }
         case MCPS_MULTICAST:
             {
-            DBG_LINKLORA( "MCPS_MULTICAST\n" );
+            DBG_LINKWAN( "MCPS_MULTICAST\n" );
             break;
         }
         default:
@@ -244,7 +244,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
     // Check Rssi
     // Check Snr
     // Check RxSlot
-    DBG_LINKLORA( "rssi = %d, snr = %d, datarate = %d\r\n", mcpsIndication->Rssi, mcpsIndication->Snr,
+    DBG_LINKWAN( "rssi = %d, snr = %d, datarate = %d\r\n", mcpsIndication->Rssi, mcpsIndication->Snr,
                  mcpsIndication->RxDatarate);
 
     if ( mcpsIndication->RxData == true )
@@ -342,45 +342,45 @@ void lora_init(LoRaMainCallback_t *callbacks)
 static void print_dev_addr(void)
 {
 #if (OVER_THE_AIR_ACTIVATION != 0)
-    DBG_LINKLORA("OTAA\r\n" );
-    DBG_LINKLORA("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
+    DBG_LINKWAN("OTAA\r\n" );
+    DBG_LINKWAN("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
                  g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
                  g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
-    DBG_LINKLORA("AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
+    DBG_LINKWAN("AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
                  g_lora_dev.app_eui[0], g_lora_dev.app_eui[1], g_lora_dev.app_eui[2], g_lora_dev.app_eui[3], \
                  g_lora_dev.app_eui[4], g_lora_dev.app_eui[5], g_lora_dev.app_eui[6], g_lora_dev.app_eui[7]);
-    DBG_LINKLORA("AppKey= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
+    DBG_LINKWAN("AppKey= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
                  g_lora_dev.app_key[0], g_lora_dev.app_key[1], g_lora_dev.app_key[2], g_lora_dev.app_key[3], \
                  g_lora_dev.app_key[4], g_lora_dev.app_key[5], g_lora_dev.app_key[6], g_lora_dev.app_key[7], \
                  g_lora_dev.app_key[8], g_lora_dev.app_key[9], g_lora_dev.app_key[10], g_lora_dev.app_key[11], \
                  g_lora_dev.app_key[12], g_lora_dev.app_key[13], g_lora_dev.app_key[14], g_lora_dev.app_key[15]);
 #else
-    DBG_LINKLORA("ABP\r\n");
-    DBG_LINKLORA("DevAdd=  %08X\n\r", DevAddr);
-    DBG_LINKLORA("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
+    DBG_LINKWAN("ABP\r\n");
+    DBG_LINKWAN("DevAdd=  %08X\n\r", DevAddr);
+    DBG_LINKWAN("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
                  g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
                  g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
-    DBG_LINKLORA("NwkSKey= %02X", NwkSKey[0]);
+    DBG_LINKWAN("NwkSKey= %02X", NwkSKey[0]);
     for (int i = 1; i < 16; i++)
     {
-        DBG_LINKLORA(" %02X", NwkSKey[i]);
+        DBG_LINKWAN(" %02X", NwkSKey[i]);
     };
-    DBG_LINKLORA("\r\n");
-    DBG_LINKLORA("AppSKey= %02X", AppSKey[0]);
+    DBG_LINKWAN("\r\n");
+    DBG_LINKWAN("AppSKey= %02X", AppSKey[0]);
     for (int i = 1; i < 16; i++)
     {
-        DBG_LINKLORA(" %02X", AppSKey[i]);
+        DBG_LINKWAN(" %02X", AppSKey[i]);
     };
-    DBG_LINKLORA("\r\n");
+    DBG_LINKWAN("\r\n");
 #endif
 
-    DBG_LINKLORA("class type %s\r\n", get_class_name(g_lora_dev.class));
-    DBG_LINKLORA("freq type %s\r\n", g_freq_type == FREQ_TYPE_INTER? "inter": "intra");
+    DBG_LINKWAN("class type %s\r\n", get_class_name(g_lora_dev.class));
+    DBG_LINKWAN("freq type %s\r\n", g_freq_type == FREQ_TYPE_INTER? "inter": "intra");
 }
 
 void lora_fsm( void )
 {
-#ifdef CONFIG_LINKLORA
+#ifdef CONFIG_LINKWAN
     int len = sizeof(g_lora_config);
     int ret;
     lora_config_t lora_config;
@@ -415,8 +415,8 @@ void lora_fsm( void )
                 LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915);
 #elif defined(REGION_US915_HYBRID)
                 LoRaMacInitialization(&LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915_HYBRID);
-#elif defined( REGION_CN470S )
-                LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470S);
+#elif defined( REGION_CN470A )
+                LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_CN470A);
 #else
 #error "Please define a region in the compiler options."
 #endif
@@ -509,7 +509,7 @@ void lora_fsm( void )
                     if (LoRaMacMlmeRequest(&mlmeReq) == LORAMAC_STATUS_OK) {
                         next_tx = false;
                     }
-                    DBG_LINKLORA("Start to Join, method %d, nb_trials:%d\r\n",
+                    DBG_LINKWAN("Start to Join, method %d, nb_trials:%d\r\n",
                                  g_join_method, mlmeReq.Req.Join.NbTrials);
                 }
                 device_state = DEVICE_STATE_SLEEP;
@@ -540,7 +540,7 @@ void lora_fsm( void )
             }
             case DEVICE_STATE_JOINED:
             {
-                DBG_LINKLORA("Joined\n\r");
+                DBG_LINKWAN("Joined\n\r");
                 store_lora_config();
                 device_state = DEVICE_STATE_SEND;
                 break;

@@ -58,11 +58,11 @@ typedef enum join_method_s {
     JOIN_METHOD_NUM
 } join_method_t;
 
-#ifdef CONFIG_DEBUG_LINKLORA
+#ifdef CONFIG_DEBUG_LINKWAN
 #include "debug.h"
-#define DBG_LINKLORA(...)     PRINTF(__VA_ARGS__)
+#define DBG_LINKWAN(...)     PRINTF(__VA_ARGS__)
 #else
-#define DBG_LINKLORA(...)
+#define DBG_LINKWAN(...)
 #define LORA_LOG(...)
 #endif
 
