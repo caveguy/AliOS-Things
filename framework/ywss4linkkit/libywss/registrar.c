@@ -847,7 +847,7 @@ find_ie:
                                          (const unsigned char *)buffer, (int)length);
             if (ie) {
 ie_handler:
-                log_trace("ie found to be processed\n");
+                //log_trace("ie found to be processed\n");
                 process_enrollee_ie(ie, rssi);
             }
             break;
