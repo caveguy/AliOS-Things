@@ -197,6 +197,7 @@ static void online_get_device_info_helper(void *arg)
     get_dev_info_arg_t *info;
     void *remote, *request;
     char is_mcast;
+    static cnt = 0;
 
     if (!arg) {
         printf("Invalid argument.\r\n");
@@ -209,11 +210,17 @@ static void online_get_device_info_helper(void *arg)
         goto end;
     }
 
+    if (cnt > 120) {
+        printf("online_get_device_info timeout.\r\n");
+        goto end;
+    }
+
     /*
      * wait for token is send to cloud success
      */
     if (awss_report_token_suc == 0) {
         aos_post_delayed_action(100, online_get_device_info_helper, info);
+        cnt++;
         return;
     }
 
