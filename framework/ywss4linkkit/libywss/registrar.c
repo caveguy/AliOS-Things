@@ -559,7 +559,7 @@ int awss_report_enrollee(unsigned char *payload, int payload_len, char rssi)
         snprintf(id, MSG_REQ_ID_LEN - 1, "\"%u\"", registrar_id ++);
 
         snprintf(param, AWSS_REPORT_PKT_LEN - 1, AWSS_REPORT_PARAM_FMT,
-                 AWSS_VER, ssid, bssid_str, rssi, payload_str);
+                 AWSS_VER, ssid, bssid_str, rssi > 0 ? rssi - 256 : rssi, payload_str);
         os_free(payload_str);
         awss_build_packet(AWSS_CMP_PKT_TYPE_REQ, id, ILOP_VER, METHOD_EVENT_ZC_ENROLLEE, param, 0, packet, &packet_len);
         os_free(param);

@@ -150,13 +150,13 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
                 msg_len += snprintf(aplist + msg_len, WIFI_APINFO_LIST_LEN - msg_len - 1,
                                    "{\"ssid\":\"%s\",\"bssid\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"rssi\":\"%d\",%s},",
                                    ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
-                                   -(256 - (unsigned char)rssi), other_apinfo);
+                                   rssi > 0 ? rssi - 256 : rssi, other_apinfo);
             } else {
                 utils_hex_to_str((unsigned char *)ssid, strlen(ssid), encode_ssid, OS_MAX_SSID_LEN * 2);
                 msg_len += snprintf(aplist + msg_len, WIFI_APINFO_LIST_LEN - msg_len - 1,
                                    "{\"xssid\":\"%s\",\"bssid\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"rssi\":\"%d\",%s},",
                                    encode_ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
-                                   -(256 - (unsigned char)rssi), other_apinfo);
+                                   rssi > 0 ? rssi - 256 : rssi, other_apinfo);
             }
             ap_num_in_msg ++;
         }
