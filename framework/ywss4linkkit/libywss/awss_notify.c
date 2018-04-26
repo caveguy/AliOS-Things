@@ -44,6 +44,7 @@ extern "C"
 {
 #endif
 
+#define AWSS_CHECK_RESP_TIME (300)
 #define AWSS_NOTIFY_PORT     (5683)
 #define AWSS_NOTIFY_HOST     "255.255.255.255"
 #define AWSS_DEV_NOTIFY_FMT  "{\"id\":\"%u\",\"version\":\"1.0\",\"method\":\"%s\",\"params\":{%s}}"
@@ -52,22 +53,30 @@ struct notify_map_t {
     unsigned char notify_type;
     char *notify_method;
     char *notify_topic;
+    void *cb;
 };
 
 static unsigned char g_notify_id;
 static unsigned short g_notify_msg_id;
 static char awss_notify_resp[AWSS_NOTIFY_MAX] = {0};
-static const struct notify_map_t notify_map[] = {
-    {AWSS_NOTIFY_DEV_TOKEN, METHOD_DEV_INFO_NOTIFY,       TOPIC_NOTIFY},
-    {AWSS_NOTIFY_DEV_RAND,  METHOD_AWSS_DEV_INFO_NOTIFY,  TOPIC_AWSS_NOTIFY},
-    {AWSS_NOTIFY_SUC,       METHOD_AWSS_CONNECTAP_NOTIFY, TOPIC_AWSS_CONNECTAP_NOTIFY}
-};
 
 extern char awss_report_token_suc;
+extern char awss_report_token_cnt;
 
+static inline int awss_connectap_notify_resp(void *context, int result, void *userdata, void *remote, void *message);
+static inline int awss_devinfo_notify_resp(void *context, int result, void *userdata, void *remote, void *message);
+static inline int awss_suc_notify_resp(void *context, int result, void *userdata, void *remote, void *message);
+static int awss_notify_response(int type, int result, void *message);
+static int awss_process_get_devinfo();
 int awss_connectap_notify();
 int awss_devinfo_notify();
 int awss_suc_notify();
+
+static const struct notify_map_t notify_map[] = {
+    {AWSS_NOTIFY_DEV_TOKEN, METHOD_DEV_INFO_NOTIFY,       TOPIC_NOTIFY,                awss_connectap_notify_resp},
+    {AWSS_NOTIFY_DEV_RAND,  METHOD_AWSS_DEV_INFO_NOTIFY,  TOPIC_AWSS_NOTIFY,           awss_devinfo_notify_resp},
+    {AWSS_NOTIFY_SUC,       METHOD_AWSS_CONNECTAP_NOTIFY, TOPIC_AWSS_CONNECTAP_NOTIFY, awss_suc_notify_resp}
+};
 
 static struct work_struct awss_connectap_notify_work = {
     .func = (work_func_t)&awss_connectap_notify,
@@ -87,6 +96,12 @@ static struct work_struct awss_suc_notify_work = {
     .name = "success",
 };
 
+static struct work_struct awss_get_devinfo_work = {
+    .func = (work_func_t)&awss_process_get_devinfo,
+    .prio = 1, /* smaller digit means higher priority */
+    .name = "get",
+};
+
 /*
  * {
  *  "id": "123",
@@ -94,32 +109,62 @@ static struct work_struct awss_suc_notify_work = {
  *  "data": {}
  * }
  */
-int awss_notify_response(void *context, int result, void *userdata, void *remote, void *message)
+static inline int awss_connectap_notify_resp(void *context, int result, void *userdata, void *remote, void *message)
 {
-    awss_debug("%s\n", __func__);
+    return awss_notify_response(AWSS_NOTIFY_DEV_TOKEN, result, message);
+}
+
+static inline int awss_devinfo_notify_resp(void *context, int result, void *userdata, void *remote, void *message)
+{
+    return awss_notify_response(AWSS_NOTIFY_DEV_RAND, result, message);
+}
+
+static inline int awss_suc_notify_resp(void *context, int result, void *userdata, void *remote, void *message)
+{
+    return awss_notify_response(AWSS_NOTIFY_SUC, result, message);
+}
+
+static int awss_notify_response(int type, int result, void *message)
+{
+    awss_debug("%s, type:%d\n", __func__, type);
 
     if (message == NULL)
         return -1;
 
+    if (result != 0)
+        return 0;
+
     if (awss_cmp_get_coap_code(message) >= 0x60)
         return 0;
 
+    {
+        int val = 0;
+        int len = 0, mlen = 0;
+        char *payload = NULL, *elem = NULL;
+
+        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0)
+            return 0;
+
+        elem = json_get_value_by_name(payload, len, AWSS_JSON_ID, &mlen, 0);
+        if (elem == NULL)
+            return 0;
+        val = atoi(elem);
+        if (val != 123 && val >= g_notify_id)
+            return 0;
+        elem = json_get_value_by_name(payload, len, AWSS_JSON_CODE, &mlen, 0);
+        if (elem == NULL)
+            return 0;
+        val = atoi(elem);
+        if (val != 200)
+            return 0;
+    }
+
     unsigned char i = 0;
-    int len = 0, mlen = 0;
-    char *payload = NULL, *method = NULL;
-
-    if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0)
-        return 0;
-
     for (i = 0; i < sizeof(notify_map) / sizeof(notify_map[0]); i ++) {
-        method = json_get_value_by_name(payload, len, "method", &mlen, 0);
-        if (method == NULL)
+        if (notify_map[i].notify_type != type)
             continue;
-
-        if (strncmp(method, notify_map[i].notify_method, strlen(notify_map[i].notify_method)))
-            continue;
-
-        awss_notify_resp[notify_map[i].notify_type] = 1;
+        awss_notify_resp[type] = 1;
+        break;
     }
 
     return 0;
@@ -132,6 +177,7 @@ int awss_notify_dev_info(int type, int count)
     int i;
 
     do {
+        void *cb = NULL;
         char *method = NULL, *topic = NULL;
         for (i = 0; i < sizeof(notify_map) / sizeof(notify_map[0]); i ++) {
             if (notify_map[i].notify_type != type)
@@ -139,6 +185,7 @@ int awss_notify_dev_info(int type, int count)
 
             method = notify_map[i].notify_method;
             topic = notify_map[i].notify_topic;
+            cb = notify_map[i].cb;
             break;
         }
         if (method == NULL || topic == NULL)
@@ -160,7 +207,7 @@ int awss_notify_dev_info(int type, int count)
 
         awss_debug("topic:%s, %s\n", topic, buf);
         for (i = 0; i < count; i ++) {
-            awss_cmp_coap_send(buf, strlen(buf), &notify_sa, topic, awss_notify_response, &g_notify_msg_id);
+            awss_cmp_coap_send(buf, strlen(buf), &notify_sa, topic, cb, &g_notify_msg_id);
             if (count > 1) os_msleep(200 + 100 * i);
             if (awss_notify_resp[type])
                 break;
@@ -181,60 +228,34 @@ int awss_connectap_notify_stop()
     return 0;
 }
 
-typedef struct get_dev_info_arg_s {
-    void *remote;
-    void *request;
-    char is_mcast
-} get_dev_info_arg_t;
+static void *coap_session_ctx = NULL;
 
-static void online_get_device_info_helper(void *arg)
+static int awss_process_get_devinfo()
 {
+    if (awss_report_token_suc == 0) {
+        queue_delayed_work(&awss_get_devinfo_work, AWSS_CHECK_RESP_TIME);
+        return 0;
+    }
+
+    if (coap_session_ctx == NULL)
+        return -1;
+
     char *buf = NULL;
     char *dev_info = NULL;
     int len = 0, id_len = 0;
     char *msg = NULL, *id = NULL;
     char req_msg_id[MSG_REQ_ID_LEN];
-    get_dev_info_arg_t *info;
-    void *remote, *request;
-    char is_mcast;
-    static cnt = 0;
-
-    if (!arg) {
-        printf("Invalid argument.\r\n");
-        return;
-    }
-
-    info = (get_dev_info_arg_t *)arg;
-    if (NULL == info->remote || NULL == info->request) {
-        printf("Invalid info argument.\r\n");
-        goto end;
-    }
-
-    if (cnt > 120) {
-        printf("online_get_device_info timeout.\r\n");
-        goto end;
-    }
-
-    /*
-     * wait for token is send to cloud success
-     */
-    if (awss_report_token_suc == 0) {
-        aos_post_delayed_action(100, online_get_device_info_helper, info);
-        cnt++;
-        return;
-    }
-
-    remote = info->remote;
-    request = info->request;
-    is_mcast = info->is_mcast;
+    struct coap_session_ctx_t *ctx = (struct coap_session_ctx_t *)coap_session_ctx;
 
     buf = os_zalloc(DEV_INFO_LEN_MAX);
     if (buf == NULL)
-        goto DEV_INFO_ERR;
+        goto GET_DEV_INFO_ERR;
     dev_info = os_zalloc(DEV_INFO_LEN_MAX);
     if (dev_info == NULL)
-        goto DEV_INFO_ERR;
-    msg = awss_cmp_get_coap_payload(request, &len);
+        goto GET_DEV_INFO_ERR;
+    msg = awss_cmp_get_coap_payload(ctx->request, &len);
+    if (msg == NULL)
+        goto GET_DEV_INFO_ERR;
     id = json_get_value_by_name(msg, len, "id", &id_len, 0);
     memset(req_msg_id, 0, sizeof(req_msg_id));
     memcpy(req_msg_id, id, id_len);
@@ -248,56 +269,49 @@ static void online_get_device_info_helper(void *arg)
 
     awss_debug("sending message to app: %s", buf);
     char topic[TOPIC_LEN_MAX] = {0};
-    if (is_mcast)
+    if (ctx->is_mcast)
         awss_build_topic((const char *)TOPIC_GETDEVICEINFO_MCAST, topic, TOPIC_LEN_MAX);
     else
         awss_build_topic((const char *)TOPIC_GETDEVICEINFO_UCAST, topic, TOPIC_LEN_MAX);
-    if (0 > awss_cmp_coap_send_resp(buf, strlen(buf), remote, topic, request)) {
+    if (0 > awss_cmp_coap_send_resp(buf, strlen(buf), ctx->remote, topic, ctx->request)) {
         awss_debug("sending failed.");
     }
     os_free(buf);
-    goto end;
+    awss_release_coap_ctx(coap_session_ctx);
+    coap_session_ctx = NULL;
+    return 0;
 
-DEV_INFO_ERR:
+GET_DEV_INFO_ERR:
+    awss_release_coap_ctx(coap_session_ctx);
+    coap_session_ctx = NULL;
     if (buf) os_free(buf);
     if (dev_info) os_free(dev_info);
-
-end:
-    if (info->remote) os_free(info->remote);
-    if (info->request) os_free(info->request);
-    if (info) os_free(info);
-    return;
+    return -1;
 }
 
-#define DEV_INFO_REMOTE_MAX 32
-#define DEV_INFO_REQUEST_MAX 256
 static int online_get_device_info(void *ctx, void *resource, void *remote, void *request, char is_mcast)
 {
-    get_dev_info_arg_t *info;
-
-    info = (get_dev_info_arg_t *)os_zalloc(sizeof(get_dev_info_arg_t));
-    if (NULL == info) return -1;
-
-    info->remote = (void *)os_zalloc(DEV_INFO_REMOTE_MAX);
-    if (NULL == info->remote) {
-        os_free(info);
+    /*
+     * if cloud is not ready, don't response token
+     */
+    if (awss_report_token_cnt == 0)
         return -1;
-    }
-
-    info->request = (void *)os_zalloc(DEV_INFO_REQUEST_MAX);
-    if (NULL == info->request) {
-        os_free(info->remote);
-        os_free(info);
+    /*
+     * if the last one is not finished, drop current request
+     */
+    if (coap_session_ctx != NULL)
         return -1;
-    }
-
-    memcpy(info->remote, remote, DEV_INFO_REMOTE_MAX);
-    memcpy(info->request, request, DEV_INFO_REQUEST_MAX);
-    info->is_mcast = is_mcast;
+    /*
+     * copy coap session context
+     */
+    coap_session_ctx = awss_cpy_coap_ctx(request, remote, is_mcast);
+    if (coap_session_ctx == NULL)
+        return -1;
 
     produce_random(aes_random, sizeof(aes_random));
     awss_report_token();
-    aos_post_delayed_action(100, online_get_device_info_helper, info);
+
+    queue_delayed_work(&awss_get_devinfo_work, AWSS_CHECK_RESP_TIME);
 
     return 0;
 }
@@ -321,7 +335,7 @@ int awss_connectap_notify()
      * wait for token is sent to cloud and rx reply from cloud
      */
     if (awss_report_token_suc == 0) {
-        queue_delayed_work(&awss_connectap_notify_work, 100);
+        queue_delayed_work(&awss_connectap_notify_work, AWSS_CHECK_RESP_TIME);
         return 0;
     }
 

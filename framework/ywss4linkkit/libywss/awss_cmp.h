@@ -71,6 +71,7 @@ extern "C" {
 #define AWSS_ACK_FMT                    "{\"id\":%s, \"code\":%d, \"data\":%s}"
 #define AWSS_REQ_FMT                    "{\"id\":%s, \"version\":\"%s\", \"method\":\"%s\", \"params\":%s}"
 #define AWSS_JSON_PARAM                 "params"
+#define AWSS_JSON_CODE                  "code"
 #define AWSS_JSON_ID                    "id"
 
 #if(AWSS_CMP_DEBUG==1)
@@ -91,6 +92,12 @@ typedef struct
 struct awss_cmp_couple {
     char *topic;
     void *cb;
+};
+
+struct coap_session_ctx_t {
+    void *request;
+    void *remote;
+    char is_mcast;
 };
 
 enum {
@@ -115,6 +122,9 @@ int awss_cmp_coap_deinit();
 int awss_cmp_mqtt_register_cb(char *topic, void *cb);
 int awss_cmp_mqtt_unregister_cb(char *topic);
 int awss_cmp_mqtt_send(char *topic, void *pkt, int pkt_len);
+
+int awss_release_coap_ctx(void *session);
+void *awss_cpy_coap_ctx(void *request, void *remote, char mcast);
 
 char *awss_cmp_get_coap_payload(void *request, int *payload_len);
 char *awss_build_sign_src(char *sign_src, int *sign_src_len);
