@@ -41,13 +41,13 @@ GLOBAL_DEFINES += CONFIG_DEBUG_LINKWAN
 $(NAME)_SOURCES += linkwan/region/RegionCN470A.c
 $(NAME)_SOURCES += linkwan/linkwan.c
 
-GLOBAL_INCLUDES +=  linkwan
-GLOBAL_INCLUDES +=  linkwan/region
+GLOBAL_INCLUDES += linkwan/include
+GLOBAL_INCLUDES += linkwan/region
 
-linkwantest?=0
-ifeq ($(linkwantest), 1)
-GLOBAL_DEFINES += CONFIG_LINKWAN_TEST
-$(NAME)_SOURCES += linkwan/linkwan_test.c
+linkwanat ?= 0
+ifeq ($(linkwanat), 1)
+GLOBAL_DEFINES += CONFIG_LINKWAN_AT
+$(NAME)_SOURCES += linkwan/linkwan_at.c
 endif
 else
 $(NAME)_SOURCES += lora/mac/region/RegionAS923.c    \

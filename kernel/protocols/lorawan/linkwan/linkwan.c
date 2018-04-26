@@ -597,10 +597,48 @@ bool set_lora_tx_datarate(int8_t datarate)
     }
 }
 
+int8_t get_lora_tx_datarate(void)
+{
+    return lora_param.TxDatarate;
+}
+
+bool set_lora_adr(int state)
+{
+    LoRaMacStatus_t status;
+    MibRequestConfirm_t mib_req;
+    bool ret = false;
+
+    if (state == 0) {
+        mib_req.Param.AdrEnable = LORAWAN_ADR_OFF;
+    } else {
+        mib_req.Param.AdrEnable = LORAWAN_ADR_ON;
+    }
+    mibReq.Type = MIB_ADR;
+    status = LoRaMacMibSetRequestConfirm(&mibReq);
+    if (status == LORAMAC_STATUS_OK) {
+        ret = true;
+    }
+    return ret;
+}
+
+int get_lora_adr(void)
+{
+    MibRequestConfirm_t mib_req;
+
+    mibReq.Type = MIB_ADR;
+    LoRaMacMibGetRequestConfirm(&mibReq);
+    return mib_req.Param.AdrEnable;
+}
+
 bool set_lora_tx_dutycycle(uint32_t dutycycle)
 {
     lora_param.TxDutyCycleTime = dutycycle;
     return true;
+}
+
+uint32_t get_lora_tx_dutycycle(void)
+{
+    return lora_param.TxDutyCycleTime;
 }
 
 bool set_lora_tx_len(uint16_t len)
@@ -613,16 +651,31 @@ bool set_lora_tx_len(uint16_t len)
     }
 }
 
-bool set_lora_tx_confirmed_flag(int confirmed)
+uint16_t get_lora_tx_len(void)
+{
+    return app_data.BuffSize;
+}
+
+bool set_lora_tx_cfm_flag(int confirmed)
 {
     is_tx_confirmed = confirmed;
     return true;
 }
 
-bool set_lora_tx_num_trials(uint8_t trials)
+int get_lora_tx_cfm_flag(void)
+{
+    return is_tx_confirmed;
+}
+
+bool set_lora_tx_cfm_trials(uint8_t trials)
 {
     num_trials = trials;
     return true;
+}
+
+uint8_t get_lora_tx_cfm_trials(void)
+{
+    return num_trials;
 }
 
 bool set_lora_state(DeviceState_t state)
@@ -661,6 +714,11 @@ bool set_lora_class(int8_t class)
     return false;
 }
 
+int8_t get_lora_class(void)
+{
+    return g_lora_dev.class;
+}
+
 bool set_lora_dev_eui(uint8_t *eui)
 {
     memcpy(g_lora_dev.dev_eui, eui, 8);
@@ -669,6 +727,11 @@ bool set_lora_dev_eui(uint8_t *eui)
     aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
 #endif
     return true;
+}
+
+uint8_t *get_lora_dev_eui(void)
+{
+    return g_lora_dev.dev_eui;
 }
 
 bool set_lora_app_eui(uint8_t *eui)
@@ -681,6 +744,11 @@ bool set_lora_app_eui(uint8_t *eui)
     return true;
 }
 
+uint8_t *get_lora_app_eui(void)
+{
+    return g_lora_dev.app_eui;
+}
+
 bool set_lora_app_key(uint8_t *key)
 {
     memcpy(g_lora_dev.app_key, key, 16);
@@ -689,4 +757,9 @@ bool set_lora_app_key(uint8_t *key)
     aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
 #endif
     return true;
+}
+
+uint8_t *get_lora_app_key(void)
+{
+    return g_lora_dev.app_key;
 }

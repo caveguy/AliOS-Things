@@ -7,7 +7,7 @@ GLOBAL_DEFINES          += USE_B_EML3047
 GLOBAL_DEFINES          += REGION_CN470A
 
 linkwan := 1
-ifeq ($(linkwantest), 1)
+ifeq ($(linkwanat), 1)
 GLOBAL_DEFINES += LOW_POWER_DISABLE
 endif
 

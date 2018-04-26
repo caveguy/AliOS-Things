@@ -2,8 +2,8 @@
  * Copyright (C) 2015-2017 Alibaba Group Holding Limited
  */
 
-#ifndef LINK_LORA_H
-#define LINK_LORA_H
+#ifndef LINKWAN_H
+#define LINKWAN_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -109,18 +109,35 @@ typedef enum eDevicState {
     DEVICE_STATE_SLEEP
 } DeviceState_t;
 
-node_freq_type_t get_lora_freq_type(void);
-bool set_lora_tx_datarate(int8_t datarate);
-bool set_lora_tx_dutycycle(uint32_t dutycycle);
-bool set_lora_tx_len(uint16_t len);
-bool set_lora_tx_confirmed_flag(int confirmed);
-bool set_lora_tx_num_trials(uint8_t trials);
-bool set_lora_state(DeviceState_t state);
-bool send_lora_link_check(void);
-bool set_lora_class(int8_t class);
-
 bool set_lora_dev_eui(uint8_t *eui);
 bool set_lora_app_eui(uint8_t *eui);
 bool set_lora_app_key(uint8_t *key);
 
-#endif /* LINK_LORA_H */
+node_freq_type_t get_lora_freq_type(void);
+bool set_lora_tx_datarate(int8_t datarate);
+int8_t get_lora_tx_datarate(void);
+
+bool set_lora_adr(int state);
+int get_lora_adr(void);
+
+bool set_lora_class(int8_t class);
+int8_t get_lora_class(void);
+
+bool set_lora_tx_cfm_flag(int confirmed);
+int get_lora_tx_cfm_flag(void);
+
+bool set_lora_tx_cfm_trials(uint8_t trials);
+uint8_t get_lora_tx_cfm_trials(void);
+
+bool set_lora_state(DeviceState_t state);
+
+bool set_lora_tx_dutycycle(uint32_t dutycycle);
+uint32_t get_lora_tx_dutycycle(void);
+
+// for linkWAN test
+bool set_lora_tx_len(uint16_t len);
+uint16_t get_lora_tx_len(void);
+
+bool send_lora_link_check(void);
+
+#endif /* LINKWAN_H */
