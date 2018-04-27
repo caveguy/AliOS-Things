@@ -64,8 +64,8 @@ static void wifi_service_event(input_event_t *event, void *priv_data) {
         return;
     }
     if (!linkkit_started) {
-        linkkit_app();
         awss_success_notify();
+        linkkit_app();
         linkkit_started = 1;
     }
 }
