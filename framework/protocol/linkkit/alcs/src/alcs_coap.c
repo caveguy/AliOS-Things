@@ -145,7 +145,7 @@ int alcs_resource_register(CoAPContext *context, const char* pk, const char* dn,
             unsigned int ctype, unsigned int maxage, char needAuth, CoAPRecvMsgHandler callback)
 {
     COAP_INFO("alcs_resource_register, ctx:%p", context);
-	log_info("ALCS Resource Register: %s",path);
+	//log_info("ALCS Resource Register: %s",path);
 	
     if (!needAuth) {
         resource_cb_item* item = (resource_cb_item*)coap_malloc (sizeof(resource_cb_item));
