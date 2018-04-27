@@ -140,7 +140,15 @@ char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
     return NULL;
 }
 
-static hal_wireless_info_t hal_wireless_info =  {0, 1, -30, 30, {0x18, 0xFE, 0x34, 0x12, 0x34, 0x56}, 1, 1};
+static hal_wireless_info_t hal_wireless_info = {
+    .band = 0,
+    .channel = 1,
+    .rssi = -30,
+    .snr = 30,
+    .mac = {0x18, 0xFE, 0x34, 0x12, 0x34, 0x56},
+    .tx_rate = 1,
+    .rx_rate = 1,
+};
 
 int HAL_GetWirelessInfo(_OU_ hal_wireless_info_t *wireless_info)
 {
