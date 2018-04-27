@@ -2193,12 +2193,8 @@ static void set_property_value(void* _thing, va_list* params)
         dm_thing_manager->_ret = (*thing)->set_property_value_by_identifier(thing, dm_thing_manager->_identifier, dm_thing_manager->_set_value, dm_thing_manager->_set_value_str);
 
         /* invoke callback funtions. */
-
-            if (strchr(dm_thing_manager->_identifier, '.') == NULL &&
-                    strchr(dm_thing_manager->_identifier, '[') == NULL &&
-                    strchr(dm_thing_manager->_identifier, ']') == NULL ) {
-                invoke_callback_list(dm_thing_manager, dm_callback_type_property_value_set);
-
+        if (strchr(dm_thing_manager->_identifier, '.') == NULL && strchr(dm_thing_manager->_identifier, '[') == NULL && strchr(dm_thing_manager->_identifier, ']') == NULL ) {
+            if (dm_thing_manager->_ret == 0) invoke_callback_list(dm_thing_manager, dm_callback_type_property_value_set);
         }
     }
 }
