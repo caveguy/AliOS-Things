@@ -3,6 +3,7 @@
 #include "alcs_coap.h"
 #include "iot_import.h"
 #include "CoAPPlatform.h"
+#include "CoAPResource.h"
 #include "alcs_api_internal.h"
 #include "CoAPServer.h"
 #include "lite-list.h"
@@ -140,11 +141,12 @@ static void recv_msg_handler (CoAPContext *context, const char *path, NetworkAdd
 }
 
 //resource
-int alcs_resource_register(CoAPContext *context, const char *path, unsigned short permission,
+int alcs_resource_register(CoAPContext *context, const char* pk, const char* dn, const char *path, unsigned short permission,
             unsigned int ctype, unsigned int maxage, char needAuth, CoAPRecvMsgHandler callback)
 {
     COAP_INFO("alcs_resource_register, ctx:%p", context);
-
+	log_info("ALCS Resource Register: %s",path);
+	
     if (!needAuth) {
         resource_cb_item* item = (resource_cb_item*)coap_malloc (sizeof(resource_cb_item));
         CoAPPathMD5_sum (path, strlen(path), item->path, MAX_PATH_CHECKSUM_LEN);
@@ -154,7 +156,7 @@ int alcs_resource_register(CoAPContext *context, const char *path, unsigned shor
         return CoAPResource_register (context, path, permission, ctype, maxage, &recv_msg_handler);
     } else {
 #ifdef USE_ALCS_SECURE
-        return alcs_resource_register_secure (context, path, permission, ctype, maxage, callback);
+        return alcs_resource_register_secure (context, pk, dn, path, permission, ctype, maxage, callback);
 #else
         return -1;
 #endif
@@ -214,7 +216,7 @@ void* thread_routine (void * arg)
     ctx->loop = 1;
 
     while (ctx->loop) {
-        CoAPMessage_cycle(ctx->ctx);
+        CoAPMessage_cycle (ctx->ctx);
 #ifdef USE_ALCS_SECURE
         on_auth_timer (ctx->ctx);
 #endif
@@ -271,7 +273,7 @@ CoAPContext* alcs_context_init(CoAPInitParam *param)
 void alcs_context_deinit()
 {
     if (g_alcs_ctx) {
-        CoAPServer_deinit (g_alcs_ctx->ctx);
+        if (g_alcs_ctx->ctx) {CoAPServer_deinit(g_alcs_ctx->ctx);}
         coap_free (g_alcs_ctx);
         g_alcs_ctx = NULL;
     }
@@ -300,7 +302,7 @@ void alcs_start_loop (CoAPContext *ctx, int newThread)
 #ifdef USE_ALCS_SECURE
     CoAPServer_add_timer (on_auth_timer);
 #endif
-   
+
     CoAPServer_loop (ctx);
 #endif
 }

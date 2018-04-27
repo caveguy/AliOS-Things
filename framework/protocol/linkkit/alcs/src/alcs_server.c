@@ -1,6 +1,7 @@
 #include "alcs_api_internal.h"
 #include "json_parser.h"
 #include "CoAPPlatform.h"
+#include "CoAPResource.h"
 #include "utils_hmac.h"
 
 #define RES_FORMAT "{\"id\":\"%.*s\",\"code\":%d,\"data\":{%s}}"
@@ -42,8 +43,20 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
             COAP_DEBUG ("entry:%.*s", entry_len, entry);
             svr_key_item *node = NULL, *next = NULL;
             list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
-                COAP_DEBUG ("keyprefix:%s", node->keyprefix);
-                if (strstr(entry, node->keyprefix) == entry) {
+                COAP_DEBUG ("keyprefix:%s", node->keyInfo.keyprefix);
+                if (strstr(entry, node->keyInfo.keyprefix) == entry) {
+                    COAP_DEBUG ("target keyprefix:%s", entry);
+                    targetKey = entry;
+                    targetLen = entry_len;
+                    break;
+                }
+            }
+            if (targetKey) break;
+
+            svr_group_item* gnode = NULL, *gnext = NULL;
+            list_for_each_entry_safe(gnode, gnext, &lst->lst_svr_group, lst, svr_group_item) {
+                COAP_DEBUG ("keyprefix:%s", gnode->keyInfo.keyprefix);
+                if (strstr(entry, gnode->keyInfo.keyprefix) == entry) {
                     COAP_DEBUG ("target keyprefix:%s", entry);
                     targetKey = entry;
                     targetLen = entry_len;
@@ -70,7 +83,7 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
     alcs_sendrsp (ctx, from, &msg, 1, resMsg->header.msgid, &token);
 }
 
-svr_key_item* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixlen, const char* keyseq, int seqlen, int* res_code)
+svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixlen, const char* keyseq, int seqlen, int* res_code)
 {
     COAP_DEBUG ("islegal prefix:%.*s, seq:%.*s", prefixlen, keyprefix, seqlen, keyseq);
 
@@ -97,13 +110,24 @@ svr_key_item* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
         } else {
             svr_key_item *node = NULL, *next = NULL;
             list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
-                COAP_DEBUG ("node prefix:%s", node->keyprefix);
-                if (strlen(node->keyprefix) == prefixlen && strncmp (keyprefix, node->keyprefix, prefixlen) == 0) {
+                COAP_DEBUG ("node prefix:%s", node->keyInfo.keyprefix);
+                if (strlen(node->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, node->keyInfo.keyprefix, prefixlen) == 0) {
                     *res_code = ALCS_AUTH_OK;
                     HAL_MutexUnlock(lst->list_mutex);
-                    return node;
+                    return &node->keyInfo;
                 }
             }
+            
+            svr_group_item* gnode = NULL, *gnext = NULL;
+            list_for_each_entry_safe(gnode, gnext, &lst->lst_svr_group, lst, svr_group_item) {
+                COAP_DEBUG ("node prefix:%s", gnode->keyInfo.keyprefix);
+                if (strlen(gnode->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, gnode->keyInfo.keyprefix, prefixlen) == 0) {
+                    *res_code = ALCS_AUTH_OK;
+                    HAL_MutexUnlock(lst->list_mutex);
+                    return &gnode->keyInfo;
+                }
+            }
+
             *res_code = ALCS_AUTH_UNMATCHPREFIX;
         }
 
@@ -117,10 +141,9 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr* from, CoAP
 {
     int seqlen, datalen;
     char* seq, *data;
-    //bool  result = 0;
     int res_code = 200;
     char body[200] = {0};
-    COAP_INFO ("alcs_rec_auth:from:%s, payloadlen:%d", from->addr, resMsg->payloadlen);
+    COAP_INFO ("receive data:%.*s, from:%s", resMsg->payloadlen, resMsg->payload, from->addr);
 
     do {
         if (!req_payload_parser((const char *)resMsg->payload, resMsg->payloadlen, &seq, &seqlen, &data, &datalen)) {
@@ -138,7 +161,7 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr* from, CoAP
         char* keyprefix = accesskey;
         char* keyseq = accesskey + KEYPREFIX_LEN + 1 + 1;
 
-        svr_key_item* item = is_legal_key(ctx, keyprefix, KEYPREFIX_LEN, keyseq, KEYSEQ_LEN, &res_code);
+        svr_key_info* item = is_legal_key(ctx, keyprefix, KEYPREFIX_LEN, keyseq, KEYSEQ_LEN, &res_code);
         if (!item) {
             COAP_INFO ("islegal return null");
             break;
@@ -171,16 +194,42 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr* from, CoAP
             break;
         }
 
-        session_item* session = get_svr_session (ctx, from);
+        int pklen, dnlen;
+        char* pk = json_get_value_by_name(data, datalen, "prodKey",&pklen, NULL);
+        char* dn = json_get_value_by_name(data, datalen, "deviceName",&dnlen, NULL);
+
+        if (!pk || !pklen || !dn || !dnlen) {
+            res_code = ALCS_AUTH_INVALIDPARAM;
+            break;
+        }
+        char tmp1 = pk[pklen];
+        char tmp2 = dn[dnlen];
+        pk[pklen] = 0;
+        dn[dnlen] = 0;
+
+        AlcsDeviceKey devKey = {0};
+        memcpy (&devKey.addr, from, sizeof(NetworkAddr));
+        devKey.pk = pk;
+        devKey.dn = dn;
+        session_item* session = get_svr_session (ctx, &devKey);
+
         if (!session) {
             session = (session_item*)coap_malloc(sizeof(session_item));
             gen_random_key((unsigned char *)session->randomKey, RANDOMKEY_LEN);
-            session->sessionId = ++ sessionid_seed;
+            session->sessionId = ++sessionid_seed;
+            char path[100] = {0}; 
+            strncpy(path, pk, sizeof(path));
+            strncat(path, dn, sizeof(path));
+            CoAPPathMD5_sum (path, strlen(path), session->pk_dn, PK_DN_CHECKSUM_LEN);
+
             memcpy (&session->addr, from, sizeof(NetworkAddr));
             COAP_INFO ("new session, addr:%s, port:%d", session->addr.addr, session->addr.port);
             struct list_head* svr_head = get_svr_session_list (ctx);
             list_add_tail(&session->lst, svr_head);
         }
+
+        pk[pklen] = tmp1;
+        dn[dnlen] = tmp2;
 
         snprintf (buf, sizeof(buf), "%.*s%s", randomkeylen, randomkey, session->randomKey);
         utils_hmac_sha1_raw (buf,strlen(buf), session->sessionKey, accessToken, tokenlen);
@@ -217,19 +266,19 @@ int add_svr_key (CoAPContext *ctx, const char* keyprefix, const char* secret, bo
         return COAP_ERROR_INVALID_LENGTH;
     }
 
+    COAP_INFO("call coap_malloc\n");
     svr_key_item* item = (svr_key_item*) coap_malloc(sizeof(svr_key_item));
     if (!item) {
         return COAP_ERROR_MALLOC;
     }
 
-    item->secret = (char*) coap_malloc(strlen(secret) + 1);
-    if (!item->secret) {
+    item->keyInfo.secret = (char*) coap_malloc(strlen(secret) + 1);
+    if (!item->keyInfo.secret) {
         coap_free (item);
         return COAP_ERROR_MALLOC;
     }
-    strcpy (item->secret, secret);
-    strcpy (item->keyprefix, keyprefix);
-    item->groupKey = isGroup;
+    strcpy (item->keyInfo.secret, secret);
+    strcpy (item->keyInfo.keyprefix, keyprefix);
 
     HAL_MutexLock(lst->list_mutex);
     list_add_tail(&item->lst, &lst->lst_svr);
@@ -257,8 +306,8 @@ int alcs_remove_svr_key (CoAPContext *ctx, const char* keyprefix)
     HAL_MutexLock(lst->list_mutex);
 
     list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
-        if(strcmp(node->keyprefix, keyprefix) == 0){
-            coap_free(node->secret);
+        if(strcmp(node->keyInfo.keyprefix, keyprefix) == 0){
+            coap_free(node->keyInfo.secret);
             list_del(&node->lst);
             coap_free(node);
             break;
@@ -321,21 +370,26 @@ void call_cb (CoAPContext *context, const char *path, NetworkAddr *remote, CoAPM
     cb (context, path, remote, &tmpMsg);
 }
 
-void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remote, CoAPMessage *message)
+static secure_resource_cb_item* get_resource_by_path (const char *path)
 {
-    secure_resource_cb_item*node = NULL, *next = NULL, *cur = NULL;
+    secure_resource_cb_item*node, *next;
     char path_calc[MAX_PATH_CHECKSUM_LEN] = {0};
     CoAPPathMD5_sum (path, strlen(path), path_calc, MAX_PATH_CHECKSUM_LEN);
 
     list_for_each_entry_safe(node, next, &secure_resource_cb_head, lst, secure_resource_cb_item) {
         if (memcmp(node->path, path_calc, MAX_PATH_CHECKSUM_LEN) == 0){
-            cur = node;
-            break;
+            return node;
         }
     }
 
-    if (!cur) {
-        COAP_ERR ("receive unknown request, path:%s", path);
+    COAP_ERR ("receive unknown request, path:%s", path);
+    return NULL;
+}
+
+void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remote, CoAPMessage *message)
+{
+    secure_resource_cb_item* node = get_resource_by_path (path);
+    if (!node) {
         return;
     }
 
@@ -343,13 +397,12 @@ void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remo
     CoAPUintOption_get (message, COAP_OPTION_SESSIONID, &sessionId);
     COAP_DEBUG("recv_msg_handler, sessionID:%d", (int)sessionId);
 
-    session_item* session = get_svr_session (context, remote);
+    struct list_head* sessions = get_svr_session_list(context);
+    session_item* session = get_session_by_checksum(sessions, remote, node->pk_dn);
     if (!session || session->sessionId != sessionId) {
         send_err_rsp (context, remote, COAP_MSG_CODE_401_UNAUTHORIZED, message);
         COAP_ERR ("need auth, path:%s, from:%s", path, remote->addr);
         return;
-    } else {
-        session->heart_time = HAL_UptimeMs();    
     }
 
     unsigned int obsVal;
@@ -361,19 +414,17 @@ void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remo
 
     if (message->payloadlen < 256) {
         char buf[256];
-        call_cb (context, path, remote, message, session->sessionKey, buf, cur->cb);
+        call_cb (context, path, remote, message, session->sessionKey, buf, node->cb);
     } else {
         char* buf = (char*)coap_malloc(message->payloadlen);
         if (buf) {
-            call_cb (context, path, remote, message, session->sessionKey, buf, cur->cb);
+            call_cb (context, path, remote, message, session->sessionKey, buf, node->cb);
             coap_free (buf);
-        } else {
-            COAP_ERR ("fail to malloc %dB", message->payloadlen);
         }
     }
 }
 
-int alcs_resource_register_secure (CoAPContext *context, const char *path, unsigned short permission,
+int alcs_resource_register_secure (CoAPContext *context, const char* pk, const char* dn, const char *path, unsigned short permission,
             unsigned int ctype, unsigned int maxage, CoAPRecvMsgHandler callback)
 {
     COAP_INFO("alcs_resource_register_secure");
@@ -381,6 +432,12 @@ int alcs_resource_register_secure (CoAPContext *context, const char *path, unsig
     secure_resource_cb_item* item = (secure_resource_cb_item*)coap_malloc (sizeof(secure_resource_cb_item));
     item->cb = callback;
     CoAPPathMD5_sum (path, strlen(path), item->path, MAX_PATH_CHECKSUM_LEN);
+
+    char pk_dn[100] = {0};
+    strncpy(pk_dn, pk, sizeof(pk_dn));
+    strncat(pk_dn, dn, sizeof(pk_dn));
+    CoAPPathMD5_sum (pk_dn, strlen(pk_dn), item->pk_dn, PK_DN_CHECKSUM_LEN);
+    
     list_add_tail(&item->lst, &secure_resource_cb_head);
 
     return CoAPResource_register (context, path, permission, ctype, maxage, &recv_msg_handler);
@@ -398,14 +455,24 @@ void alcs_resource_cb_deinit(void)
 	}
 }
 
-void alcs_rec_heart_beat(CoAPContext *ctx, const char *paths, NetworkAddr *remote, CoAPMessage *request)
+void alcs_rec_heart_beat(CoAPContext *ctx, const char *path, NetworkAddr *remote, CoAPMessage *request)
 {
     COAP_DEBUG ("alcs_rec_heart_beat");
+    struct list_head* ctl_head = get_svr_session_list (ctx);
+    if (!ctl_head || list_empty(ctl_head)) {
+        return;
+    }
 
-    session_item* session = get_svr_session (ctx, remote);
-    if (session) {
-        session->heart_time = HAL_UptimeMs();
-    } else {
+    session_item* session = NULL;
+    session_item *node = NULL, *next = NULL;
+    list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
+        if(node->sessionId && is_networkadd_same(&node->addr, remote)) {
+            node->heart_time = HAL_UptimeMs();
+            session = node;
+        }
+    }
+
+    if (!session) {
         COAP_INFO ("receive stale heart beat");
     }
 
@@ -428,32 +495,38 @@ void alcs_rec_heart_beat(CoAPContext *ctx, const char *paths, NetworkAddr *remot
 
     CoAPLenString payload = {strlen(payloadbuf), (unsigned char *)payloadbuf};
     alcs_msg_init (ctx, &msg, COAP_MSG_CODE_205_CONTENT, COAP_MESSAGE_TYPE_CON, 0, &payload, NULL);
-    CoAPLenString token = {request->header.tokenlen,request->token};
     if (session) {
-        alcs_sendrsp_secure (ctx, remote, &msg, 1, request->header.msgid, &token);
+        msg.header.msgid = request->header.msgid;
+        msg.header.tokenlen = request->header.tokenlen;
+        memcpy (&msg.token, request->token, request->header.tokenlen);
+        internal_secure_send (ctx, session, remote, &msg, 1, NULL);
     } else {
+        CoAPLenString token = {request->header.tokenlen, request->token};
         alcs_sendrsp (ctx, remote, &msg, 1, request->header.msgid, &token);
     }
 }
 
-int observe_data_encrypt(CoAPContext *ctx, NetworkAddr* from, CoAPMessage *message, CoAPLenString *src, CoAPLenString *dest)
+int observe_data_encrypt(CoAPContext *ctx, const char* path, NetworkAddr* from, CoAPMessage *message, CoAPLenString *src, CoAPLenString *dest)
 {
     COAP_DEBUG("observe_data_encrypt, src:%.*s", src->len, src->data);
 
-    session_item* session = get_svr_session (ctx, from);
+    secure_resource_cb_item* node = get_resource_by_path (path);
+    if (!node) {
+        return COAP_ERROR_NOT_FOUND;
+    }
+
+    struct list_head* sessions = get_svr_session_list(ctx);
+    session_item* session = get_session_by_checksum(sessions, from, node->pk_dn);
+
     if (session) {
         dest->len = (src->len & 0xfffffff0) + 16;
         dest->data  = (unsigned char*)coap_malloc(dest->len);
-        if (alcs_encrypt ((const char*)src->data, src->len, session->sessionKey, dest->data) <= 0) {
-            return COAP_ERROR_ENCRYPT_FAILED;
-        }
+        alcs_encrypt ((const char*)src->data, src->len, session->sessionKey, dest->data);
         CoAPUintOption_add (message, COAP_OPTION_SESSIONID, session->sessionId);
         return COAP_SUCCESS;
-    } else {
-        COAP_INFO ("observe_data_encrypt, no session found!");
     }
 
-    return COAP_ERROR_ENCRYPT_FAILED;
+    return COAP_ERROR_NOT_FOUND;
 }
 
 void on_svr_auth_timer (CoAPContext* ctx)
