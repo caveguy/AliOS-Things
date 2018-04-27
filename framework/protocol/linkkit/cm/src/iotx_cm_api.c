@@ -75,8 +75,10 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
     char device_name[DEVICE_NAME_LEN + 1] = {0};
     char device_secret[DEVICE_SECRET_LEN + 1] = {0};
     char device_id[DEVICE_ID_LEN + 1] = {0};
+	
+	CM_INFO(cm_log_info_version, "0.3");
 
-    if (NULL == init_param || init_param->user_data == NULL || init_param->event_func == NULL) return FAIL_RETURN;
+    if (NULL == init_param || init_param->event_func == NULL) return FAIL_RETURN;
 
     if (NULL == g_cm_ctx) {
         HAL_GetProductKey(product_key);
@@ -124,6 +126,10 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
 
         g_cm_ctx->response_func = iotx_cm_response_func;
         guider_set_domain_type(init_param->domain_type);
+
+#ifdef CM_SUPPORT_MULTI_THREAD
+        g_cm_ctx->action_lock = HAL_MutexCreate();
+#endif
     }
 
     if (g_cm_ctx->list_event_callback == NULL) {
@@ -148,10 +154,10 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
     }
 
     if (g_cm_ctx->inited == 0) {
-         if (FAIL_RETURN == iotx_cm_add_connectivity_all(g_cm_ctx, init_param)) goto exit;
-         g_cm_ctx->inited = 1;
+        if (FAIL_RETURN == iotx_cm_add_connectivity_all(g_cm_ctx, init_param)) goto exit;
+        g_cm_ctx->inited = 1;
     } else {
-         linked_list_iterator(g_cm_ctx->list_connectivity, cm_trigger_connected_event_handler, g_cm_ctx, init_param);
+        linked_list_iterator(g_cm_ctx->list_connectivity, cm_trigger_connected_event_handler, g_cm_ctx, init_param);
     }
 
     return SUCCESS_RETURN;
@@ -220,7 +226,7 @@ int IOT_CM_OTA_Set_Callback(iotx_cm_ota_types_t type, void* ota_func, void* user
         break;
     }
 
-    if (_ota_func) {
+    if (*_ota_func) {
         CM_WARNING(cm_log_warning_ota_started);
         return FAIL_RETURN;
     }
@@ -258,6 +264,255 @@ int IOT_CM_OTA_Request_Image(const char* version, void* option)
 #endif /* SERVICE_OTA_ENABLED */
 
 
+#ifdef CM_SUPPORT_MULTI_THREAD
+static void cm_multi_iterator_action_handler(void* list_node, va_list* params)
+{
+    iotx_cm_connectivity_t* connectivity = (iotx_cm_connectivity_t*)list_node;
+    iotx_cm_conntext_t* cm_ctx;
+    cm_iterator_action_t action;
+    iotx_cm_process_list_node_t* node = NULL;
+    void* arg3 = NULL;
+    void* arg4 = NULL;
+
+    cm_ctx = va_arg(*params, iotx_cm_conntext_t*);
+    action = va_arg(*params, int);
+    arg3 = va_arg(*params, void*);
+    arg4 = va_arg(*params, void*);
+
+    assert(cm_ctx && action < cm_iterator_action_max);
+
+    HAL_MutexLock(cm_ctx->action_lock);
+    node = iotx_cm_get_list_node(cm_ctx, iotx_cm_get_connectivity_type(connectivity));
+    if (NULL == node) {
+        CM_ERR(cm_log_error_get_node);
+        return;
+    }
+    
+    if (connectivity && connectivity->is_connected) {
+        switch (action) {
+        case cm_iterator_action_register: {
+            iotx_cm_register_param_t* register_param = (iotx_cm_register_param_t*)arg3;
+            iotx_cm_process_register_t* msg = NULL;
+            char* URI;
+            int length = 0;
+
+            assert(register_param);
+
+            length = strlen(register_param->URI);
+            URI = CM_malloc(length + 1);
+            if (NULL == URI) {
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            strcpy(URI, register_param->URI);
+
+            node->type = IOTX_CM_PROCESS_REGISTER;
+            node->msg = CM_malloc(sizeof(iotx_cm_process_register_t));
+            if (NULL == node->msg) {
+                CM_ERR(cm_log_error_memory);
+                LITE_free(URI);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+
+            msg = node->msg;
+            msg->URI = URI;
+            msg->type = register_param->message_type;
+            msg->register_func = register_param->register_func;
+            msg->user_data = register_param->user_data;
+            msg->mail_box = register_param->mail_box;
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                LITE_free(URI);
+                LITE_free(node->msg);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+        }
+            break;
+            
+        case cm_iterator_action_unregister: {
+            iotx_cm_unregister_param_t* unregister_param = (iotx_cm_unregister_param_t*)arg3;
+            char* URI;
+            int length = 0;
+
+            assert(unregister_param);
+
+            length = strlen(unregister_param->URI);
+
+            URI = CM_malloc(length + 1);
+            if (NULL == URI){
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            strcpy(URI, unregister_param->URI);
+
+            node->type = IOTX_CM_PROCESS_UNREGISTER;
+            node->msg = URI;
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                LITE_free(URI);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+        }
+            break;
+            
+        case cm_iterator_action_add_service: {
+            iotx_cm_add_service_param_t* add_service_param = (iotx_cm_add_service_param_t*)arg3;
+            iotx_cm_process_service_t* msg = NULL;
+            char* URI;
+            int length = 0;
+            
+            assert(add_service_param);
+
+            length = strlen(add_service_param->URI);
+            URI = CM_malloc(length + 1);
+            if (NULL == URI) {
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            strcpy(URI, add_service_param->URI);
+
+            node->type = IOTX_CM_PROCESS_ADD_SERVICE;
+            node->msg = CM_malloc(sizeof(iotx_cm_process_service_t));
+            if (NULL == node->msg) {
+                CM_ERR(cm_log_error_memory);
+                LITE_free(URI);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            msg = node->msg;
+            msg->URI = URI;
+            msg->type = add_service_param->message_type;
+            msg->auth_type = add_service_param->auth_type;
+            msg->register_func = add_service_param->register_func;
+            msg->user_data = add_service_param->user_data;
+            msg->mail_box = add_service_param->mail_box;
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                LITE_free(URI);
+                LITE_free(node->msg);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+        }
+            break;
+            
+        case cm_iterator_action_remove_service: {
+            iotx_cm_remove_service_param_t* remove_service_param = (iotx_cm_remove_service_param_t*)arg3;
+            char* URI;
+            int length = 0;
+
+            assert(remove_service_param);
+
+            length = strlen(remove_service_param->URI);
+            URI = CM_malloc(length + 1);
+            if (NULL == URI){
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            strcpy(URI, remove_service_param->URI);
+
+            node->type = IOTX_CM_PROCESS_REMOVE_SERVICE;
+            node->msg = URI;
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                LITE_free(URI);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+            
+        }
+            break;
+            
+        case cm_iterator_action_add_subdevice:{
+            const char* pk = (const char*)arg3;
+            const char* dn = (const char*)arg4;
+            iotx_cm_process_subdevice_t* subdevice = NULL;
+
+            assert(pk && dn);
+            
+            node->type = IOTX_CM_PROCESS_ADD_SUBDIVCE;
+            node->msg = CM_malloc(sizeof(iotx_cm_process_subdevice_t));
+            if (NULL == node->msg) {
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+
+            subdevice = node->msg;
+            strncpy(subdevice->pk, pk, strlen(pk));
+            strncpy(subdevice->dn, dn, strlen(dn));
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                LITE_free(node->msg);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+        }
+            break;
+            
+        case cm_iterator_action_remove_subdevice:{
+            const char* pk = (const char*)arg3;
+            const char* dn = (const char*)arg4;
+            iotx_cm_process_subdevice_t* subdevice = NULL;
+
+            assert(pk && dn);
+            
+            node->type = IOTX_CM_PROCESS_REMOVE_SUBDIVCE;
+            node->msg = CM_malloc(sizeof(iotx_cm_process_subdevice_t));
+            if (NULL == node->msg) {
+                CM_ERR(cm_log_error_memory);
+                iotx_cm_free_list_node(cm_ctx, node);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+
+            subdevice = node->msg;
+            strncpy(subdevice->pk, pk, strlen(pk));
+            strncpy(subdevice->dn, dn, strlen(dn));
+
+            if (FAIL_RETURN == iotx_cm_process_list_push(cm_ctx, iotx_cm_get_connectivity_type(connectivity), node)) {
+                CM_ERR(cm_log_error_push_node);
+                iotx_cm_free_list_node(cm_ctx, node);
+                LITE_free(node->msg);
+                HAL_MutexUnlock(cm_ctx->action_lock);
+                return;
+            }
+        }
+            break;
+            
+        default:
+            break;
+        }
+    }
+    HAL_MutexUnlock(cm_ctx->action_lock);
+}
+#endif
+
+
 /**
  * @brief Register service.
  *        This function used to register some service by different URI, set the URI's callback.
@@ -274,58 +529,18 @@ int IOT_CM_Register(iotx_cm_register_param_t* register_param, void* option)
 {
     int rc = 0;
     iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
 
     assert(cm_ctx && register_param && register_param->URI);
 
-    if (NULL != iotx_cm_find_mapping(cm_ctx, register_param->URI, strlen(register_param->URI))) {
-        CM_INFO(cm_log_info_registered);
-        return FAIL_RETURN;
-    }
-
 #ifdef CM_SUPPORT_MULTI_THREAD
-    {
-        /* send message to itself thread */
-        iotx_cm_process_list_node_t* node = NULL;
-        iotx_cm_process_register_t* msg = NULL;
-        char* URI = NULL;
-        int length = strlen(register_param->URI);
-
-        URI = CM_malloc(length + 1);
-        strcpy(URI, register_param->URI);
-
-        node = iotx_cm_get_list_node(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_CLOUD);
-        if (NULL == node) {
-            CM_ERR(cm_log_error_get_node);
-            LITE_free(URI);
-            return FAIL_RETURN;
-        }
-
-        node->type = IOTX_CM_PROCESS_CLOUD_REGISTER;
-        node->msg = CM_malloc(sizeof(iotx_cm_process_register_t));
-        if (NULL == node->msg) {
-            CM_ERR(cm_log_error_memory);
-            LITE_free(URI);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-            return FAIL_RETURN;
-        }
-
-        msg = node->msg;
-        msg->URI = URI;
-        msg->type = register_param->message_type;
-        msg->register_func = register_param->register_func;
-        msg->user_data = register_param->user_data;
-        msg->mail_box = register_param->mail_box;
-
-        rc = iotx_cm_process_list_push(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_CLOUD, node);
-        if (FAIL_RETURN == rc) {
-            CM_ERR(cm_log_error_push_node);
-            LITE_free(URI);
-            LITE_free(node->msg);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-        }
-    }
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_register, register_param);
 #else /* CM_SUPPORT_MULTI_THREAD */
-    rc = iotx_cm_register_service(cm_ctx, register_param->URI, register_param->message_type, register_param->register_func, register_param->user_data, register_param->mail_box);
+    rc = iotx_cm_register(cm_ctx, register_param->URI, register_param->message_type,
+                                  register_param->register_func, register_param->user_data, register_param->mail_box);
 #endif /* CM_SUPPORT_MULTI_THREAD */
 
     return rc;
@@ -346,43 +561,22 @@ int IOT_CM_Unregister(iotx_cm_unregister_param_t* unregister_param, void* option
     int ret = 0;
 
     iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
 
     assert(cm_ctx && unregister_param && unregister_param->URI);
 
-#ifdef CM_SUPPORT_MULTI_THREAD
-    {
-        /* send message to itself thread */
-        iotx_cm_process_list_node_t* node = NULL;
-        char* URI = NULL;
-        int length = strlen(unregister_param->URI);
-
-        URI = CM_malloc(length + 1);
-        strcpy(URI, unregister_param->URI);
-
-        node = iotx_cm_get_list_node(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_CLOUD);
-        if (NULL == node) {
-            CM_ERR(cm_log_error_get_node);
-            LITE_free(URI);
-            return FAIL_RETURN;
-        }
-
-        node->type = IOTX_CM_PROCESS_CLOUD_UNREGISTER;
-        node->msg = (void*)URI;
-
-        ret = iotx_cm_process_list_push(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_CLOUD, node);
-        if (FAIL_RETURN == ret) {
-            CM_ERR(cm_log_error_push_node);
-            LITE_free(URI);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-        }
-    }
-
+#ifdef CM_SUPPORT_MULTI_THREAD    
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_unregister, unregister_param);
 #else /* CM_SUPPORT_MULTI_THREAD */
-    ret = iotx_cm_unregister_service(cm_ctx, unregister_param->URI);
+    ret = iotx_cm_unregister(cm_ctx, unregister_param->URI);
 #endif /* CM_SUPPORT_MULTI_THREAD */
 
     return ret;
 }
+
 
 
 /**
@@ -401,51 +595,15 @@ int IOT_CM_Add_Service(iotx_cm_add_service_param_t* service_param, void* option)
 {
     int ret = 0;
     iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
 
     assert(cm_ctx && service_param && service_param->URI);
 
-    if (NULL != iotx_cm_find_mapping(cm_ctx, service_param->URI, strlen(service_param->URI))) {
-        CM_INFO(cm_log_info_registered_1);
-        return FAIL_RETURN;
-    }
-
 #ifdef CM_SUPPORT_MULTI_THREAD
-    {
-        /* send message to itself thread */
-        iotx_cm_process_list_node_t* node = NULL;
-        iotx_cm_process_service_t* msg = NULL;
-        char* URI = NULL;
-        int length = strlen(service_param->URI);
-
-        URI = CM_malloc(length + 1);
-        strcpy(URI, service_param->URI);
-
-        if (NULL == (node = iotx_cm_get_list_node(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_LOCAL))) {
-            LITE_free(URI);
-            return FAIL_RETURN;
-        }
-
-        node->type = IOTX_CM_PROCESS_LOCAL_ADD_SERVICE;
-        if(NULL == (node->msg = CM_malloc(sizeof(iotx_cm_process_service_t)))) {
-            LITE_free(URI);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-            return FAIL_RETURN;
-        }
-
-        msg = node->msg;
-        msg->URI = URI;
-        msg->type = service_param->message_type;
-        msg->auth_type = service_param->auth_type;
-        msg->register_func = service_param->register_func;
-        msg->user_data = service_param->user_data;
-        msg->mail_box = service_param->mail_box;
-
-        if (FAIL_RETURN == iotx_cm_process_list_push(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_LOCAL, node)) {
-            LITE_free(URI);
-            LITE_free(node->msg);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-        }
-    }
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_add_service, service_param);
 #else /* CM_SUPPORT_MULTI_THREAD */
     ret = iotx_cm_add_service(cm_ctx, service_param->URI, service_param->message_type, service_param->auth_type,
                               service_param->register_func, service_param->user_data, service_param->mail_box);
@@ -468,43 +626,84 @@ int IOT_CM_Remove_Service(iotx_cm_remove_service_param_t* service_param, void* o
 {
     int ret = 0;
     iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
 
     assert(cm_ctx && service_param && service_param->URI);
 
 #ifdef CM_SUPPORT_MULTI_THREAD
-    {
-        char* URI = NULL;
-        /* send message to itself thread */
-        iotx_cm_process_list_node_t* node = NULL;
-
-        int length = strlen(service_param->URI);
-        URI = CM_malloc(length + 1);
-        strcpy(URI, service_param->URI);
-
-        node = iotx_cm_get_list_node(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_LOCAL);
-
-        if (NULL == node) {
-            LITE_free(URI);
-            return FAIL_RETURN;
-        }
-
-        node->type = IOTX_CM_PROCESS_LOCAL_REMOVE_SERVICE;
-        node->msg = (void*)URI;
-
-        ret = iotx_cm_process_list_push(g_cm_ctx, IOTX_CM_CONNECTIVITY_TYPE_LOCAL, node);
-
-        if (FAIL_RETURN == ret) {
-            LITE_free(URI);
-            iotx_cm_free_list_node(g_cm_ctx, node);
-        }
-    }
-
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_remove_service, service_param);
 #else /* CM_SUPPORT_MULTI_THREAD */
     ret = iotx_cm_remove_service(cm_ctx, service_param->URI);
 #endif /* CM_SUPPORT_MULTI_THREAD */
 
     return ret;
 }
+
+
+/**
+ * @brief add sub-device.
+ *        This function used to add sub-device with sub-device's pk and dn.
+ *
+ * @param PK, product_key.
+ * @param DN, device_name.
+ * @param option, reserve.
+ *
+ * @return success or fail.
+ */
+int IOT_CM_Add_Sub_Device(const char* PK, const char* DN, void* option)
+{
+    int ret = 0;
+    iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
+
+    assert(cm_ctx && PK && DN);
+    
+#ifdef CM_SUPPORT_MULTI_THREAD
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_add_subdevice, PK, DN);
+#else /* CM_SUPPORT_MULTI_THREAD */
+    ret = iotx_cm_add_subdevice(cm_ctx, PK, DN);
+#endif /* CM_SUPPORT_MULTI_THREAD */
+
+    return ret;
+}
+
+
+/**
+ * @brief remove sub-device.
+ *        This function used to remove sub-device with sub-device's pk and dn.
+ *
+ * @param PK, product_key.
+ * @param DN, device_name.
+ * @param option, reserve.
+ *
+ * @return success or fail.
+ */
+int IOT_CM_Remove_Sub_Device(const char* PK, const char* DN, void* option)
+{
+    int ret = 0;
+    iotx_cm_conntext_t* cm_ctx = g_cm_ctx;
+#ifdef CM_SUPPORT_MULTI_THREAD
+    linked_list_t* list = NULL;
+#endif
+
+    assert(cm_ctx && PK && DN);
+    
+#ifdef CM_SUPPORT_MULTI_THREAD
+    list = cm_ctx->list_connectivity;
+    linked_list_iterator(list, cm_multi_iterator_action_handler, cm_ctx, cm_iterator_action_remove_subdevice, PK, DN);
+#else /* CM_SUPPORT_MULTI_THREAD */
+    ret = iotx_cm_remove_subdevice(cm_ctx, PK, DN);
+#endif /* CM_SUPPORT_MULTI_THREAD */
+
+    return ret;
+}
+
 
 #ifdef CM_SUPPORT_MULTI_THREAD
 static void cm_connectivity_add_send_handler(void* list_node, va_list* params)

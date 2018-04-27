@@ -33,7 +33,8 @@
 
 
 #ifdef CM_MAPPING_USE_POOL
-static iotx_cm_mapping_t g_cm_mapping_list[CM_SUPPORT_MAX_MAPPING_SIZE];
+static iotx_cm_mapping_t g_cm_register_mapping_list[CM_SUPPORT_MAX_MAPPING_SIZE];
+static iotx_cm_mapping_t g_cm_service_mapping_list[CM_SUPPORT_MAX_MAPPING_SIZE];
 #endif
 
 #ifdef CM_PROCESS_NODE_USE_POOL
@@ -545,8 +546,9 @@ int iotx_cm_parse_payload(void* _payload, int payload_length, iotx_cm_message_in
     node = NULL;
 
     msg->method = NULL;
-
-    /* parse message */
+    msg->message_type = IOTX_CM_MESSAGE_RESPONSE;
+    
+/* parse message */
     node = LITE_json_value_of((char*)string_message, payload);
     if (node) msg->message = node;
 
@@ -592,7 +594,7 @@ void iotx_cm_free_message_info(iotx_cm_message_info_t* message_info)
 }
 
 
-void iotx_cm_response_func(void* context, iotx_cm_message_info_t* message_info)
+void iotx_cm_response_func(void* context, iotx_cm_mapping_type_t mapping_type, iotx_cm_message_info_t* message_info)
 {
     iotx_cm_send_peer_t peer;
     iotx_cm_conntext_t* cm_ctx = (iotx_cm_conntext_t*)context;
@@ -616,7 +618,7 @@ void iotx_cm_response_func(void* context, iotx_cm_message_info_t* message_info)
 
 #ifdef CM_SUPPORT_TOPIC_DISPATCH
     /* find mapping */
-    mapping = iotx_cm_find_mapping(cm_ctx, message_info->URI, strlen(message_info->URI));
+    mapping = iotx_cm_find_mapping(cm_ctx, mapping_type, message_info->URI, strlen(message_info->URI));
 
     if (NULL == mapping) {
         CM_WARNING(cm_log_warning_not_mapping);
@@ -656,7 +658,7 @@ static void cm_find_connectivity_handler(void* list_node, va_list* params)
     target = va_arg(*params, void*);
     conn_ctx = va_arg(*params, void*);
 
-    assert(cm_ctx && target);
+    assert(cm_ctx);
 
     /* TODO */
     if (conn_ctx && IOTX_CM_CONNECTIVITY_TYPE_LOCAL == connectivity->type) {
@@ -665,7 +667,7 @@ static void cm_find_connectivity_handler(void* list_node, va_list* params)
     }
 
 
-    if (connectivity && connectivity->get_target_func && (connectivity_target = connectivity->get_target_func())) {
+    if (connectivity && target && connectivity->get_target_func && (connectivity_target = connectivity->get_target_func())) {
         if (0 == strcmp(target->product_key, connectivity_target->product_key) &&
             0 == strcmp(target->device_name, connectivity_target->device_name)) {
             cm_ctx->target_connectivity = connectivity;
@@ -684,7 +686,7 @@ iotx_cm_connectivity_t* iotx_cm_find_connectivity(iotx_cm_conntext_t* cm_ctx, io
     assert(list);
 
     cm_ctx->target_connectivity = NULL;
-    if (target) linked_list_iterator(list, cm_find_connectivity_handler, cm_ctx, target, conn_ctx);
+    linked_list_iterator(list, cm_find_connectivity_handler, cm_ctx, target, conn_ctx);
 
     return cm_ctx->target_connectivity;
 }
@@ -704,6 +706,7 @@ int iotx_cm_add_connectivity(iotx_cm_conntext_t* cm_ctx, iotx_cm_connectivity_t*
 }
 
 
+#ifndef CM_SUPPORT_MULTI_THREAD
 static void cm_trigger_connected_handler(void* list_node, va_list* params)
 {
     iotx_cm_connectivity_t* connectivity = (iotx_cm_connectivity_t*)list_node;
@@ -715,6 +718,7 @@ static void cm_trigger_connected_handler(void* list_node, va_list* params)
 
     connectivity->trigger_connected_func(cm_ctx, connectivity, NULL, NULL);
 }
+#endif
 
 
 int iotx_cm_add_connectivity_all(iotx_cm_conntext_t* cm_ctx, iotx_cm_init_param_t* init_param)
@@ -727,7 +731,9 @@ int iotx_cm_add_connectivity_all(iotx_cm_conntext_t* cm_ctx, iotx_cm_init_param_
 
     if (FAIL_RETURN == iotx_cm_add_connectivity(cm_ctx, connectivity)) return FAIL_RETURN;
 
+#ifndef CM_SUPPORT_MULTI_THREAD
     connectivity->connect_func(cm_ctx, connectivity);
+#endif
 
     /* local connection */
 #ifdef CM_SUPPORT_LOCAL_CONN
@@ -735,11 +741,15 @@ int iotx_cm_add_connectivity_all(iotx_cm_conntext_t* cm_ctx, iotx_cm_init_param_
     if (NULL == connectivity)  return FAIL_RETURN;
 
     if (FAIL_RETURN == iotx_cm_add_connectivity(cm_ctx, connectivity)) return FAIL_RETURN;
-
+    
+#ifndef CM_SUPPORT_MULTI_THREAD
     connectivity->connect_func(cm_ctx, connectivity);
 #endif
-
+#endif
+    
+#ifndef CM_SUPPORT_MULTI_THREAD
     linked_list_iterator(cm_ctx->list_connectivity, cm_trigger_connected_handler, cm_ctx);
+#endif
 
     return SUCCESS_RETURN;
 }
@@ -750,6 +760,12 @@ int iotx_cm_get_connectivity_id()
     static int _connectivity_id = 0;
     _connectivity_id++;
     return _connectivity_id;
+}
+
+
+iotx_cm_connectivity_types_t iotx_cm_get_connectivity_type(iotx_cm_connectivity_t* connectivity)
+{
+    return connectivity ? connectivity->type : IOTX_CM_CONNECTIVITY_TYPE_MAX;
 }
 
 
@@ -786,7 +802,7 @@ int iotx_cm_remove_connectivity_all(iotx_cm_conntext_t* cm_ctx)
 }
 
 
-iotx_cm_mapping_t* iotx_cm_get_mapping_node()
+iotx_cm_mapping_t* iotx_cm_get_mapping_node(iotx_cm_mapping_type_t mapping_type)
 {
 #ifndef CM_SUPPORT_TOPIC_DISPATCH
     return NULL;
@@ -795,10 +811,19 @@ iotx_cm_mapping_t* iotx_cm_get_mapping_node()
 
 #ifdef CM_MAPPING_USE_POOL
     int i = 0;
+    iotx_cm_mapping_t* mapping_list = NULL;
+
+    if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type)
+        mapping_list = g_cm_register_mapping_list;
+    else if(IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type)
+        mapping_list = g_cm_service_mapping_list;
+    else
+        return NULL;
+
     for (i = 0; i < CM_SUPPORT_MAX_MAPPING_SIZE; i++) {
-        if (g_cm_mapping_list[i].is_used == 0) {
-            g_cm_mapping_list[i].is_used = 1;
-            return &g_cm_mapping_list[i];
+        if (mapping_list[i].is_used == 0) {
+            mapping_list[i].is_used = 1;
+            return &mapping_list[i];
         }
     }
     return NULL;
@@ -809,13 +834,14 @@ iotx_cm_mapping_t* iotx_cm_get_mapping_node()
     if (NULL == node) return NULL;
 
     memset(node, 0x0, sizeof(iotx_cm_mapping_t));
+    node->mapping_type = mapping_type;
     return node;
 #endif
 
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 }
 
-int iotx_cm_free_mapping_node(iotx_cm_mapping_t* node)
+int iotx_cm_free_mapping_node(iotx_cm_mapping_type_t mapping_type, iotx_cm_mapping_t* node)
 {
 #ifndef CM_SUPPORT_TOPIC_DISPATCH
     return SUCCESS_RETURN;
@@ -839,7 +865,7 @@ int iotx_cm_free_mapping_node(iotx_cm_mapping_t* node)
 }
 
 
-int iotx_cm_add_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, iotx_cm_message_types_t type,
+int iotx_cm_add_mapping(iotx_cm_conntext_t* cm_ctx, iotx_cm_mapping_type_t mapping_type, char* URI, iotx_cm_message_types_t type,
                         iotx_cm_register_fp_t func, void* user_data, void* mail_box)
 {
 #ifndef CM_SUPPORT_TOPIC_DISPATCH
@@ -852,13 +878,13 @@ int iotx_cm_add_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, iotx_cm_message_t
         return FAIL_RETURN;
     }
 
-    mapping = iotx_cm_get_mapping_node();
+    mapping = iotx_cm_get_mapping_node(mapping_type);
     if (NULL == mapping) return FAIL_RETURN;
 
     mapping->URI = CM_malloc(strlen(URI) + 1);
     if (NULL == mapping->URI) {
         CM_ERR(cm_log_error_memory);
-        iotx_cm_free_mapping_node(mapping);
+        iotx_cm_free_mapping_node(mapping_type, mapping);
         return FAIL_RETURN;
     }
     memset(mapping->URI, 0x0, strlen(URI) + 1);
@@ -869,8 +895,17 @@ int iotx_cm_add_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, iotx_cm_message_t
     mapping->user_data = user_data;
     mapping->mail_box = mail_box;
 
-    mapping->next = cm_ctx->mapping_list;
-    cm_ctx->mapping_list = mapping;
+    if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type) {
+        mapping->next = cm_ctx->register_mapping_list;
+        cm_ctx->register_mapping_list = mapping;
+    } else if (IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type) {
+        mapping->next = cm_ctx->service_mapping_list;
+        cm_ctx->service_mapping_list = mapping;
+    } else {
+        LITE_free(mapping->URI);
+        iotx_cm_free_mapping_node(mapping_type, mapping);
+        return FAIL_RETURN;
+    }
 
     return SUCCESS_RETURN;
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
@@ -878,7 +913,7 @@ int iotx_cm_add_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, iotx_cm_message_t
 
 
 /* remove */
-int iotx_cm_remove_mapping(iotx_cm_conntext_t* cm_ctx, char* URI)
+int iotx_cm_remove_mapping(iotx_cm_conntext_t* cm_ctx, iotx_cm_mapping_type_t mapping_type, char* URI)
 {
 #ifndef CM_SUPPORT_TOPIC_DISPATCH
     return SUCCESS_RETURN;
@@ -891,14 +926,30 @@ int iotx_cm_remove_mapping(iotx_cm_conntext_t* cm_ctx, char* URI)
         return FAIL_RETURN;
     }
 
-    pre_mapping = mapping = cm_ctx->mapping_list;
+    if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type)
+        pre_mapping = mapping = cm_ctx->register_mapping_list;
+    else if(IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type)
+        pre_mapping = mapping = cm_ctx->service_mapping_list;
+    else
+        return FAIL_RETURN;
 
-    /* first one is match */
+    if (NULL == mapping) return FAIL_RETURN;
+	
     if (0 == strncmp(URI, mapping->URI, strlen(URI))) {
         if (NULL == mapping->next) {
-            cm_ctx->mapping_list = NULL;
+            if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type)
+                cm_ctx->register_mapping_list = NULL;
+            else if (IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type)
+                cm_ctx->service_mapping_list = NULL;
+            else
+                return FAIL_RETURN;
         } else {
-            cm_ctx->mapping_list = mapping->next;
+            if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type)
+                cm_ctx->register_mapping_list = mapping->next;
+            else if (IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type)
+                cm_ctx->service_mapping_list = mapping->next;
+            else
+                return FAIL_RETURN;
         }
     }
 
@@ -908,7 +959,7 @@ int iotx_cm_remove_mapping(iotx_cm_conntext_t* cm_ctx, char* URI)
             pre_mapping->next = mapping->next;
 
             LITE_free(mapping->URI);
-            iotx_cm_free_mapping_node(mapping);
+            iotx_cm_free_mapping_node(mapping_type, mapping);
             return SUCCESS_RETURN;
         }
 
@@ -935,24 +986,36 @@ int iotx_cm_remove_mapping_all(iotx_cm_conntext_t* cm_ctx)
         return FAIL_RETURN;
     }
 
-    next_mapping = mapping = cm_ctx->mapping_list;
+    next_mapping = mapping = cm_ctx->register_mapping_list;
 
     while (mapping) {
         next_mapping = mapping->next;
 
         LITE_free(mapping->URI);
-        iotx_cm_free_mapping_node(mapping);
+        iotx_cm_free_mapping_node(IOTX_CM_MAPPING_TYPE_REGISTER, mapping);
+
+        mapping = next_mapping;
+    }
+    cm_ctx->register_mapping_list = NULL;
+
+    next_mapping = mapping = cm_ctx->service_mapping_list;
+
+    while (mapping) {
+        next_mapping = mapping->next;
+
+        LITE_free(mapping->URI);
+        iotx_cm_free_mapping_node(IOTX_CM_MAPPING_TYPE_SERVICE, mapping);
 
         mapping = next_mapping;
     }
 
-    cm_ctx->mapping_list = NULL;
+    cm_ctx->service_mapping_list = NULL;
 
     return FAIL_RETURN;
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 }
 
-iotx_cm_mapping_t* iotx_cm_find_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, int URI_length)
+iotx_cm_mapping_t* iotx_cm_find_mapping(iotx_cm_conntext_t* cm_ctx, iotx_cm_mapping_type_t mapping_type, char* URI, int URI_length)
 {
 #ifndef CM_SUPPORT_TOPIC_DISPATCH
     return NULL;
@@ -963,7 +1026,14 @@ iotx_cm_mapping_t* iotx_cm_find_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, i
         CM_ERR(cm_log_error_parameter);
         return NULL;
     }
-    mapping = cm_ctx->mapping_list;
+
+    if (IOTX_CM_MAPPING_TYPE_REGISTER == mapping_type)
+        mapping = cm_ctx->register_mapping_list;
+    else if(IOTX_CM_MAPPING_TYPE_SERVICE == mapping_type)
+        mapping = cm_ctx->service_mapping_list;
+    else
+        return NULL;
+    
 
     while (mapping) {
         if ((0 == strncmp(URI, mapping->URI, URI_length)) || (0 != strstr(mapping->URI, URI))) {
@@ -977,70 +1047,77 @@ iotx_cm_mapping_t* iotx_cm_find_mapping(iotx_cm_conntext_t* cm_ctx, char* URI, i
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 }
 
-typedef enum {
-    cm_iterator_action_register = 0,
-    cm_iterator_action_unregister,
-    cm_iterator_action_add_service,
-    cm_iterator_action_remove_service,
-
-    cm_iterator_action_max
-} cm_iterator_action_t;
-
-
 static void cm_connectivity_iterator_action_handler(void* list_node, va_list* params)
 {
     iotx_cm_connectivity_t* connectivity = (iotx_cm_connectivity_t*)list_node;
     iotx_cm_conntext_t* cm_ctx;
     char* uri;
+    const char* pk;
+    const char* dn;
     iotx_cm_message_auth_types_t auth_type;
     cm_iterator_action_t action;
 
     cm_ctx = va_arg(*params, iotx_cm_conntext_t*);
     action = va_arg(*params, int);
-    uri = va_arg(*params, char*);
 
-    assert(cm_ctx && uri && action < cm_iterator_action_max);
+    assert(cm_ctx && action < cm_iterator_action_max);
 
     if (connectivity && connectivity->is_connected) {
         switch (action) {
         case cm_iterator_action_register:
+            uri = va_arg(*params, char*);
             connectivity->register_func(cm_ctx, connectivity, uri);
             break;
+            
         case cm_iterator_action_unregister:
+            uri = va_arg(*params, char*);
             connectivity->unregister_func(cm_ctx, connectivity, uri);
             break;
+            
         case cm_iterator_action_add_service:
+            uri = va_arg(*params, char*);
             auth_type = va_arg(*params, int);
             connectivity->add_service_func(cm_ctx, connectivity, uri, auth_type);
             break;
+            
         case cm_iterator_action_remove_service:
+            uri = va_arg(*params, char*);
             connectivity->remove_service_func(cm_ctx, connectivity, uri);
             break;
+            
+        case cm_iterator_action_add_subdevice:
+            pk = va_arg(*params, char*);
+            dn = va_arg(*params, char*);
+            connectivity->add_subdevice_func(cm_ctx, connectivity, pk, dn);
+            break;
+            
+        case cm_iterator_action_remove_subdevice:
+            pk = va_arg(*params, char*);
+            dn = va_arg(*params, char*);
+            connectivity->remove_subdevice_func(cm_ctx, connectivity, pk, dn);
+            break;
+            
         default:
             break;
         }
     }
 }
 
-int iotx_cm_register_service(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_message_types_t type,
+int iotx_cm_register(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_message_types_t type,
                              iotx_cm_register_fp_t register_func, void* user_data, void* mail_box)
 {
     linked_list_t* list = NULL;
 
-    int8_t ret = SUCCESS_RETURN;
     char* URI = _URI;
 
 #ifdef CM_SUPPORT_TOPIC_DISPATCH
     iotx_cm_mapping_t* mapping = NULL;
 #endif
 
-    if (NULL == cm_ctx || NULL == _URI) {
-        CM_ERR(cm_log_error_parameter);
-        return FAIL_RETURN;
-    }
+    assert(cm_ctx && URI);
 
 #ifdef CM_SUPPORT_TOPIC_DISPATCH
-    if (FAIL_RETURN == iotx_cm_add_mapping(cm_ctx, URI, type, register_func, user_data, mail_box)) {
+    if (FAIL_RETURN == iotx_cm_add_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_REGISTER, URI, type, register_func, user_data, mail_box)) {
         iotx_cm_event_msg_t event;
         iotx_cm_event_result_t result_pt = {0};
 
@@ -1056,7 +1133,7 @@ int iotx_cm_register_service(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_mes
         return FAIL_RETURN;
     }
 
-    mapping = iotx_cm_find_mapping(cm_ctx, URI, strlen(URI));
+    mapping = iotx_cm_find_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_REGISTER, URI, strlen(URI));
 
     list = cm_ctx->list_connectivity;
 
@@ -1068,15 +1145,13 @@ int iotx_cm_register_service(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_mes
     linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_register, URI);
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 
-    return ret;
+    return SUCCESS_RETURN;
 }
 
 
-int iotx_cm_unregister_service(iotx_cm_conntext_t* cm_ctx, char* URI)
+int iotx_cm_unregister(iotx_cm_conntext_t* cm_ctx, char* URI)
 {
     linked_list_t* list = NULL;
-
-    int8_t ret = SUCCESS_RETURN;
 
     assert(cm_ctx && URI);
 
@@ -1084,12 +1159,12 @@ int iotx_cm_unregister_service(iotx_cm_conntext_t* cm_ctx, char* URI)
 
     linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_unregister, URI);
 
-    if (FAIL_RETURN == iotx_cm_remove_mapping(cm_ctx, URI)) {
+    if (FAIL_RETURN == iotx_cm_remove_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_REGISTER, URI)) {
         CM_ERR(cm_log_error_fail);
-        ret = FAIL_RETURN;
+        return FAIL_RETURN;
     }
 
-    return ret;
+    return SUCCESS_RETURN;
 }
 
 
@@ -1097,20 +1172,15 @@ int iotx_cm_add_service(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_message_
                         iotx_cm_register_fp_t register_func, void* user_data, void* mail_box)
 {
     linked_list_t* list = NULL;
-    int8_t ret = SUCCESS_RETURN;
     char* URI = _URI;
-
 #ifdef CM_SUPPORT_TOPIC_DISPATCH
     iotx_cm_mapping_t* mapping = NULL;
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 
-    if (NULL == cm_ctx || NULL == _URI) {
-        CM_ERR(cm_log_error_parameter);
-        return FAIL_RETURN;
-    }
+    assert(cm_ctx && URI);
 
 #ifdef CM_SUPPORT_TOPIC_DISPATCH
-    if (FAIL_RETURN == iotx_cm_add_mapping(cm_ctx, URI, type, register_func, user_data, mail_box)) {
+    if (FAIL_RETURN == iotx_cm_add_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_SERVICE, URI, type, register_func, user_data, mail_box)) {
         iotx_cm_event_msg_t event;
         iotx_cm_event_result_t result_pt = {0};
 
@@ -1126,34 +1196,25 @@ int iotx_cm_add_service(iotx_cm_conntext_t* cm_ctx, char* _URI, iotx_cm_message_
         return FAIL_RETURN;
     }
 
-    mapping = iotx_cm_find_mapping(cm_ctx, URI, strlen(URI));
-
-    assert(cm_ctx && URI);
+    mapping = iotx_cm_find_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_SERVICE, URI, strlen(URI));
 
     list = cm_ctx->list_connectivity;
 
     linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_add_service, mapping->URI, auth_type);
 #else /* CM_SUPPORT_TOPIC_DISPATCH */
-    assert(cm_ctx && URI);
 
     list = cm_ctx->list_connectivity;
 
     linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_add_service, URI, auth_type);
 #endif /* CM_SUPPORT_TOPIC_DISPATCH */
 
-    return ret;
+    return SUCCESS_RETURN;
 }
 
 
 int iotx_cm_remove_service(iotx_cm_conntext_t* cm_ctx, char* URI)
 {
     linked_list_t* list;
-    int8_t ret = SUCCESS_RETURN;
-
-    if (NULL == cm_ctx || NULL == URI) {
-        CM_ERR(cm_log_error_parameter);
-        return FAIL_RETURN;
-    }
 
     assert(cm_ctx && URI);
 
@@ -1161,19 +1222,50 @@ int iotx_cm_remove_service(iotx_cm_conntext_t* cm_ctx, char* URI)
 
     linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_remove_service, URI);
 
-    if (FAIL_RETURN == iotx_cm_remove_mapping(cm_ctx, URI)) {
+    if (FAIL_RETURN == iotx_cm_remove_mapping(cm_ctx, IOTX_CM_MAPPING_TYPE_SERVICE, URI)) {
         CM_ERR(cm_log_error_fail);
-        ret = FAIL_RETURN;
+        return FAIL_RETURN;
     }
 
-    return ret;
+    return SUCCESS_RETURN;
+}
+
+
+int iotx_cm_add_subdevice(iotx_cm_conntext_t* cm_ctx, const char* pk, const char* dn)
+{
+    linked_list_t* list = NULL;
+
+    assert(cm_ctx && pk && dn);
+
+    list = cm_ctx->list_connectivity;
+
+    linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_add_subdevice, pk, dn);
+
+    return SUCCESS_RETURN;
+}
+
+
+int iotx_cm_remove_subdevice(iotx_cm_conntext_t* cm_ctx, const char* pk, const char* dn)
+{
+    linked_list_t* list = NULL;
+
+    assert(cm_ctx && pk && dn);
+
+    list = cm_ctx->list_connectivity;
+
+    linked_list_iterator(list, cm_connectivity_iterator_action_handler, cm_ctx, cm_iterator_action_remove_subdevice, pk, dn);
+
+    return SUCCESS_RETURN;
 }
 
 
 int iotx_cm_parse_message(iotx_cm_conntext_t* cm_ctx, iotx_cm_message_info_t* message_info,
                           char** URI, void** payload, int* payload_length)
 {
-    *URI = message_info->URI;
+    (*URI) = CM_malloc(strlen(message_info->URI) + 1);
+    memset((*URI), 0X0, strlen(message_info->URI) + 1);
+    strcpy((*URI), message_info->URI);
+
     (*payload_length) = message_info->parameter_length + 10 + strlen(string_request_format);
 
     if (message_info->method) (*payload_length) += strlen(message_info->method);
@@ -1186,9 +1278,7 @@ int iotx_cm_parse_message(iotx_cm_conntext_t* cm_ctx, iotx_cm_message_info_t* me
         return FAIL_RETURN;
     }
 
-    if (0 == message_info->id) {
-        message_info->id = iotx_cm_get_next_message_id(cm_ctx);
-    }
+    if (0 == message_info->id) message_info->id = iotx_cm_get_next_message_id(cm_ctx);
 
     if (FAIL_RETURN == iotx_cm_splice_payload((*payload), payload_length, message_info->id, message_info)) {
         CM_ERR(cm_log_error_parse_payload);
@@ -1260,6 +1350,7 @@ int iotx_cm_send_data(iotx_cm_conntext_t* cm_ctx, iotx_cm_send_peer_t* target, v
         /* todo: send fail is not a event */
         iotx_cm_trigger_event_callback(cm_ctx, &event_msg);
     }
+    LITE_free(URI);
     LITE_free(payload);
     return rc;
 }
@@ -1381,36 +1472,56 @@ static void iotx_cm_free_process_list_handler(void* list_node, va_list* params)
         iotx_cm_process_list_node_t* next_node = node;
         switch (node->type)
         {
-        case IOTX_CM_PROCESS_CLOUD_REGISTER: {
-            iotx_cm_process_register_t* register_pt = (iotx_cm_process_register_t*)node->msg;
-            LITE_free(register_pt->URI);
-            LITE_free(register_pt);
+        case IOTX_CM_PROCESS_REGISTER: {
+            iotx_cm_process_register_t* _register = (iotx_cm_process_register_t*)node->msg;
+            LITE_free(_register->URI);
+            LITE_free(_register);
         }
             break;
 
-        case IOTX_CM_PROCESS_CLOUD_UNREGISTER: {
-            char* URI = (char*)node->msg;
-            LITE_free(URI);
+        case IOTX_CM_PROCESS_UNREGISTER: {
+            LITE_free(node->msg);
+        }
+            break;
+
+        case IOTX_CM_PROCESS_ADD_SERVICE: {
+            iotx_cm_process_service_t* _service = (iotx_cm_process_service_t*)node->msg;
+            LITE_free(_service->URI);
+            LITE_free(_service);
+        }
+            break;
+
+        case IOTX_CM_PROCESS_REMOVE_SERVICE: {
+            LITE_free(node->msg);
+        }
+            break;
+
+        case IOTX_CM_PROCESS_ADD_SUBDIVCE: {
+            LITE_free(node->msg);
+        }
+            break;
+
+        case IOTX_CM_PROCESS_REMOVE_SUBDIVCE: {
+            LITE_free(node->msg);
         }
             break;
 
         case IOTX_CM_PROCESS_CLOUD_SEND: {
-            iotx_cm_process_send_pt send_pt = (iotx_cm_process_send_pt)node->msg;
-            if (send_pt->URI)
-                LITE_free(send_pt->URI);
-            if (send_pt->payload)
-                LITE_free(send_pt->payload);
-            if (send_pt->target)
-                LITE_free(send_pt->target);
-            LITE_free(send_pt);
+            iotx_cm_process_send_t* send = (iotx_cm_process_send_t*)node->msg;
+            if (send->URI)
+                LITE_free(send->URI);
+            if (send->payload)
+                LITE_free(send->payload);
+            if (send->target)
+                LITE_free(send->target);
+            LITE_free(send);
         }
             break;
 
-        case IOTX_CM_PROCESS_CLOUD_REGISTER_RESULT:
-        case IOTX_CM_PROCESS_CLOUD_UNREGISTER_RESULT: {
-            iotx_cm_process_register_result_pt register_pt = (iotx_cm_process_register_result_pt)node->msg;
-
-            LITE_free(register_pt);
+        case IOTX_CM_PROCESS_REGISTER_RESULT:
+        case IOTX_CM_PROCESS_UNREGISTER_RESULT: {
+            iotx_cm_process_register_result_t* _register = (iotx_cm_process_register_result_t*)node->msg;
+            LITE_free(_register);
         }
             break;
 
@@ -1421,24 +1532,16 @@ static void iotx_cm_free_process_list_handler(void* list_node, va_list* params)
             break;
         }
 
-        case IOTX_CM_PROCESS_LOCAL_ADD_DEVICE: {
+        case IOTX_CM_PROCESS_ADD_DEVICE: {
         }
             break;
 
-        case IOTX_CM_PROCESS_LOCAL_REMOVE_DEVICE: {
+        case IOTX_CM_PROCESS_REMOVE_DEVICE: {
         }
             break;
 
-        case IOTX_CM_PROCESS_LOCAL_ADD_SERVICE: {
-        }
-            break;
-
-        case IOTX_CM_PROCESS_LOCAL_REMOVE_SERVICE: {
-        }
-            break;
-
-        case IOTX_CM_PROCESS_LOCAL_ADD_SERVICE_RESULT:
-        case IOTX_CM_PROCESS_LOCAL_REMOVE_SERVICE_RESULT: {
+        case IOTX_CM_PROCESS_ADD_SERVICE_RESULT:
+        case IOTX_CM_PROCESS_REMOVE_SERVICE_RESULT: {
         }
             break;
 

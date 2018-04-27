@@ -38,10 +38,10 @@
 /* domain type */
 typedef enum IOTX_CM_CLOUD_DOMAIN_TYPES {
     /* "iot-as-mqtt.cn-shanghai.aliyuncs.com" */
-    IOTX_CM_CLOUD_DOMAIN_SH,
+    IOTX_CM_CLOUD_DOMAIN_ShangHai,
 
-    /* USA */
-    IOTX_CM_CLOUD_DOMAIN_USA,
+    /* Singapore */
+    IOTX_CM_CLOUD_DOMAIN_Singapore,
 
     /* Maximum number of domain */
     IOTX_CM_CLOUD_DOMAIN_MAX
@@ -515,6 +515,32 @@ int IOT_CM_Add_Service(iotx_cm_add_service_param_t* service_param, void* option)
  * @return success or fail.
  */
 int IOT_CM_Remove_Service(iotx_cm_remove_service_param_t* service_param, void* option);
+
+
+/**
+ * @brief add sub-device.
+ *        This function used to add sub-device with sub-device's pk and dn.
+ *
+ * @param PK, product_key.
+ * @param DN, device_name.
+ * @param option, reserve.
+ *
+ * @return success or fail.
+ */
+int IOT_CM_Add_Sub_Device(const char* PK, const char* DN, void* option);
+
+
+/**
+ * @brief remove sub-device.
+ *        This function used to remove sub-device with sub-device's pk and dn.
+ *
+ * @param PK, product_key.
+ * @param DN, device_name.
+ * @param option, reserve.
+ *
+ * @return success or fail.
+ */
+int IOT_CM_Remove_Sub_Device(const char* PK, const char* DN, void* option);
 
 
 /**
