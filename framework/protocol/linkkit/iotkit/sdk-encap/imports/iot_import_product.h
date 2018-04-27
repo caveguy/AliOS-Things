@@ -121,4 +121,23 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN]);
  */
 char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN]);
 
+typedef struct _hal_wireless_info_t {
+    char band;               /*wireless band, 0: wifi 2.4G, 1: wifi 5G, ... */
+    unsigned short channel;  /* wireless channel. */
+    char rssi;               /* wireless RSSI, range of [-127 : -1]. */
+    unsigned char snr;       /* wireless SNR. */
+    char mac[6];             /* parent'mac, such as Ap's bssid. */
+    float tx_rate;           /* 0.25 : 250Kbps, 1: 1Mbps，2: 2Mbps，5.5: 5.5Mbps，...*/
+    float rx_rate;           /* 0.25 : 250Kbps, 1: 1Mbps，2: 2Mbps，5.5: 5.5Mbps，...*/
+} hal_wireless_info_t;
+/**
+ * @brief   获取无线信号信息
+ *
+ * @param   wireless_info : 存放获取无线信号信息的缓冲区
+ * @return  执行结果
+ *   0:  success
+ *   -1: failure
+ */
+int HAL_GetWirelessInfo(_OU_ hal_wireless_info_t *wireless_info);
+
 #endif  /* __IMPORT_PRODUCT_H__ */

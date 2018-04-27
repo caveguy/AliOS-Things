@@ -3,7 +3,7 @@ NAME := linkkitapp
 
 GLOBAL_DEFINES      +=  MQTT_DIRECT  ALIOT_DEBUG IOTX_DEBUG USE_LPTHREAD  FOTA_RAM_LIMIT_MODE  COAP_WITH_YLOOP
 
-$(NAME)_SOURCES     := linkkit-example.c linkkit_app.c linkkit_export.c lite_queue.c
+$(NAME)_SOURCES     := linkkit-example.c linkkit_app.c linkkit_export.c
 
 $(NAME)_COMPONENTS := protocol.linkkit.iotkit connectivity.mqtt fota netmgr framework.common  protocol.linkkit.cm protocol.linkkit.dm protocol.linkkit.alcs ywss4linkkit
 

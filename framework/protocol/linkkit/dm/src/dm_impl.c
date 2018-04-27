@@ -46,7 +46,7 @@ static void* dm_impl_ctor(void* _self, va_list* params)
 
     /* use sh as default domain. */
     if (self->_domain_type >= dm_cloud_domain_max) {
-        self->_domain_type = dm_cloud_domain_sh;
+        self->_domain_type = dm_cloud_domain_shanghai;
     }
 
     self->_thing_manager = new_object(DM_THING_MANAGER_CLASS, string_dm_impl_thing_manager_object_name, self->_get_tsl_from_cloud, linkkit_callback_fp, self->_domain_type);
@@ -95,7 +95,9 @@ static int dm_impl_set_event_output_value(void* _self, const void* thing_id, con
     thing_manager_t** thing_manager = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->set_thing_event_output_value && thing_id && identifier && (value || value_str));
-
+    if (strcmp(identifier, "post") == 0) {
+        return -1;
+    }
     return (*thing_manager)->set_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
 }
 
@@ -105,7 +107,9 @@ static int dm_impl_set_service_output_value(void* _self, const void* thing_id, c
     thing_manager_t** thing_manager = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->set_thing_service_output_value && thing_id && identifier && (value || value_str));
-
+    if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
+        return -1;
+    }
     return (*thing_manager)->set_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
 }
 
@@ -125,7 +129,9 @@ static int dm_impl_get_service_input_value(const void* _self, const void* thing_
     thing_manager_t** thing_manager = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_service_input_value && thing_id && identifier && (value || value_str));
-
+    if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
+        return -1;
+    }
     return (*thing_manager)->get_thing_service_input_value(thing_manager, thing_id, identifier, value, value_str);
 }
 
@@ -135,7 +141,9 @@ static int dm_impl_get_service_output_value(const void* _self, const void* thing
     thing_manager_t** thing_manager = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_service_output_value && thing_id && identifier && (value || value_str));
-
+    if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
+        return -1;
+    }
     return (*thing_manager)->get_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
 }
 
@@ -145,7 +153,9 @@ static int dm_impl_get_event_output_value(const void* _self, const void* thing_i
     const thing_manager_t** thing_manager = (const thing_manager_t**)self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_event_output_value && thing_id && identifier && (value || value_str));
-
+    if (strcmp(identifier, "post") == 0) {
+        return -1;
+    }
     return (*thing_manager)->get_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
 }
 
@@ -259,7 +269,7 @@ void dm_lite_free_func(void* ptr)
     return LITE_free_internal(ptr);
 }
 
-void dm_lite_free(void* ptr)
+void dm_lite_free(const void* ptr)
 {
     assert(ptr);
 
@@ -268,7 +278,44 @@ void dm_lite_free(void* ptr)
         return;
     }
 
-    LITE_free_internal(ptr);
+    LITE_free_internal((char*)ptr);
+}
+
+void dm_lltoa(long long n, char* str, int radix)
+{
+    int i, j;
+    long long remain;
+    unsigned long long n_abs;
+    char tmp_char;
+
+    i = 0;
+
+    if (n < 0) {
+        str[i] = '-';
+        str++;
+        n_abs = -1 * n;
+    } else {
+        n_abs = n;
+    }
+
+    do {
+        remain = n_abs % radix;
+        if(remain > 9)
+            str[i] = remain  - 10 + 'A';
+        else
+            str[i] = remain + '0';
+        i++;
+    } while(n_abs /= radix);
+
+    str[i] = '\0';
+
+    for(i-- , j = 0 ; j <= i ; j++ , i--)
+    {
+        tmp_char = str[j];
+        str[j] = str[i];
+        str[i] = tmp_char;
+    }
+    return;
 }
 
 #ifdef SUBDEV_ENABLE
@@ -282,17 +329,77 @@ int dm_impl_add_subdev_callback_function(void* _self, handle_dm_subdev_callback_
     return (*thing_manager)->add_subdev_callback_function(thing_manager, subdev_callback_func);
 }
 
-static void* dm_impl_generate_new_subthing(void* _self, const char* product_key, const char* device_name, const char* device_secret, const char* tsl, int tsl_len)
+static void* dm_impl_generate_new_subthing(void* _self, const char* product_key, const char* device_name, const char* tsl, int tsl_len)
 {
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
     void* thing = NULL;
 
-    assert(thing_manager && tsl && tsl_len > 0);
+    assert(thing_manager && *thing_manager && product_key && device_name);
 
-    thing = (*thing_manager)->generate_new_sub_thing(thing_manager, product_key, device_name, device_secret, tsl, tsl_len);
+    thing = (*thing_manager)->generate_new_sub_thing(thing_manager, product_key, device_name, tsl, tsl_len);
 
     return thing;
+}
+
+static int dm_impl_remove_subthing(void* _self, const void* sub_thing_id)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && sub_thing_id);
+
+    return (*thing_manager)->remove_sub_thing(thing_manager, sub_thing_id);
+}
+
+static int dm_impl_bind_sub_thing(void* _self, const char* pk, const char* dn, const char* ds)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && pk && dn);
+
+    return (*thing_manager)->bind_sub_thing(thing_manager, pk, dn, ds);
+}
+
+static int dm_impl_unbind_sub_thing(void* _self, const char* pk, const char* dn)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && pk && dn);
+
+    return (*thing_manager)->unbind_sub_thing(thing_manager, pk, dn);
+}
+
+static int dm_impl_login_sub_thing(void* _self, const void* sub_thing_id, const char* ds)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && sub_thing_id && ds);
+
+    return (*thing_manager)->login_sub_thing(thing_manager, sub_thing_id, ds);
+}
+
+static int dm_impl_logout_sub_thing(void* _self, const void* sub_thing_id)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && sub_thing_id);
+
+    return (*thing_manager)->logout_sub_thing(thing_manager, sub_thing_id);
+}
+
+static int dm_impl_topo_delete_subthing(void* _self, const void* sub_thing_id)
+{
+    dm_impl_t* self = _self;
+    thing_manager_t** thing_manager = self->_thing_manager;
+
+    assert(thing_manager && *thing_manager && sub_thing_id);
+
+    return (*thing_manager)->topo_delete_sub_thing(thing_manager, sub_thing_id);
 }
 #endif
 
@@ -304,6 +411,12 @@ static dm_t _dm_impl_class = {
     dm_impl_generate_new_thing,
 #ifdef SUBDEV_ENABLE
     dm_impl_generate_new_subthing,
+    dm_impl_remove_subthing,
+    dm_impl_bind_sub_thing,
+    dm_impl_unbind_sub_thing,
+    dm_impl_login_sub_thing,
+    dm_impl_logout_sub_thing,
+    dm_impl_topo_delete_subthing,
     dm_impl_add_subdev_callback_function,
 #endif
     dm_impl_set_property_value,

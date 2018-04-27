@@ -2,7 +2,7 @@
 #include <string.h>
 #include "iot_import.h"
 #include "iot_import_product.h"
-
+#include "iot_import_awss.h"
 //#define PID_STR_MAXLEN              (64)
 //#define MID_STR_MAXLEN              (64)
 //#define PRODUCT_KEY_MAXLEN          (20)
@@ -139,3 +139,15 @@ char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
     strncpy(cid_str, CHIP_ID, len);
     return NULL;
 }
+
+static hal_wireless_info_t hal_wireless_info =  {0, 1, -30, 30, {0x18, 0xFE, 0x34, 0x12, 0x34, 0x56}, 1, 1};
+
+int HAL_GetWirelessInfo(_OU_ hal_wireless_info_t *wireless_info)
+{
+    if (wireless_info) {
+        memcpy(wireless_info, &hal_wireless_info, sizeof(hal_wireless_info_t));
+    }
+
+    return 0;
+}
+
