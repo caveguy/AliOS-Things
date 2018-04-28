@@ -1089,7 +1089,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth
             adha_aplist->aplist[adha_aplist->cnt ++] = i;
     }
 
-    log_debug("[%d] ssid:%s, mac:%02x%02x%02x%02x%02x%02x, chn:%d, auth:%s, %s, %s, rssi:%d, adha:%d\r\n",
+    awss_debug("[%d] ssid:%s, mac:%02x%02x%02x%02x%02x%02x, chn:%d, auth:%s, %s, %s, rssi:%d, adha:%d\r\n",
         i, ssid, bssid[0], bssid[1], bssid[2],
         bssid[3], bssid[4], bssid[5], channel,
         zconfig_auth_str(auth),
@@ -1118,7 +1118,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth
  *  < 0, error
  *
  */
-static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, char rssi)
+static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, signed char rssi)
 {
     u8 ssid[ZC_MAX_SSID_LEN] = {0}, bssid[ETH_ALEN] = {0};
     int ret1, ret2, channel;
@@ -1151,7 +1151,7 @@ static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, char rss
 
     if (strcmp((const char *)ssid, zc_default_ssid) == 0 ||
         strcmp((const char *)ssid, zc_adha_ssid) == 0 ||
-        rssi > (char)WIFI_RX_SENSITIVITY) {
+        (rssi > (signed char)WIFI_RX_SENSITIVITY)) {
         cfg80211_get_cipher_info(data, len, &auth, &pairwise_cipher, &group_cipher);
         __zconfig_save_apinfo(ssid, bssid, channel, auth,
                               pairwise_cipher, group_cipher, rssi);
