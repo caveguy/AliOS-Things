@@ -1469,10 +1469,9 @@ static void dm_cm_register_handler_clear_message_info(iotx_cm_message_info_t* _c
 {
     iotx_cm_message_info_t* cm_message_info = _cm_message_info;
 
-    if (cm_message_info->URI) {
-        dm_lite_free(cm_message_info->URI);
-        cm_message_info->URI = NULL;
-    }
+    dm_lite_free(cm_message_info->URI);
+    cm_message_info->URI = NULL;
+		
     if (cm_message_info->method) {
         dm_lite_free(cm_message_info->method);
         cm_message_info->method = NULL;
@@ -2543,7 +2542,7 @@ static void install_property_to_message_info(void* _item, int index, va_list* pa
                         dm_snprintf(property_key_value_buff + params_val_len, params_buffer_len - params_val_len, "\"%s\":%s}",
                                     struct_lite_property->identifier, dm_thing_manager->_get_value_str);
 
-                        if (q) dm_lite_free(q);
+                        if (q) {dm_lite_free(q);q = NULL;};
                     }
                 }
 

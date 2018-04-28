@@ -105,10 +105,14 @@ static void* dm_thing_ctor(void* _self, va_list* params)
 static void* dm_thing_dtor(void* _self)
 {
     dm_thing_t* self = _self;
-
+	
     property_iterator((thing_t*)self, free_item_memory, string_property, self->tsl_template.property_number);
     event_iterator((thing_t*)self, free_item_memory, string_event, self->tsl_template.event_number);
     service_iterator((thing_t*)self, free_item_memory, string_service, self->tsl_template.service_number);
+
+	if (self->_name) {
+		dm_lite_free(self->_name);
+	}
 
     if (self->tsl_template.schema) {
         dm_lite_free(self->tsl_template.schema);
@@ -3167,8 +3171,9 @@ static void free_lite_property(void* _lite_property)
         if (lite_property->name) {
             dm_lite_free(lite_property->name);
         }
+		
+		property_free_data_type_info(&lite_property->data_type);
     }
-    property_free_data_type_info(&lite_property->data_type);
 }
 
 static void free_input_data(void* _input_data, service_type_t service_type)
