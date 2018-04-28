@@ -520,7 +520,7 @@ static void install_cjson_item_data_type(void* dst, const char* key, const char*
         data_type->type_str = dm_lite_calloc(1, size);
         if (!data_type->type_str) return;
         memset(data_type->type_str, 0, size);
-        strncpy(data_type->type_str, dm_val, size - 1);
+        strncpy(data_type->type_str, dm_val, dm_len);
         data_type->type = detect_data_type_type(data_type->type_str);
     }
 

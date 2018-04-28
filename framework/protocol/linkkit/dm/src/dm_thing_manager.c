@@ -1492,6 +1492,8 @@ static void dm_cm_register_handler_message_type_process(dm_thing_manager_t* _dm_
     iotx_cm_message_info_t* cm_message_info = _cm_message_info;
     thing_t** thing = dm_thing_manager->_thing_id;
 
+	if (!thing) return;
+	
     if (cm_message_info->message_type == IOTX_CM_MESSAGE_REQUEST) {
         dm_thing_manager->_request_id = cm_message_info->id;
 
@@ -1832,6 +1834,8 @@ static void generate_thing_event_service_subscribe_uri(void* _item, int index, v
     int rrpc = 1;
 #endif
 
+	if (!_item) return;
+	
     dm_thing_manager = va_arg(*params, void*);
     thing = va_arg(*params, void*);
     uri_buff = va_arg(*params, char*);
@@ -2651,6 +2655,9 @@ static void handle_service_key_value(void* _item, int index, va_list* params)
 #ifdef RRPC_NEW
     char rrpc_message_id[24] = {0};
 #endif
+
+	if (!_item) return;
+
     dm_thing_manager = va_arg(*params, void*);
     message_info = va_arg(*params, message_info_t**);
     thing = va_arg(*params, thing_t**);
