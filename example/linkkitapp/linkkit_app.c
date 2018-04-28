@@ -73,6 +73,8 @@ static int on_connect(void* ctx)
 {
     sample_context_t* sample_ctx = ctx;
 
+    ota_init();
+
 #ifdef LOCAL_CONN_ENABLE
     if (cloud) {
         sample_ctx->cloud_connected = 1;
@@ -86,7 +88,7 @@ static int on_connect(void* ctx)
     LINKKIT_PRINTF("%s is connected\n", "cloud");
 	aos_post_event(EV_YUNIO, CODE_YUNIO_ON_CONNECTED, 0);
 #endif
-
+    
     return 0;
 }
 
