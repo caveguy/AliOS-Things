@@ -88,7 +88,7 @@ static int on_connect(void* ctx)
     LINKKIT_PRINTF("%s is connected\n", "cloud");
 	aos_post_event(EV_YUNIO, CODE_YUNIO_ON_CONNECTED, 0);
 #endif
-    
+
     return 0;
 }
 
