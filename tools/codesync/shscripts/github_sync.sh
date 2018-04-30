@@ -1,7 +1,15 @@
 #!/bin/sh
 
 version=1.3.0
-GITHUB_HEAD_SHA=14f23d03db1363dc1bd71382b0f18affeb3ef78e
+GITHUB_HEAD_SHA=b3200a97204faadac12c484b5a7d968a0b2f9947
+
+if [ $# -gt 0 ]; then
+    version=$1
+fi
+
+if [ $# -gt 1 ]; then
+    GITHUB_HEAD_SHA=$2
+fi
 
 aosdir=${HOME}/githubsync/aos
 githubdir=${HOME}/githubsync/AliOS
