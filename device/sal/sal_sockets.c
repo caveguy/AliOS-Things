@@ -2098,6 +2098,8 @@ int sal_setsockopt(int s, int level, int optname,
                     break;
                 case IP_MULTICAST_LOOP:
                     break;
+                case IP_ADD_MEMBERSHIP:
+                    break;
                 default:
                     SAL_DEBUG("sal_setsockopt(%d, SOL_SOCKET:, UNIMPL: "
                               "optname=0x%x, ..)\n", s, optname);
