@@ -247,8 +247,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
     DBG_LINKWAN( "rssi = %d, snr = %d, datarate = %d\r\n", mcpsIndication->Rssi, mcpsIndication->Snr,
                  mcpsIndication->RxDatarate);
 
-    if ( mcpsIndication->RxData == true )
-    {
+    if (mcpsIndication->RxData == true) {
         switch ( mcpsIndication->Port )
         {
             case 224:
@@ -260,6 +259,9 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
                 app_callbacks->LoraRxData(&app_data);
                 break;
         }
+    } else if (mcpsIndication->AckReceived) {
+        app_data.BuffSize = 0;
+        app_callbacks->LoraRxData(&app_data);
     }
 }
 
