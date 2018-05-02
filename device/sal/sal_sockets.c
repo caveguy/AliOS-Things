@@ -1388,7 +1388,7 @@ int sal_sendto(int s, const void *data, size_t size, int flags,
         aos_free(buf->payload);
         aos_free(buf);
         SAL_ERROR("%s try post output packet fail \n", __FUNCTION__);
-        return -1;
+        //return -1;
     }
     sal_deal_event(s, NETCONN_EVT_SENDMINUS);
 #else
