@@ -151,40 +151,32 @@ static void mcps_confirm(McpsConfirm_t *mcpsConfirm)
 {
     if (mcpsConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK) {
         switch (mcpsConfirm->McpsRequest) {
-            case MCPS_UNCONFIRMED:
-            {
+            case MCPS_UNCONFIRMED: {
                 // Check Datarate
                 // Check TxPower
                 break;
             }
-            case MCPS_CONFIRMED:
-            {
+            case MCPS_CONFIRMED: {
                 // Check Datarate
                 // Check TxPower
                 // Check AckReceived
                 // Check NbTrials
                 break;
             }
-            case MCPS_PROPRIETARY:
-            {
+            case MCPS_PROPRIETARY: {
                 break;
             }
             default:
                 break;
         }
-    }
-    else
-    {
-        switch( mcpsConfirm->McpsRequest )
-        {
-            case MCPS_UNCONFIRMED:
-            {
+    } else {
+        switch ( mcpsConfirm->McpsRequest ) {
+            case MCPS_UNCONFIRMED: {
                 // Check Datarate
                 // Check TxPower
                 break;
             }
-            case MCPS_CONFIRMED:
-            {
+            case MCPS_CONFIRMED: {
                 // Check Datarate
                 // Check TxPower
                 // Check AckReceived
@@ -195,8 +187,7 @@ static void mcps_confirm(McpsConfirm_t *mcpsConfirm)
                 DBG_LINKWAN("Not receive Ack,Start to Join...\r\n");
                 break;
             }
-            case MCPS_PROPRIETARY:
-            {
+            case MCPS_PROPRIETARY: {
                 break;
             }
             default:
@@ -208,27 +199,21 @@ static void mcps_confirm(McpsConfirm_t *mcpsConfirm)
 
 static void McpsIndication(McpsIndication_t *mcpsIndication)
 {
-    if ( mcpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK )
-    {
+    if ( mcpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ) {
         return;
     }
 
-    switch ( mcpsIndication->McpsIndication )
-    {
-        case MCPS_UNCONFIRMED:
-            {
+    switch ( mcpsIndication->McpsIndication ) {
+        case MCPS_UNCONFIRMED: {
             break;
         }
-        case MCPS_CONFIRMED:
-            {
+        case MCPS_CONFIRMED: {
             break;
         }
-        case MCPS_PROPRIETARY:
-            {
+        case MCPS_PROPRIETARY: {
             break;
         }
-        case MCPS_MULTICAST:
-            {
+        case MCPS_MULTICAST: {
             DBG_LINKWAN( "MCPS_MULTICAST\n" );
             break;
         }
@@ -249,8 +234,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
                  mcpsIndication->RxDatarate);
 
     if (mcpsIndication->RxData == true) {
-        switch ( mcpsIndication->Port )
-        {
+        switch ( mcpsIndication->Port ) {
             case 224:
                 break;
             default:
@@ -282,10 +266,8 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
 {
     uint32_t rejoin_delay;
 
-    switch ( mlmeConfirm->MlmeRequest )
-    {
-        case MLME_JOIN:
-        {
+    switch ( mlmeConfirm->MlmeRequest ) {
+        case MLME_JOIN: {
             if (mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK) {
                 // Status is OK, node has joined the network
                 device_state = DEVICE_STATE_JOINED;
@@ -305,10 +287,8 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
             }
             break;
         }
-        case MLME_LINK_CHECK:
-            {
-            if ( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
-            {
+        case MLME_LINK_CHECK: {
+            if ( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK ) {
                 // Check DemodMargin
                 // Check NbGateways
             }
@@ -348,38 +328,36 @@ static void print_dev_addr(void)
 #if (OVER_THE_AIR_ACTIVATION != 0)
     DBG_LINKWAN("OTAA\r\n" );
     DBG_LINKWAN("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
-                 g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
-                 g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
+                g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
+                g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
     DBG_LINKWAN("AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
-                 g_lora_dev.app_eui[0], g_lora_dev.app_eui[1], g_lora_dev.app_eui[2], g_lora_dev.app_eui[3], \
-                 g_lora_dev.app_eui[4], g_lora_dev.app_eui[5], g_lora_dev.app_eui[6], g_lora_dev.app_eui[7]);
+                g_lora_dev.app_eui[0], g_lora_dev.app_eui[1], g_lora_dev.app_eui[2], g_lora_dev.app_eui[3], \
+                g_lora_dev.app_eui[4], g_lora_dev.app_eui[5], g_lora_dev.app_eui[6], g_lora_dev.app_eui[7]);
     DBG_LINKWAN("AppKey= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
-                 g_lora_dev.app_key[0], g_lora_dev.app_key[1], g_lora_dev.app_key[2], g_lora_dev.app_key[3], \
-                 g_lora_dev.app_key[4], g_lora_dev.app_key[5], g_lora_dev.app_key[6], g_lora_dev.app_key[7], \
-                 g_lora_dev.app_key[8], g_lora_dev.app_key[9], g_lora_dev.app_key[10], g_lora_dev.app_key[11], \
-                 g_lora_dev.app_key[12], g_lora_dev.app_key[13], g_lora_dev.app_key[14], g_lora_dev.app_key[15]);
+                g_lora_dev.app_key[0], g_lora_dev.app_key[1], g_lora_dev.app_key[2], g_lora_dev.app_key[3], \
+                g_lora_dev.app_key[4], g_lora_dev.app_key[5], g_lora_dev.app_key[6], g_lora_dev.app_key[7], \
+                g_lora_dev.app_key[8], g_lora_dev.app_key[9], g_lora_dev.app_key[10], g_lora_dev.app_key[11], \
+                g_lora_dev.app_key[12], g_lora_dev.app_key[13], g_lora_dev.app_key[14], g_lora_dev.app_key[15]);
 #else
     DBG_LINKWAN("ABP\r\n");
     DBG_LINKWAN("DevAdd=  %08X\n\r", DevAddr);
     DBG_LINKWAN("DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n",
-                 g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
-                 g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
+                g_lora_dev.dev_eui[0], g_lora_dev.dev_eui[1], g_lora_dev.dev_eui[2], g_lora_dev.dev_eui[3], \
+                g_lora_dev.dev_eui[4], g_lora_dev.dev_eui[5], g_lora_dev.dev_eui[6], g_lora_dev.dev_eui[7]);
     DBG_LINKWAN("NwkSKey= %02X", NwkSKey[0]);
-    for (int i = 1; i < 16; i++)
-    {
+    for (int i = 1; i < 16; i++) {
         DBG_LINKWAN(" %02X", NwkSKey[i]);
     };
     DBG_LINKWAN("\r\n");
     DBG_LINKWAN("AppSKey= %02X", AppSKey[0]);
-    for (int i = 1; i < 16; i++)
-    {
+    for (int i = 1; i < 16; i++) {
         DBG_LINKWAN(" %02X", AppSKey[i]);
     };
     DBG_LINKWAN("\r\n");
 #endif
 
     DBG_LINKWAN("class type %s\r\n", get_class_name(g_lora_dev.class));
-    DBG_LINKWAN("freq type %s\r\n", g_freq_type == FREQ_TYPE_INTER? "inter": "intra");
+    DBG_LINKWAN("freq type %s\r\n", g_freq_type == FREQ_TYPE_INTER ? "inter" : "intra");
 }
 
 void lora_fsm( void )
@@ -393,8 +371,7 @@ void lora_fsm( void )
 
     while (1) {
         switch (device_state) {
-            case DEVICE_STATE_INIT:
-            {
+            case DEVICE_STATE_INIT: {
                 LoRaMacPrimitives.MacMcpsConfirm = mcps_confirm;
                 LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
                 LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
@@ -475,13 +452,15 @@ void lora_fsm( void )
                 LoRaMacChannelAdd(9, (ChannelParams_t)LC10);
 
                 mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
-                mibReq.Param.Rx2DefaultChannel = (Rx2ChannelParams_t)
-                {   869525000, DR_3};
+                mibReq.Param.Rx2DefaultChannel = (Rx2ChannelParams_t) {
+                    869525000, DR_3
+                };
                 LoRaMacMibSetRequestConfirm(&mibReq);
 
                 mibReq.Type = MIB_RX2_CHANNEL;
-                mibReq.Param.Rx2Channel = (Rx2ChannelParams_t)
-                {   869525000, DR_3};
+                mibReq.Param.Rx2Channel = (Rx2ChannelParams_t) {
+                    869525000, DR_3
+                };
                 LoRaMacMibSetRequestConfirm(&mibReq);
 #endif
 
@@ -490,8 +469,7 @@ void lora_fsm( void )
                 break;
             }
 
-            case DEVICE_STATE_JOIN:
-            {
+            case DEVICE_STATE_JOIN: {
 #if (OVER_THE_AIR_ACTIVATION != 0)
                 MlmeReq_t mlmeReq;
 
@@ -514,7 +492,7 @@ void lora_fsm( void )
                         next_tx = false;
                     }
                     DBG_LINKWAN("Start to Join, method %d, nb_trials:%d\r\n",
-                                 g_join_method, mlmeReq.Req.Join.NbTrials);
+                                g_join_method, mlmeReq.Req.Join.NbTrials);
                 }
                 device_state = DEVICE_STATE_SLEEP;
 #else
@@ -542,21 +520,18 @@ void lora_fsm( void )
 #endif
                 break;
             }
-            case DEVICE_STATE_JOINED:
-            {
+            case DEVICE_STATE_JOINED: {
                 DBG_LINKWAN("Joined\n\r");
                 store_lora_config();
                 device_state = DEVICE_STATE_SEND;
                 break;
             }
-            case DEVICE_STATE_SEND:
-            {
+            case DEVICE_STATE_SEND: {
                 if (next_tx == true) {
                     prepare_tx_frame();
                     next_tx = send_frame();
                 }
-                if ( lora_param.TxEvent == TX_ON_TIMER )
-                {
+                if ( lora_param.TxEvent == TX_ON_TIMER ) {
                     // Schedule next packet transmission
                     TimerSetValue(&TxNextPacketTimer, lora_param.TxDutyCycleTime);
                     TimerStart(&TxNextPacketTimer);
@@ -564,16 +539,14 @@ void lora_fsm( void )
                 device_state = DEVICE_STATE_SLEEP;
                 break;
             }
-            case DEVICE_STATE_SLEEP:
-            {
+            case DEVICE_STATE_SLEEP: {
                 // Wake up through events
 #ifndef LOW_POWER_DISABLE
                 LowPower_Handler( );
 #endif
                 break;
             }
-            default:
-            {
+            default: {
                 device_state = DEVICE_STATE_INIT;
                 break;
             }
