@@ -21,7 +21,6 @@
 static void LoraTxData(lora_AppData_t *AppData);
 static void LoraRxData(lora_AppData_t *AppData);
 uint32_t g_msg_index = 0;
-uint32_t g_ack_index = 0;
 
 static LoRaMainCallback_t LoRaMainCallbacks = {
     HW_GetBatteryLevel,
@@ -65,7 +64,5 @@ static void LoraRxData(lora_AppData_t *AppData)
 {
     if (AppData->BuffSize > 0) {
         DBG_LINKWAN( "rx, port %d, size %d\r\n", AppData->Port, AppData->BuffSize);
-    } else if (AppData->BuffSize == 0) {
-        DBG_LINKWAN( "rx, ACK, index %d\r\n", g_ack_index++);
     }
 }

@@ -26,6 +26,7 @@ static int8_t is_tx_confirmed = ENABLE;
 static bool next_tx = true;
 static uint8_t num_trials = 8;
 static bool rejoin_flag = true;
+static uint32_t g_ack_index = 0;
 
 static LoRaParam_t lora_param = {
     TX_ON_TIMER,
@@ -259,9 +260,10 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
                 app_callbacks->LoraRxData(&app_data);
                 break;
         }
+#ifdef CONFIG_DEBUG_LINKWAN
     } else if (mcpsIndication->AckReceived) {
-        app_data.BuffSize = 0;
-        app_callbacks->LoraRxData(&app_data);
+        DBG_LINKWAN( "rx, ACK, index %d\r\n", g_ack_index++);
+#endif
     }
 }
 
