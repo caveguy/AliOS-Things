@@ -1387,10 +1387,12 @@ int sal_sendto(int s, const void *data, size_t size, int flags,
     if(sal_mbox_trypost(&pstsalsock->conn->sendmbox, buf) != ERR_OK){
         aos_free(buf->payload);
         aos_free(buf);
+        sock_set_errno(pstsalsock, EAGAIN);
         SAL_ERROR("%s try post output packet fail \n", __FUNCTION__);
         //return -1;
+    } else {
+        sal_deal_event(s, NETCONN_EVT_SENDMINUS);
     }
-    sal_deal_event(s, NETCONN_EVT_SENDMINUS);
 #else
     sal_deal_event(s, NETCONN_EVT_SENDMINUS);
     if (sal_module_send(s, (uint8_t *)data, size, NULL, -1, pstsalsock->conn->send_timeout)){
