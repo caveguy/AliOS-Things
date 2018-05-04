@@ -128,7 +128,7 @@ cp -f ${aosdir}/framework/ywss/awss.h ${githubdir}/framework/ywss/
 rm -rf ${githubdir}/framework/ywss4linkkit/*
 cp -f ${aosdir}/framework/ywss4linkkit/libywss/os/os.h ${githubdir}/framework/ywss4linkkit/
 cp -f ${aosdir}/framework/ywss4linkkit/libywss/os/product/product.h ${githubdir}/framework/ywss4linkkit/
-cp -f ${branch_specific_files}/ywss4linkkit.mk ${githubdir}/framework/ywss4linkkit/
+cp -f $(aosdir)/framework/ywss4linkkit/libywss/libywss.mk.b ${githubdir}/framework/ywss4linkkit/ywss4linkkit.mk
 
 #mesh folder
 rm -rf ${githubdir}/kernel/protocols/mesh/*
