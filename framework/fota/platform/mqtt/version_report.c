@@ -218,12 +218,11 @@ static int get_hex_version(char *str,char hex[4])
     ACT_LOGD("cur str=%s",p);
 
     q=strtok(p,".");
-    for(i=0;i<3;i++)
+    for(i=0;i<4;i++)
    {
         if( q == NULL)
         {
-            ACT_LOGE("get_hex_version err i=%d",i);
-            return -1;
+            break;
         }
         else
         {
@@ -249,8 +248,8 @@ static void produce_random(unsigned char *random, unsigned int len)
 int version_report()
 {
     int ret=0;
-    uint8_t mac[8];
-    uint8_t version[4];
+    uint8_t mac[8]={0};
+    uint8_t version[4]={0};
     uint8_t random_num[4];
     uint8_t chip_code[4]={0};
     char output[ACTIVE_INFO_LEN]={0};
