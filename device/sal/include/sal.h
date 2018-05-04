@@ -80,7 +80,7 @@ typedef struct sal_op_s {
     int (*send)(int fd, uint8_t *data, uint32_t len,
                 char remote_ip[16], int32_t remote_port, int32_t timeout);
 
-    int (*recv)(int fd, uint8_t *data, uint32_t len, 
+    int (*recv)(int fd, uint8_t *data, uint32_t len,
                 char remote_ip[16], int32_t remote_port);
 
     /**
@@ -167,8 +167,8 @@ int sal_module_start(sal_conn_t *conn);
  *
  * @return  0 - success, -1 - failure
  */
-int sal_module_send(int fd, uint8_t *data, uint32_t len, char remote_ip[16], 
-                        int32_t remote_port, int32_t timeout);
+int sal_module_send(int fd, uint8_t *data, uint32_t len, char remote_ip[16],
+                    int32_t remote_port, int32_t timeout);
 
 /**
  * Get IP information of the corresponding domain.
