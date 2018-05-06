@@ -814,7 +814,7 @@ static void smart_config_stop(void)
     }
 
     printf("%s %d\r\n", __func__, __LINE__);
-    awss_stop();
+    //awss_stop();
 }
 
 static void smart_config_result_cb(int result, uint32_t ip)
