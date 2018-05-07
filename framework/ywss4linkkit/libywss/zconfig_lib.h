@@ -111,14 +111,14 @@ void zconfig_destroy(void);
     见enum _PKG_TYPE_结构体说明
 */
 int zconfig_recv_callback(void *pkt_data, u32 pkt_length, u8 channel,
-                          int link_type, int with_fcs, char rssi);
+                          int link_type, int with_fcs, signed char rssi);
 
 /*
  * save apinfo
  * 0 -- success, otherwise, failed.
  */
 int zconfig_set_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth,
-                       u8 pairwise_cipher, u8 group_cipher, char rssi);
+                       u8 pairwise_cipher, u8 group_cipher, signed char rssi);
 
 /* helper function, auth/encry type to string */
 const char *zconfig_auth_str(u8 auth);

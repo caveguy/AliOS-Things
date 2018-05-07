@@ -32,7 +32,7 @@ typedef struct _ap_info_ {
     enum AWSS_AUTH_TYPE auth;
     enum AWSS_ENC_TYPE encry;
     uint8_t channel;
-    char rssi;
+    signed char rssi;
     struct _ap_info_ *next;
 } alink_ap_info_t;
 
@@ -102,7 +102,7 @@ int cbScan(const char ssid[PLATFORM_MAX_SSID_LEN],
            const uint8_t bssid[ETH_ALEN],
            enum AWSS_AUTH_TYPE auth,
            enum AWSS_ENC_TYPE encry,
-           uint8_t channel, char rssi,
+           uint8_t channel, signed char rssi,
            int isLastAP)
 {
     alink_ap_info_t *p, *q;

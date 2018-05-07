@@ -1018,7 +1018,7 @@ struct ap_info *zconfig_get_apinfo_by_ssid_suffix(u8 *ssid_suffix)
  */
 
 static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth,
-                                        u8 pairwise_cipher, u8 group_cipher, char rssi)
+                                        u8 pairwise_cipher, u8 group_cipher, signed char rssi)
 {
     int i;
 
@@ -1118,7 +1118,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth
  *  < 0, error
  *
  */
-static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, char rssi)
+static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, signed char rssi)
 {
     u8 ssid[ZC_MAX_SSID_LEN] = {0}, bssid[ETH_ALEN] = {0};
     int ret1, ret2, channel;
@@ -1151,7 +1151,7 @@ static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, char rss
 
     if (strcmp((const char *)ssid, zc_default_ssid) == 0 ||
         strcmp((const char *)ssid, zc_adha_ssid) == 0 ||
-        rssi > (char)WIFI_RX_SENSITIVITY) {
+        rssi > (signed char)WIFI_RX_SENSITIVITY) {
         cfg80211_get_cipher_info(data, len, &auth, &pairwise_cipher, &group_cipher);
         __zconfig_save_apinfo(ssid, bssid, channel, auth,
                               pairwise_cipher, group_cipher, rssi);
@@ -1224,7 +1224,7 @@ uint8_t zconfig_get_press_status()
  *     0/success, -1/invalid params
  */
 int zconfig_set_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth,
-                       u8 pairwise_cipher, u8 group_cipher, char rssi)
+                       u8 pairwise_cipher, u8 group_cipher, signed char rssi)
 {
     return __zconfig_save_apinfo(ssid, bssid, channel,
             auth, pairwise_cipher, group_cipher, rssi);
@@ -1329,7 +1329,7 @@ do {\
  *
  * @Note: howto deal with radio SSI signal
  */
-int ieee80211_data_extract(u8 *in, int len, int link_type, struct parser_res *res, char rssi)
+int ieee80211_data_extract(u8 *in, int len, int link_type, struct parser_res *res, signed char rssi)
 {
     struct ieee80211_hdr *hdr;
     int hdrlen, fc, seq_ctrl, ret;

@@ -119,7 +119,7 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
            const uint8_t bssid[ETH_ALEN],
            enum AWSS_AUTH_TYPE auth,
            enum AWSS_ENC_TYPE encry,
-           uint8_t channel, char rssi,
+           uint8_t channel, signed char rssi,
            int last_ap)
 {
 #define ONE_AP_INFO_LEN_MAX           (141)

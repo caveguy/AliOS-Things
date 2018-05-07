@@ -50,7 +50,7 @@ extern "C"
 #define AWSS_REPORT_PKT_LEN     (512)
 #define AWSS_REPORT_PARAM_FMT   "{\"awssVer\":%s,\"type\":0,\"ssid\":\"%s\",\"bssid\":\"%s\",\"rssi\":%d,\"payload\":[\"%s\"]}"
 
-static void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, char rssi, int buffer_type);
+static void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, signed char rssi, int buffer_type);
 static void registrar_raw_frame_init(struct enrollee_info *enr);
 static void registrar_raw_frame_send(void);
 static void registrar_raw_frame_destroy(void);
@@ -529,7 +529,7 @@ REPORT_REPLY_FAIL:
     return -1;
 }
 
-int awss_report_enrollee(unsigned char *payload, int payload_len, char rssi)
+int awss_report_enrollee(unsigned char *payload, int payload_len, signed char rssi)
 {
     int i;
     char *payload_str = NULL;
@@ -652,7 +652,7 @@ static void enrollee_report(void)
 
 int enrollee_put(struct enrollee_info *in);
 
-int process_enrollee_ie(const uint8_t *ie, char rssi)
+int process_enrollee_ie(const uint8_t *ie, signed char rssi)
 {
     struct enrollee_info tmp_enrollee = {0};
     /* suppose enrollee_ie is complete */
@@ -796,7 +796,7 @@ extern const unsigned char *cfg80211_find_vendor_ie(
  * @see None.
  * @note None.
  */
-void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, char rssi, int buffer_type)
+void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, signed char rssi, int buffer_type)
 {
 #define MGMT_BEACON     (0x80)
 #define MGMT_PROBE_REQ  (0x40)
