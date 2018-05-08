@@ -7,7 +7,7 @@ extern "C" {
 
 #include "iot_export.h"
 #include "iot_export_cm.h"
-#include "iot_export_dm.h"
+#include "dm_impl_abstract.h"
 #include "iot_import.h"
 
 #define DM_THING_MANAGER_CLASS get_dm_thing_manager_class()

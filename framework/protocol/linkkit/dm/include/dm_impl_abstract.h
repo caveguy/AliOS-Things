@@ -1,5 +1,5 @@
-#ifndef DM_EXPORT_H
-#define DM_EXPORT_H
+#ifndef _DM_IMPL_ABSTRACT_H_
+#define _DM_IMPL_ABSTRACT_H_
 
 #ifdef __cplusplus
 extern "C" {
