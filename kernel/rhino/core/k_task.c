@@ -341,7 +341,7 @@ kstat_t task_suspend(ktask_t *task)
         case K_SUSPENDED:
         case K_SLEEP_SUSPENDED:
         case K_PEND_SUSPENDED:
-            if (task->suspend_count == (suspend_nested_t)-1) {
+            if (task->suspend_count == (suspend_nested_t) - 1) {
                 RHINO_CRITICAL_EXIT();
                 return RHINO_SUSPENDED_COUNT_OVF;
             }
@@ -733,6 +733,7 @@ kstat_t krhino_task_del(ktask_t *task)
     }
 
     if (task->prio == RHINO_IDLE_PRI) {
+        RHINO_CRITICAL_EXIT();
         return RHINO_TASK_DEL_NOT_ALLOWED;
     }
 
