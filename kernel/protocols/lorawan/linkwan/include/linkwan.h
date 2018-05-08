@@ -109,6 +109,9 @@ typedef enum eDevicState {
     DEVICE_STATE_SLEEP
 } DeviceState_t;
 
+bool set_lora_freqband_mask(uint16_t mask);
+uint16_t get_lora_freqband_mask(void);
+
 bool set_lora_dev_eui(uint8_t *eui);
 bool set_lora_app_eui(uint8_t *eui);
 bool set_lora_app_key(uint8_t *key);

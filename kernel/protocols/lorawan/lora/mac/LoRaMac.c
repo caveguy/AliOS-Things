@@ -1962,6 +1962,7 @@ static LoRaMacStatus_t ScheduleTx( void )
 #ifdef CONFIG_LINKWAN
     nextChan.joinmethod = LoRaMacParams.method;
     nextChan.freqband = LoRaMacParams.freqband;
+    nextChan.update_freqband = LoRaMacParams.update_freqband;
 #endif
 
     // Select channel
@@ -1975,6 +1976,7 @@ static LoRaMacStatus_t ScheduleTx( void )
 
 #ifdef CONFIG_LINKWAN
     LoRaMacParams.freqband = nextChan.freqband;
+    LoRaMacParams.update_freqband = nextChan.update_freqband;
 #endif
 
     // Compute Rx1 windows parameters
@@ -3219,6 +3221,7 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t *mlmeRequest )
             altDr.datarate = mlmeRequest->Req.Join.datarate;
             LoRaMacParams.method = altDr.joinmethod;
             LoRaMacParams.freqband = mlmeRequest->Req.Join.freqband;
+            LoRaMacParams.update_freqband = true;
 #endif
             LoRaMacParams.ChannelsDatarate = RegionAlternateDr( LoRaMacRegion, &altDr );
 

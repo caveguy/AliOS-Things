@@ -38,9 +38,6 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 
 // Definitions
 #define CHANNELS_MASK_SIZE 1
-
-uint16_t LoRaMacFreqBandMask = 0xffff;
-
 #define RADIO_WAKEUP_TIME 2
 
 // Global attributes
@@ -70,7 +67,7 @@ static uint16_t ChannelsMask[CHANNELS_MASK_SIZE];
 static uint16_t ChannelsDefaultMask[CHANNELS_MASK_SIZE];
 
 uint8_t NumFreqBand;
-uint8_t FreqBandNum[1 + 16] = {0};
+uint8_t FreqBandNum[16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0, 8, 16, 24, 100, 108, 116, 124, 68, 76, 84, 92, 166, 174, 182, 190};
 uint8_t NextAvailableFreqBandIdx;
 uint8_t InterFreqRx2Chan[16] = {75, 83, 91, 99, 173, 181, 189, 197, 7, 15, 23, 31, 107, 115, 123, 131};
@@ -339,15 +336,14 @@ void RegionCN470AInitDefaults( InitType_t type )
             //set default freqband = 1A2(No.=1,471.9Mhz)
             NumFreqBand = 1;
             FreqBandNum[0] = 1; //1A2
-            NextAvailableFreqBandIdx = 1;
+            NextAvailableFreqBandIdx = 0;
 
             //save other freqband from mask
-            for( uint8_t i = 0; i < 16; i++ ) {
-                if( ( LoRaMacFreqBandMask & ( 1 << i ) ) != 0 ) {
+            for (uint8_t i = 0; i < 16; i++) {
+                if ((get_lora_freqband_mask() & (1 << i)) != 0 && i != 1) {
                     FreqBandNum[NumFreqBand++] = i;
                 }
             }
-
             break;
         }
         case INIT_TYPE_RESTORE:
@@ -668,8 +664,8 @@ bool RegionCN470ATxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTim
 
     *txPower = txConfig->TxPower;
 
-    DBG_LINKWAN("Tx, Freq: %d,DR: %d, len: %d, duration %d, at %d\r\n",
-                 frequency, txConfig->Datarate, txConfig->PktLen, *txTimeOnAir, curTime);
+    DBG_LINKWAN("Tx, Band %d, Freq: %d,DR: %d, len: %d, duration %d, at %d\r\n",
+                 TxFreqBandNum, frequency, txConfig->Datarate, txConfig->PktLen, *txTimeOnAir, curTime);
     return true;
 }
 
@@ -948,49 +944,6 @@ bool RegionCN470ANextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
     TimerTime_t nextTxDelay = 0;
     MibRequestConfirm_t mib_req;
     static uint8_t RxFreqBandNum = 0;
-    uint8_t band_index = 0;
-
-    mib_req.Type = MIB_NETWORK_JOINED;
-    LoRaMacMibGetRequestConfirm(&mib_req);
-
-    if (mib_req.Param.IsNetworkJoined == false) {
-        if (nextChanParams->joinmethod == STORED_JOIN_METHOD) {
-            if (nextChanParams->freqband > 15) {
-                nextChanParams->freqband = 1;  // reset to defautl value
-            }
-            TxFreqBandNum = nextChanParams->freqband;
-        } else {
-            if (nextChanParams->joinmethod == SCAN_JOIN_METHOD) {
-                band_index = NextAvailableFreqBandIdx;
-                NextAvailableFreqBandIdx++;
-                if (NextAvailableFreqBandIdx >= NumFreqBand) {
-                    NextAvailableFreqBandIdx = 1;
-                }
-            }
-            TxFreqBandNum = FreqBandNum[band_index];
-        }
-    }
-
-    if(get_lora_freq_type() == FREQ_TYPE_INTER) {
-        if(FreqBandNum[band_index] > 7) {
-            RxFreqBandNum = TxFreqBandNum - 8;
-        } else {
-            RxFreqBandNum = TxFreqBandNum + 8;
-        }
-    } else { //IntraFreq
-        RxFreqBandNum = TxFreqBandNum;
-    }
-
-    nextChanParams->freqband = TxFreqBandNum;
-    nextChanParams->NextAvailableRxFreqBandNum = RxFreqBandNum;
-    nextChanParams->NextAvailableTxFreqBandNum = TxFreqBandNum;
-
-    //update the freq due to the change of FreqBand Num
-    for( uint8_t i = 0; i < CN470A_MAX_NB_CHANNELS; i++ )
-    {
-        Channels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableRxFreqBandNum]+i) * 200000;
-        TxChannels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableTxFreqBandNum]+i) * 200000;
-    }
 
     if (RegionCommonCountChannels( ChannelsMask, 0, 1) == 0 ) { // Reactivate default channels
         ChannelsMask[0] |= LC( 1 ) + LC( 2 ) + LC( 3 );
@@ -1018,9 +971,7 @@ bool RegionCN470ANextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
     {
         // We found a valid channel
         *channel = enabledChannels[randr( 0, nbEnabledChannels - 1 )];
-
         *time = 0;
-        return true;
     }
     else
     {
@@ -1035,6 +986,52 @@ bool RegionCN470ANextChannel( NextChanParams_t* nextChanParams, uint8_t* channel
         *time = 0;
         return false;
     }
+
+    mib_req.Type = MIB_NETWORK_JOINED;
+    LoRaMacMibGetRequestConfirm(&mib_req);
+
+    if (mib_req.Param.IsNetworkJoined == false) {
+        if (nextChanParams->joinmethod == STORED_JOIN_METHOD) {
+            if (nextChanParams->freqband > 15) {
+                nextChanParams->freqband = 1;  // reset to defautl value
+            }
+            TxFreqBandNum = nextChanParams->freqband;
+        } else {
+            if (nextChanParams->joinmethod == SCAN_JOIN_METHOD && nextChanParams->update_freqband) {
+                NextAvailableFreqBandIdx++;
+                if (NextAvailableFreqBandIdx >= NumFreqBand) {
+                    NextAvailableFreqBandIdx = 0;
+                }
+            } else if (nextChanParams->joinmethod == DEF_JOIN_METHOD) {
+                NextAvailableFreqBandIdx = 0;
+            }
+            nextChanParams->update_freqband = false;
+            TxFreqBandNum = FreqBandNum[NextAvailableFreqBandIdx];
+        }
+    }
+
+    if(get_lora_freq_type() == FREQ_TYPE_INTER) {
+        if(FreqBandNum[NextAvailableFreqBandIdx] > 7) {
+            RxFreqBandNum = TxFreqBandNum - 8;
+        } else {
+            RxFreqBandNum = TxFreqBandNum + 8;
+        }
+    } else { //IntraFreq
+        RxFreqBandNum = TxFreqBandNum;
+    }
+
+    nextChanParams->freqband = TxFreqBandNum;
+    nextChanParams->NextAvailableRxFreqBandNum = RxFreqBandNum;
+    nextChanParams->NextAvailableTxFreqBandNum = TxFreqBandNum;
+
+    //update the freq due to the change of FreqBand Num
+    for( uint8_t i = 0; i < CN470A_MAX_NB_CHANNELS; i++ )
+    {
+        Channels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableRxFreqBandNum]+i) * 200000;
+        TxChannels[i].Frequency = 470300000 + (FreqBandStartChannelNum[nextChanParams->NextAvailableTxFreqBandNum]+i) * 200000;
+    }
+
+    return true;
 }
 
 LoRaMacStatus_t RegionCN470AChannelAdd( ChannelAddParams_t* channelAdd )

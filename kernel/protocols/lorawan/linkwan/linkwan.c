@@ -28,6 +28,9 @@ static uint8_t num_trials = 8;
 static bool rejoin_flag = true;
 static uint32_t g_ack_index = 0;
 
+static uint16_t g_freqband_mask = 0xffff;
+static uint8_t g_freqband_num = 0;
+
 static LoRaParam_t lora_param = {
     TX_ON_TIMER,
     APP_TX_DUTYCYCLE,
@@ -101,7 +104,6 @@ static void on_tx_next_packet_timer_event(void)
             rejoin_flag = true;
             device_state = DEVICE_STATE_JOIN;
         }
-        next_tx = true;
     }
 }
 
@@ -262,6 +264,14 @@ static uint32_t generate_rejoin_delay(void)
     return rejoin_delay;
 }
 
+static uint8_t get_freqband_num(void) {
+    for (uint8_t i = 0; i < 16; i++) {
+        if ((get_lora_freqband_mask() & (1 << i)) && i != 1) {
+            g_freqband_num++;
+        }
+    }
+}
+
 static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
 {
     uint32_t rejoin_delay;
@@ -277,9 +287,18 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
                 if (g_join_method != SCAN_JOIN_METHOD) {
                     g_join_method = (g_join_method + 1) % JOIN_METHOD_NUM;
                     rejoin_delay = generate_rejoin_delay();
+                    if (g_join_method == SCAN_JOIN_METHOD) {
+                        get_freqband_num();
+                    }
                 } else {
-                    g_join_method = DEF_JOIN_METHOD;
-                    rejoin_delay = 60 * 60 * 1000;  // 1 hour
+                    g_freqband_num--;
+                    if (g_freqband_num == 0) {
+                        g_join_method = DEF_JOIN_METHOD;
+                        rejoin_delay = 60 * 60 * 1000;  // 1 hour
+                        DBG_LINKWAN("Wait 1 hour for new round of scan\r\n");
+                    } else {
+                        rejoin_delay = generate_rejoin_delay();
+                    }
                 }
                 TimerSetValue(&TxNextPacketTimer, rejoin_delay);
                 TimerStart(&TxNextPacketTimer);
@@ -481,8 +500,8 @@ void lora_fsm( void )
                 mlmeReq.Req.Join.method = g_join_method;
                 if (g_join_method == STORED_JOIN_METHOD) {
                     mlmeReq.Req.Join.freqband = g_lora_config.freqband;
-                    mlmeReq.Req.Join.NbTrials = 3;
                     mlmeReq.Req.Join.datarate = g_lora_config.datarate;
+                    mlmeReq.Req.Join.NbTrials = 3;
                 } else {
                     mlmeReq.Req.Join.NbTrials = 2;
                 }
@@ -739,4 +758,16 @@ bool set_lora_app_key(uint8_t *key)
 uint8_t *get_lora_app_key(void)
 {
     return g_lora_dev.app_key;
+}
+
+bool set_lora_freqband_mask(uint16_t mask)
+{
+    
+    g_freqband_mask = mask;
+    return true;
+}
+
+uint16_t get_lora_freqband_mask(void)
+{
+    return g_freqband_mask;
 }

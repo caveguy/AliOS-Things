@@ -307,6 +307,7 @@ typedef struct sLoRaMacParams
 #ifdef CONFIG_LINKWAN
     join_method_t method;
     uint32_t freqband;
+    bool update_freqband;
 #endif
 }LoRaMacParams_t;
 

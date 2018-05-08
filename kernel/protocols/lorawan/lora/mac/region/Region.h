@@ -1143,6 +1143,7 @@ typedef struct sNextChanParams
     uint8_t NextAvailableRxFreqBandNum;
     uint8_t joinmethod;
     uint32_t freqband;
+    bool update_freqband;
 #endif
 }NextChanParams_t;
 
