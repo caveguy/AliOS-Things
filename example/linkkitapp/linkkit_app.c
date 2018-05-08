@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <aos/aos.h>
 
-#include "linkkit_export.h"
+#include "iot_export_dm.h"
 
 #include "iot_import.h"
 
@@ -41,7 +41,6 @@ static void ota_init();
 
 /* PLEASE set RIGHT tsl string according to your product. */
 const char TSL_STRING[] = "{\"profile\":{\"productKey\":\"a1aYoI3ZbWv\"},\"services\":[{\"outputData\":[],\"identifier\":\"set\",\"method\":\"thing.service.property.set\",\"required\":true,\"callType\":\"sync\"},{\"identifier\":\"get\",\"inputData\":[\"WIFI_Band\",\"WIFI_Channel\",\"WiFI_RSSI\",\"WiFI_SNR\",\"WIFI_AP_BSSID\",\"WIFI_Tx_Rate\",\"WIFI_Rx_Rate\",\"RGBColor\",\"HSVColor\",\"HSLColor\",\"WorkMode\",\"NightLightSwitch\",\"Brightness\",\"LightSwitch\",\"ColorTemperature\",\"PropertyCharacter\",\"Propertypoint\"],\"method\":\"thing.service.property.get\",\"required\":true,\"callType\":\"sync\"},{\"outputData\":[{\"identifier\":\"Contrastratio\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"identifier\":\"Custom\",\"inputData\":[{\"identifier\":\"transparency\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"method\":\"thing.service.Custom\",\"required\":false,\"callType\":\"async\"}],\"properties\":[{\"identifier\":\"WIFI_Band\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Channel\",\"dataType\":{\"specs\":{\"min\":\"1\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_RSSI\",\"dataType\":{\"specs\":{\"min\":\"-127\",\"max\":\"-1\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_SNR\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_AP_BSSID\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Tx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Rx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"RGBColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Red\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Green\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Blue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSVColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Value\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSLColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"360\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Lightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"WorkMode\",\"dataType\":{\"specs\":{\"0\":\"手动\",\"1\":\"阅读\",\"2\":\"影院\",\"3\":\"夜灯\",\"4\":\"生活\",\"5\":\"柔和\"},\"type\":\"enum\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"NightLightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Brightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"LightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"ColorTemperature\",\"dataType\":{\"specs\":{\"min\":\"2700\",\"max\":\"6500\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"PropertyCharacter\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Propertypoint\",\"dataType\":{\"specs\":{\"min\":\"-100\",\"max\":\"100\"},\"type\":\"double\"},\"accessMode\":\"rw\",\"required\":false}],\"events\":[{\"identifier\":\"post\",\"method\":\"thing.event.property.post\",\"type\":\"info\",\"required\":true},{\"outputData\":[{\"identifier\":\"ErrorCode\",\"dataType\":{\"specs\":{\"0\":\"恢复正常\"},\"type\":\"enum\"}}],\"identifier\":\"Error\",\"method\":\"thing.event.Error.post\",\"type\":\"info\",\"required\":false}]}";
-/* user sample context struct. */
 typedef struct _sample_context {
     const void*   thing;
     int           cloud_connected;
@@ -131,7 +130,7 @@ static int raw_data_arrived(const void* thing_id, const void* data, int len, voi
 
     snprintf(raw_data, sizeof(raw_data), "test down raw reply data %lld", (long long)HAL_UptimeMs());
 
-    linkkit_invoke_raw_service(thing_id, 0, raw_data, strlen(raw_data));
+    IOT_DM_Service_Raw(thing_id, 0, raw_data, strlen(raw_data));
 
     return 0;
 }
@@ -176,7 +175,7 @@ static int handle_service_custom(sample_context_t* _sample_ctx, const void* thin
      * get iutput value.
      */
     snprintf(identifier, sizeof(identifier), "%s.%s", service_identifier, "transparency");
-    linkkit_get_value(linkkit_method_get_service_input_value, thing, identifier, &sample_ctx->service_custom_input_transparency, NULL);
+    IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_SERVICE_INPUT, thing, identifier, &sample_ctx->service_custom_input_transparency, NULL);
 
     /*
      * set output value according to user's process result.
@@ -186,11 +185,11 @@ static int handle_service_custom(sample_context_t* _sample_ctx, const void* thin
 
     sample_ctx->service_custom_output_contrastratio = sample_ctx->service_custom_input_transparency >= 0 ? sample_ctx->service_custom_input_transparency : sample_ctx->service_custom_input_transparency * -1;
 
-    linkkit_set_value(linkkit_method_set_service_output_value, thing, identifier, &sample_ctx->service_custom_output_contrastratio, NULL);
+    IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_SERVICE_OUTPUT, thing, identifier, &sample_ctx->service_custom_output_contrastratio, NULL);
 #ifdef RRPC_ENABLED
-    linkkit_answer_service(thing, service_identifier, request_id, 200, rrpc);
+    IOT_DM_Service_Response(thing, service_identifier, request_id, 200, rrpc);
 #else
-    linkkit_answer_service(thing, service_identifier, request_id, 200);
+    IOT_DM_Service_Response(thing, service_identifier, request_id, 200);
 #endif /* RRPC_ENABLED */
 
     return 0;
@@ -227,13 +226,13 @@ static int thing_prop_changed(const void* thing_id, const char* property, void* 
         int hue, saturation, value;
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Hue");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &hue, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &hue, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Saturation");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &saturation, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &saturation, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Value");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &value, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &value, &value_str);
 
         LINKKIT_PRINTF("property(%s), Hue:%d, Saturation:%d, Value:%d\n", property, hue, saturation, value);
 
@@ -242,13 +241,13 @@ static int thing_prop_changed(const void* thing_id, const char* property, void* 
         int hue, saturation, lightness;
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Hue");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &hue, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &hue, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Saturation");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &saturation, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &saturation, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Lightness");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &lightness, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &lightness, &value_str);
 
         LINKKIT_PRINTF("property(%s), Hue:%d, Saturation:%d, Lightness:%d\n", property, hue, saturation, lightness);
         /* XXX: do user's process logical here. */
@@ -256,24 +255,24 @@ static int thing_prop_changed(const void* thing_id, const char* property, void* 
         int red, green, blue;
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Red");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &red, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &red, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Green");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &green, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &green, &value_str);
 
         snprintf(property_buf, sizeof(property_buf), "%s.%s", property, "Blue");
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property_buf, &blue, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property_buf, &blue, &value_str);
 
         LINKKIT_PRINTF("property(%s), Red:%d, Green:%d, Blue:%d\n", property, red, green, blue);
         /* XXX: do user's process logical here. */
     } else {
-        linkkit_get_value(linkkit_method_get_property_value, thing_id, property, NULL, &value_str);
+        IOT_DM_Get_Value(IOTX_DM_VALUE_GET_TYPE_PROPERTY, thing_id, property, NULL, &value_str);
 
         LINKKIT_PRINTF("property(%s) new value set: %s\n", property, value_str);
     }
 
     /* do user's process logical here. */
-    linkkit_post_property(thing_id, property, post_property_cb);
+    IOT_DM_Property_Post(thing_id, property, post_property_cb);
     return 0;
 }
 
@@ -312,12 +311,12 @@ static int post_event_error(sample_context_t* sample)
     snprintf(event_output_identifier, sizeof(event_output_identifier), "%s.%s", EVENT_ERROR_IDENTIFIER, EVENT_ERROR_OUTPUT_INFO_IDENTIFIER);
 
     int errorCode = 0;
-    linkkit_set_value(linkkit_method_set_event_output_value,
+    IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_EVENT_OUTPUT,
                       sample->thing,
                       event_output_identifier,
                       &errorCode, NULL);
 
-    return linkkit_trigger_event(sample->thing, EVENT_ERROR_IDENTIFIER, post_property_cb);
+    return IOT_DM_Event_Trigger(sample->thing, EVENT_ERROR_IDENTIFIER, post_property_cb);
 }
 
 static int is_active(sample_context_t* sample_ctx)
@@ -359,20 +358,20 @@ static int post_property_wifi_status_once(sample_context_t* sample_ctx)
         tx_rate = wireless_info.tx_rate;
         rx_rate = wireless_info.rx_rate;
 
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Band", band, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Channel", &channel, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_RSSI", &rssi, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_SNR", &snr, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WIFI_Band", band, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WIFI_Channel", &channel, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WiFI_RSSI", &rssi, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WiFI_SNR", &snr, NULL);
 
         memset(val_buf, 0, sizeof(val_buf));
         for(i = 0; i < 6; i++) {
             snprintf(val_buf + strlen(val_buf), sizeof(val_buf) - strlen(val_buf), "%02X:", bssid[i]);
         }
         if(strlen(val_buf) > 0 && val_buf[strlen(val_buf) - 1] == ':') val_buf[strlen(val_buf) - 1] = '\0';
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_AP_BSSID", val_buf, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WIFI_AP_BSSID", val_buf, NULL);
 
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Tx_Rate", &tx_rate, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Rx_Rate", &rx_rate, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WIFI_Tx_Rate", &tx_rate, NULL);
+        IOT_DM_Set_Value(IOTX_DM_VALUE_SET_TYPE_PROPERTY, sample_ctx->thing, "WIFI_Rx_Rate", &rx_rate, NULL);
 
         is_post = 1;
         ret = 0;
@@ -390,7 +389,7 @@ void linkkit_action(void *params)
 
     sample_context_t* sample_ctx = params;
 
-    linkkit_dispatch();
+    IOT_DM_Dispatch();
 
     now += 1;
 
@@ -442,9 +441,9 @@ int linkkit_main()
     memset(sample_ctx, 0, sizeof(sample_context_t));
     sample_ctx->thing_enabled = 1;
 
-    linkkit_start(16, get_tsl_from_cloud, linkkit_loglevel_debug, &alink_ops, linkkit_cloud_domain_shanghai, sample_ctx);
+    IOT_DM_Construct(16, get_tsl_from_cloud, IOTX_DM_LOG_DEBUG, &alink_ops, IOTX_DM_CLOUD_DOMAIN_SHANGHAI, sample_ctx);
     if (!get_tsl_from_cloud) {
-        linkkit_set_tsl(TSL_STRING, strlen(TSL_STRING));
+        IOT_DM_Set_TSL(TSL_STRING, strlen(TSL_STRING));
     }
 
     aos_post_delayed_action(100, linkkit_action, sample_ctx);

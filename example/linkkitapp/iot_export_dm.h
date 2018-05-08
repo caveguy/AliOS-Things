@@ -5,10 +5,73 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include "iot_export_dm.h"
+#include "dm_impl_abstract.h"
 #ifdef SERVICE_OTA_ENABLED
 #include "iot_export_fota.h"
 #endif /* SERVICE_OTA_ENABLED */
+
+/* old interface names */
+#define linkkit_dispatch                            IOT_DM_Dispatch
+#define linkkit_start                               IOT_DM_Construct
+#ifdef SERVICE_OTA_ENABLED
+#define linkkit_ota_init                            IOT_DM_Ota_init
+#define linkkit_invoke_ota_service                  IOT_DM_Ota_Service_Invoke
+#endif
+#define linkkit_end                                 IOT_DM_Destroy
+#define linkkit_set_tsl                             IOT_DM_Set_TSL
+#define linkkit_set_value                           IOT_DM_Set_Value
+#define linkkit_get_value                           IOT_DM_Get_Value
+#define linkkit_answer_service                      IOT_DM_Service_Response
+#define linkkit_invoke_raw_service                  IOT_DM_Service_Raw
+#ifdef EXTENDED_INFO_ENABLED
+#define linkkit_trigger_extended_info_operate       IOT_DM_Trigger_Extended_Info_Operate
+#endif
+#define linkkit_trigger_event                       IOT_DM_Event_Trigger
+#define linkkit_post_property                       IOT_DM_Property_Post
+#ifdef SUBDEV_ENABLE
+#define linkkit_subdev_create                       IOT_DM_Subdev_Create
+#define linkkit_subdev_destroy                      IOT_DM_Subdev_Destroy
+#define linkkit_bind_subdev                         IOT_DM_Subdev_Bind
+#define linkkit_unbind_subdev                       IOT_DM_Subdev_Unbind
+#define linkkit_subdev_login                        IOT_DM_Subdev_Login
+#define linkkit_subdev_logout                       IOT_DM_Subdev_Logout
+#endif
+#ifdef CM_SUPPORT_MULTI_THREAD
+#define linkkit_yield                               IOT_DM_Yield
+#endif
+
+#define linkkit_subdev_ops_t                        iotx_dm_subdev_ops_t
+
+#define linkkit_loglevel_emerg                      IOTX_DM_LOG_EMERG
+#define linkkit_loglevel_crit                       IOTX_DM_LOG_CRIT
+#define linkkit_loglevel_error                      IOTX_DM_LOG_ERROR
+#define linkkit_loglevel_warning                    IOTX_DM_LOG_WARNING
+#define linkkit_loglevel_info                       IOTX_DM_LOG_INFO
+#define linkkit_loglevel_debug                      IOTX_DM_LOG_DEBUG
+#define linkkit_loglevel_t                          iotx_dm_log_t
+
+#define linkkit_cloud_domain_shanghai               IOTX_DM_CLOUD_DOMAIN_SHANGHAI
+#define linkkit_cloud_domain_singapore              IOTX_DM_CLOUD_DOMAIN_SINGAPORE
+#define linkkit_cloud_domain_max                    IOTX_DM_CLOUD_DOMAIN_MAX
+#define linkkit_cloud_domain_type_t                 iotx_dm_cloud_domain_t
+
+#define linkkit_extended_info_operate_update        IOTX_DM_EXTENDED_INFO_OP_UPDATE
+#define linkkit_extended_info_operate_delete        IOTX_DM_EXTENDED_INFO_OP_DELETE
+#define linkkit_deviceinfo_operate_max              IOTX_DM_EXTENDED_INFO_OP_MAX
+#define linkkit_extended_info_operate_t             iotx_dm_extended_info_op_t
+
+#define linkkit_method_set_property_value           IOTX_DM_VALUE_SET_TYPE_PROPERTY
+#define linkkit_method_set_event_output_value       IOTX_DM_VALUE_SET_TYPE_EVENT_OUTPUT
+#define linkkit_method_set_service_output_value     IOTX_DM_VALUE_SET_TYPE_SERVICE_OUTPUT
+#define linkkit_method_set_number                   IOTX_DM_VALUE_SET_TYPE_MAX
+#define linkkit_method_set_t                        iotx_dm_value_set_type_t
+
+#define linkkit_method_get_property_value           IOTX_DM_VALUE_GET_TYPE_PROPERTY
+#define linkkit_method_get_event_output_value       IOTX_DM_VALUE_GET_TYPE_EVENT_OUTPUT
+#define linkkit_method_get_service_input_value      IOTX_DM_VALUE_GET_TYPE_SERVICE_INPUT
+#define linkkit_method_get_service_output_value     IOTX_DM_VALUE_GET_TYPE_SERVICE_OUTPUT
+#define linkkit_method_get_number                   IOTX_DM_VALUE_GET_TYPE_MAX
+#define linkkit_method_get_t                        iotx_dm_value_get_type_t
 
 typedef void (*handle_post_cb_fp_t)(const void* thing_id, int respons_id, int code, const char* response_message, void* ctx);
 typedef void (*handle_subdev_cb_fp_t)(const void* thing_id, int code, const char* response_message, int success, void* ctx);
@@ -41,41 +104,42 @@ typedef struct _linkkit_ops {
 } linkkit_ops_t;
 
 #ifdef SUBDEV_ENABLE
-typedef struct _linkkit_subdev_ops {
+typedef struct {
     handle_subdev_cb_fp_t topo_add_notify;
     handle_subdev_cb_fp_t topo_delete_notify;
     handle_subdev_cb_fp_t login_notify;
     handle_subdev_cb_fp_t logout_notify;
-} linkkit_subdev_ops_t;
+} iotx_dm_subdev_ops_t;
 #endif
 
-typedef enum _linkkit_loglevel {
-    linkkit_loglevel_emerg = 0,
-    linkkit_loglevel_crit,
-    linkkit_loglevel_error,
-    linkkit_loglevel_warning,
-    linkkit_loglevel_info,
-    linkkit_loglevel_debug,
-} linkkit_loglevel_t;
+typedef enum {
+	IOTX_DM_LOG_EMERG = 0,
+    IOTX_DM_LOG_CRIT,
+    IOTX_DM_LOG_ERROR,
+    IOTX_DM_LOG_WARNING,
+    IOTX_DM_LOG_INFO,
+    IOTX_DM_LOG_DEBUG,
+} iotx_dm_log_t;
 
 /* domain type */
 /* please sync with dm_cloud_domain_type_t */
 typedef enum {
-    /* iot-as-mqtt.cn-shanghai.aliyuncs.com */
-    linkkit_cloud_domain_shanghai,
-    /* USA */
-    linkkit_cloud_domain_singapore,
+    /* iot-auth.cn-shanghai.aliyuncs.com */
+    IOTX_DM_CLOUD_DOMAIN_SHANGHAI,
+    
+    /* iot-auth.ap-southeast-1.aliyuncs.com */
+    IOTX_DM_CLOUD_DOMAIN_SINGAPORE,
 
-    linkkit_cloud_domain_max,
-} linkkit_cloud_domain_type_t;
+    IOTX_DM_CLOUD_DOMAIN_MAX,
+} iotx_dm_cloud_domain_t;
 
 /* device info related operation */
 typedef enum {
-    linkkit_extended_info_operate_update,
-    linkkit_extended_info_operate_delete,
+    IOTX_DM_EXTENDED_INFO_OP_UPDATE,
+    IOTX_DM_EXTENDED_INFO_OP_DELETE,
 
-    linkkit_deviceinfo_operate_max,
-} linkkit_extended_info_operate_t;
+    IOTX_DM_EXTENDED_INFO_OP_MAX,
+} iotx_dm_extended_info_op_t;
 
 /**
  * @brief dispatch message of queue for further process.
@@ -83,9 +147,9 @@ typedef enum {
  * @return void*
  */
 #ifdef CM_SUPPORT_MULTI_THREAD
-void* linkkit_dispatch(void* params);
+void* IOT_DM_Dispatch(void* params);
 #else
-void* linkkit_dispatch();
+void* IOT_DM_Dispatch();
 #endif
 
 /**
@@ -93,14 +157,14 @@ void* linkkit_dispatch();
  *
  * @param max_buffered_msg, specify max buffered message size.
  * @param ops, callback function struct to be installed.
- * @param get_tsl_from_cloud, config if device need to get tsl from cloud(!0) or local(0), if local selected, must invoke linkkit_set_tsl to tell tsl to dm after start complete.
+ * @param get_tsl_from_cloud, config if device need to get tsl from cloud(!0) or local(0), if local selected, must invoke IOT_DM_Set_TSL to tell tsl to dm after start complete.
  * @param log_level, config log level.
  * @param user_context, user context pointer.
  * @param domain_type, specify the could server domain.
  *
  * @return int, 0 when success, -1 when fail.
  */
-int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel_t log_level, linkkit_ops_t *ops, linkkit_cloud_domain_type_t domain_type, void *user_context);
+int IOT_DM_Construct(int max_buffered_msg, int get_tsl_from_cloud, iotx_dm_log_t log_level, linkkit_ops_t *ops, iotx_dm_cloud_domain_t domain_type, void *user_context);
 
 #ifdef SERVICE_OTA_ENABLED
 /**
@@ -110,7 +174,7 @@ int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel
  *
  * @return int, 0 when success, -1 when fail.
  */
-int linkkit_ota_init(handle_service_fota_callback_fp_t callback_fp);
+int IOT_DM_Ota_init(handle_service_fota_callback_fp_t callback_fp);
 #endif /* SERVICE_OTA_ENABLED */
 
 /**
@@ -119,7 +183,7 @@ int linkkit_ota_init(handle_service_fota_callback_fp_t callback_fp);
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_end();
+int IOT_DM_Destroy();
 
 /**
  * @brief install user tsl.
@@ -129,7 +193,7 @@ int linkkit_end();
  *
  * @return pointer to thing object, NULL when fails.
  */
-extern void* linkkit_set_tsl(const char* tsl, int tsl_len);
+extern void* IOT_DM_Set_TSL(const char* tsl, int tsl_len);
 
 /* patterns: */
 /* method:
@@ -137,12 +201,12 @@ extern void* linkkit_set_tsl(const char* tsl, int tsl_len);
  * method_set, thing_id, identifier, value */
 
 typedef enum {
-    linkkit_method_set_property_value = 0,
-    linkkit_method_set_event_output_value,
-    linkkit_method_set_service_output_value,
+    IOTX_DM_VALUE_SET_TYPE_PROPERTY = 0,
+    IOTX_DM_VALUE_SET_TYPE_EVENT_OUTPUT,
+    IOTX_DM_VALUE_SET_TYPE_SERVICE_OUTPUT,
 
-    linkkit_method_set_number,
-} linkkit_method_set_t;
+    IOTX_DM_VALUE_SET_TYPE_MAX,
+} iotx_dm_value_set_type_t;
 
 /**
  * @brief set value to property, event output, service output items.
@@ -162,17 +226,17 @@ typedef enum {
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_set_value(linkkit_method_set_t method_set, const void* thing_id, const char* identifier,
+extern int IOT_DM_Set_Value(iotx_dm_value_set_type_t method_set, const void* thing_id, const char* identifier,
                              const void* value, const char* value_str);
 
 typedef enum {
-    linkkit_method_get_property_value = 0,
-    linkkit_method_get_event_output_value,
-    linkkit_method_get_service_input_value,
-    linkkit_method_get_service_output_value,
+    IOTX_DM_VALUE_GET_TYPE_PROPERTY = 0,
+    IOTX_DM_VALUE_GET_TYPE_EVENT_OUTPUT,
+    IOTX_DM_VALUE_GET_TYPE_SERVICE_INPUT,
+    IOTX_DM_VALUE_GET_TYPE_SERVICE_OUTPUT,
 
-    linkkit_method_get_number,
-} linkkit_method_get_t;
+    IOTX_DM_VALUE_GET_TYPE_MAX,
+} iotx_dm_value_get_type_t;
 
 /**
  * @brief get value from property, event output, service input/output items.
@@ -193,7 +257,7 @@ typedef enum {
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_get_value(linkkit_method_get_t method_get, const void* thing_id, const char* identifier,
+extern int IOT_DM_Get_Value(iotx_dm_value_get_type_t method_get, const void* thing_id, const char* identifier,
                              void* value, char** value_str);
 
 
@@ -211,9 +275,9 @@ extern int linkkit_get_value(linkkit_method_get_t method_get, const void* thing_
  * @return 0 when success, -1 when fail.
  */
 #ifdef RRPC_ENABLED
-extern int linkkit_answer_service(const void* thing_id, const char* service_identifier, int response_id, int code, int rrpc);
+extern int IOT_DM_Service_Response(const void* thing_id, const char* service_identifier, int response_id, int code, int rrpc);
 #else
-extern int linkkit_answer_service(const void* thing_id, const char* service_identifier, int response_id, int code);
+extern int IOT_DM_Service_Response(const void* thing_id, const char* service_identifier, int response_id, int code);
 #endif /* RRPC_ENABLED */
 
 /**
@@ -226,7 +290,7 @@ extern int linkkit_answer_service(const void* thing_id, const char* service_iden
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_invoke_raw_service(const void* thing_id, int is_up_raw, void* raw_data, int raw_data_length);
+extern int IOT_DM_Service_Raw(const void* thing_id, int is_up_raw, void* raw_data, int raw_data_length);
 
 #ifdef SERVICE_OTA_ENABLED
 /**
@@ -238,7 +302,7 @@ extern int linkkit_invoke_raw_service(const void* thing_id, int is_up_raw, void*
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_invoke_ota_service(void* data_buf, int data_buf_length);
+extern int IOT_DM_Ota_Service_Invoke(void* data_buf, int data_buf_length);
 #endif /* SERVICE_OTA_ENABLED */
 
 #ifdef EXTENDED_INFO_ENABLED
@@ -252,7 +316,7 @@ extern int linkkit_invoke_ota_service(void* data_buf, int data_buf_length);
  * @return 0 when success, -1 when fail.
  */
 
-int linkkit_trigger_extended_info_operate(const void* thing_id, const char* params, linkkit_extended_info_operate_t linkkit_extended_info_operation);
+int IOT_DM_Trigger_Extended_Info_Operate(const void* thing_id, const char* params, iotx_dm_extended_info_op_t linkkit_extended_info_operation);
 #endif /* EXTENDED_INFO_ENABLED */
 
 /**
@@ -263,7 +327,7 @@ int linkkit_trigger_extended_info_operate(const void* thing_id, const char* para
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_trigger_event(const void* thing_id, const char* event_identifier, handle_post_cb_fp_t cb);
+extern int IOT_DM_Event_Trigger(const void* thing_id, const char* event_identifier, handle_post_cb_fp_t cb);
 /**
  * @brief post property to cloud.
  *
@@ -272,7 +336,7 @@ extern int linkkit_trigger_event(const void* thing_id, const char* event_identif
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_post_property(const void* thing_id, const char* property_identifier, handle_post_cb_fp_t cb);
+extern int IOT_DM_Property_Post(const void* thing_id, const char* property_identifier, handle_post_cb_fp_t cb);
 #ifdef SUBDEV_ENABLE
 
 /**
@@ -284,7 +348,7 @@ extern int linkkit_post_property(const void* thing_id, const char* property_iden
  *
  * @return void*, sub thing id when success, NULL when fail.
  */
-void* linkkit_subdev_create(const char* product_key, const char* device_name, const char* tsl, int tsl_len);
+void* IOT_DM_Subdev_Create(const char* product_key, const char* device_name, const char* tsl, int tsl_len);
 
 /**
  * @brief remove a sub device from gateway.
@@ -293,7 +357,7 @@ void* linkkit_subdev_create(const char* product_key, const char* device_name, co
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_subdev_destroy(const void* sub_thing_id);
+int IOT_DM_Subdev_Destroy(const void* sub_thing_id);
 
 /**
  * @brief bind subdev to gateway.
@@ -302,7 +366,7 @@ int linkkit_subdev_destroy(const void* sub_thing_id);
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_bind_subdev(const void* subdev_product_key, const char* subdev_device_name, const char* subdev_device_secret, handle_subdev_cb_fp_t cb);
+int IOT_DM_Subdev_Bind(const void* subdev_product_key, const char* subdev_device_name, const char* subdev_device_secret, handle_subdev_cb_fp_t cb);
 
 /**
  * @brief unbind subdev from gateway.
@@ -311,7 +375,7 @@ int linkkit_bind_subdev(const void* subdev_product_key, const char* subdev_devic
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_unbind_subdev(const void* subdev_product_key, const void* subdev_device_name, handle_subdev_cb_fp_t cb);
+int IOT_DM_Subdev_Unbind(const void* subdev_product_key, const void* subdev_device_name, handle_subdev_cb_fp_t cb);
 
 /**
  * @brief subdev login to cloud.
@@ -321,7 +385,7 @@ int linkkit_unbind_subdev(const void* subdev_product_key, const void* subdev_dev
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_subdev_login(const void* sub_thing_id, const char* subdev_device_secret, handle_subdev_cb_fp_t cb);
+int IOT_DM_Subdev_Login(const void* sub_thing_id, const char* subdev_device_secret, handle_subdev_cb_fp_t cb);
 
 /**
  * @brief subdev logout from cloud.
@@ -330,7 +394,7 @@ int linkkit_subdev_login(const void* sub_thing_id, const char* subdev_device_sec
  *
  * @return 0 when success, -1 when fail.
  */
-int linkkit_subdev_logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb);
+int IOT_DM_Subdev_Logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb);
 
 #endif
 
@@ -343,7 +407,7 @@ int linkkit_subdev_logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb);
  *
  * @return 0 when success, -1 when fail.
  */
-extern int linkkit_yield(int timeout_ms);
+extern int IOT_DM_Yield(int timeout_ms);
 #endif /* CM_SUPPORT_MULTI_THREAD */
 
 #ifdef __cplusplus

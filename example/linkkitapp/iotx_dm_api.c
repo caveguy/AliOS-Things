@@ -5,7 +5,7 @@
 #include <limits.h>
 #include "linked_list.h"
 #include "lite_queue.h"
-#include "linkkit_export.h"
+#include "iot_export_dm.h"
 #include "class_interface.h"
 
 #ifdef CM_SUPPORT_MULTI_THREAD
@@ -42,7 +42,7 @@ static lite_queue_t* g_message_queue = NULL;
 static void* user_ctx = NULL;
 
 #ifdef SUBDEV_ENABLE
-static linkkit_subdev_ops_t* g_linkkit_subdev_ops = NULL;
+static iotx_dm_subdev_ops_t* g_linkkit_subdev_ops = NULL;
 #endif
 
 static void* dm_object  = NULL;
@@ -293,7 +293,7 @@ static void handle_masterdev_request(dm_msg_t* dm_msg, void* ctx)
         break;
 #ifdef LOCAL_CONN_ENABLE
     case dm_callback_type_local_post:
-        linkkit_post_property(dm_msg->thing_id, NULL, NULL);
+        IOT_DM_Property_Post(dm_msg->thing_id, NULL, NULL);
         break;
 #endif
     default:
@@ -304,7 +304,7 @@ static void handle_masterdev_request(dm_msg_t* dm_msg, void* ctx)
 #ifdef SUBDEV_ENABLE
 static void handle_subdev_request(dm_msg_t* msg, void* ctx)
 {
-    linkkit_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
+    iotx_dm_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
     void* context = ctx;
     int success = 0;
 
@@ -342,9 +342,9 @@ static void handle_subdev_request(dm_msg_t* msg, void* ctx)
 #endif
 
 #ifdef CM_SUPPORT_MULTI_THREAD
-void* linkkit_dispatch(void* params)
+void* IOT_DM_Dispatch(void* params)
 #else
-void* linkkit_dispatch()
+void* IOT_DM_Dispatch()
 #endif
 {
     if (!g_message_queue || !user_ctx) {
@@ -382,7 +382,7 @@ void* linkkit_dispatch()
 }
 
 /* async type */
-static int linkkit_start_routine(handle_dm_callback_fp_t callback_fp, int get_tsl_from_cloud, linkkit_loglevel_t log_level, linkkit_cloud_domain_type_t domain_type)
+static int linkkit_start_routine(handle_dm_callback_fp_t callback_fp, int get_tsl_from_cloud, iotx_dm_log_t log_level, iotx_dm_cloud_domain_t domain_type)
 {
     int ret = -1;
 #ifdef SUBDEV_ENABLE
@@ -407,13 +407,13 @@ static int linkkit_start_routine(handle_dm_callback_fp_t callback_fp, int get_ts
 #endif
 
 #ifdef CM_SUPPORT_MULTI_THREAD
-    HAL_ThreadCreate(&thread_process_dispatch, linkkit_dispatch, NULL, NULL, &stack_used);
+    HAL_ThreadCreate(&thread_process_dispatch, IOT_DM_Dispatch, NULL, NULL, &stack_used);
     HAL_ThreadDetach(thread_process_dispatch);
 #endif /* CM_SUPPORT_MULTI_THREAD */
     return ret;
 }
 
-int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel_t log_level, linkkit_ops_t* ops, linkkit_cloud_domain_type_t domain_type, void* user_context)
+int IOT_DM_Construct(int max_buffered_msg, int get_tsl_from_cloud, iotx_dm_log_t log_level, linkkit_ops_t* ops, iotx_dm_cloud_domain_t domain_type, void* user_context)
 {
     int ret = -1;
 
@@ -433,7 +433,7 @@ int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel
     user_ctx = user_context;
 
 #ifdef SUBDEV_ENABLE
-    g_linkkit_subdev_ops = calloc(1, sizeof(linkkit_subdev_ops_t));
+    g_linkkit_subdev_ops = calloc(1, sizeof(iotx_dm_subdev_ops_t));
     if (!g_linkkit_subdev_ops) return -1;
 #endif
     g_list_post_cb = linked_list_create("post cb", 0);
@@ -445,7 +445,7 @@ int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel
 }
 
 #ifdef SERVICE_OTA_ENABLED
-int linkkit_ota_init(handle_service_fota_callback_fp_t callback_fp)
+int IOT_DM_Ota_init(handle_service_fota_callback_fp_t callback_fp)
 {
     fota_t** ota;
     int ret = -1;
@@ -474,7 +474,7 @@ static void free_post_cb(void* _post_cb, va_list* params)
     if (post_cb) free(post_cb);
 }
 
-int linkkit_end()
+int IOT_DM_Destroy()
 {
 
     linked_list_t* list;
@@ -512,7 +512,7 @@ int linkkit_end()
     return 0;
 }
 
-void* linkkit_set_tsl(const char* tsl, int tsl_len)
+void* IOT_DM_Set_TSL(const char* tsl, int tsl_len)
 {
     void* thing = NULL;
     const dm_t** dm = dm_object;
@@ -524,19 +524,19 @@ void* linkkit_set_tsl(const char* tsl, int tsl_len)
     return thing;
 }
 
-int linkkit_set_value(linkkit_method_set_t method_set, const void* thing_id, const char* identifier, const void* value, const char* value_str)
+int IOT_DM_Set_Value(iotx_dm_value_set_type_t method_set, const void* thing_id, const char* identifier, const void* value, const char* value_str)
 {
     dm_t** dm = dm_object;
     int ret = -1;
     char identifier_buf[128] = {0};
 
-    if (dm == NULL || *dm == NULL || thing_id == NULL || identifier == NULL || method_set >= linkkit_method_set_number || (value == NULL && value_str == NULL)) return -1;
+    if (dm == NULL || *dm == NULL || thing_id == NULL || identifier == NULL || method_set >= IOTX_DM_VALUE_SET_TYPE_MAX || (value == NULL && value_str == NULL)) return -1;
 
-    if (method_set == linkkit_method_set_property_value) {
+    if (method_set == IOTX_DM_VALUE_SET_TYPE_PROPERTY) {
         ret = (*dm)->set_property_value(dm, thing_id, identifier, value, value_str);
-    } else if (method_set == linkkit_method_set_event_output_value) {
+    } else if (method_set == IOTX_DM_VALUE_SET_TYPE_EVENT_OUTPUT) {
         ret = (*dm)->set_event_output_value(dm, thing_id, identifier, value, value_str);
-    } else if (method_set == linkkit_method_set_service_output_value) {
+    } else if (method_set == IOTX_DM_VALUE_SET_TYPE_SERVICE_OUTPUT) {
         if (strstr(identifier, ".output") == NULL) {
             snprintf(identifier_buf, sizeof(identifier_buf), "%s%s", identifier, ".output");
             ret = (*dm)->set_service_output_value(dm, thing_id, identifier_buf, value, value_str);
@@ -548,26 +548,26 @@ int linkkit_set_value(linkkit_method_set_t method_set, const void* thing_id, con
     return ret;
 }
 
-int linkkit_get_value(linkkit_method_get_t method_get, const void* thing_id, const char* identifier, void* value, char** value_str)
+int IOT_DM_Get_Value(iotx_dm_value_get_type_t method_get, const void* thing_id, const char* identifier, void* value, char** value_str)
 {
     dm_t** dm = dm_object;
     int ret = -1;
     char identifier_buf[128] = {0};
 
-    if (dm == NULL || *dm == NULL || thing_id == NULL || identifier == NULL || method_get >= linkkit_method_get_number || (value == NULL && value_str == NULL)) return -1;
+    if (dm == NULL || *dm == NULL || thing_id == NULL || identifier == NULL || method_get >= IOTX_DM_VALUE_GET_TYPE_MAX || (value == NULL && value_str == NULL)) return -1;
 
-    if (method_get == linkkit_method_get_property_value) {
+    if (method_get == IOTX_DM_VALUE_GET_TYPE_PROPERTY) {
         ret = (*dm)->get_property_value(dm, thing_id, identifier, value, value_str);
-    } else if (method_get == linkkit_method_get_event_output_value) {
+    } else if (method_get == IOTX_DM_VALUE_GET_TYPE_EVENT_OUTPUT) {
         ret = (*dm)->get_event_output_value(dm, thing_id, identifier, value, value_str);
-    } else if (method_get == linkkit_method_get_service_output_value) {
+    } else if (method_get == IOTX_DM_VALUE_GET_TYPE_SERVICE_OUTPUT) {
         if (strstr(identifier, ".output") == NULL) {
             snprintf(identifier_buf, sizeof(identifier_buf), "%s%s", identifier, ".output");
             ret = (*dm)->get_service_output_value(dm, thing_id, identifier_buf, value, value_str);
         } else {
             ret = (*dm)->get_service_output_value(dm, thing_id, identifier, value, value_str);
         }
-    } else if (method_get == linkkit_method_get_service_input_value) {
+    } else if (method_get == IOTX_DM_VALUE_GET_TYPE_SERVICE_INPUT) {
         if (strstr(identifier, ".input") == NULL) {
             snprintf(identifier_buf, sizeof(identifier_buf), "%s%s", identifier, ".input");
             ret = (*dm)->get_service_input_value(dm, thing_id, identifier_buf, value, value_str);
@@ -579,9 +579,9 @@ int linkkit_get_value(linkkit_method_get_t method_get, const void* thing_id, con
     return ret;
 }
 #ifdef RRPC_ENABLED
-int linkkit_answer_service(const void* thing_id, const char* service_identifier, int response_id, int code, int rrpc)
+int IOT_DM_Service_Response(const void* thing_id, const char* service_identifier, int response_id, int code, int rrpc)
 #else
-int linkkit_answer_service(const void* thing_id, const char* service_identifier, int response_id, int code)
+int IOT_DM_Service_Response(const void* thing_id, const char* service_identifier, int response_id, int code)
 #endif /* RRPC_ENABLED */
 {
     dm_t** dm = dm_object;
@@ -595,7 +595,7 @@ int linkkit_answer_service(const void* thing_id, const char* service_identifier,
 #endif /* RRPC_ENABLED */
 }
 
-int linkkit_invoke_raw_service(const void* thing_id, int is_up_raw, void* raw_data, int raw_data_length)
+int IOT_DM_Service_Raw(const void* thing_id, int is_up_raw, void* raw_data, int raw_data_length)
 {
     dm_t** dm = dm_object;
     int ret;
@@ -611,7 +611,7 @@ int linkkit_invoke_raw_service(const void* thing_id, int is_up_raw, void* raw_da
     return ret;
 }
 #ifdef SERVICE_OTA_ENABLED
-int linkkit_invoke_ota_service(void* data_buf, int data_buf_length)
+int IOT_DM_Ota_Service_Invoke(void* data_buf, int data_buf_length)
 {
     fota_t** ota = fota_object;
     int ret;
@@ -625,15 +625,15 @@ int linkkit_invoke_ota_service(void* data_buf, int data_buf_length)
 #endif /* SERVICE_OTA_ENABLED */
 
 #ifdef EXTENDED_INFO_ENABLED
-int linkkit_trigger_extended_info_operate(const void* thing_id, const char* params, linkkit_extended_info_operate_t linkkit_extended_info_operation)
+int IOT_DM_Trigger_Extended_Info_Operate(const void* thing_id, const char* params, linkkit_extended_info_operate_t linkkit_extended_info_operation)
 {
     dm_t** dm = dm_object;
 
-    if (linkkit_extended_info_operation == linkkit_extended_info_operate_update) {
+    if (linkkit_extended_info_operation == IOTX_DM_EXTENDED_INFO_OP_UPDATE) {
         if (dm == NULL || *dm == NULL || (*dm)->trigger_extended_info_update == NULL || thing_id == NULL) return -1;
 
         return (*dm)->trigger_extended_info_update(dm, thing_id, params);
-    } else if (linkkit_extended_info_operation == linkkit_extended_info_operate_delete) {
+    } else if (linkkit_extended_info_operation == IOTX_DM_EXTENDED_INFO_OP_DELETE) {
         if (dm == NULL || *dm == NULL || (*dm)->trigger_extended_info_delete == NULL || thing_id == NULL) return -1;
 
         return (*dm)->trigger_extended_info_delete(dm, thing_id, params);
@@ -696,7 +696,7 @@ static void insert_post_cb(int id_send, linked_list_t* list, void* cb)
     }
 }
 
-int linkkit_trigger_event(const void* thing_id, const char* event_identifier, handle_post_cb_fp_t cb)
+int IOT_DM_Event_Trigger(const void* thing_id, const char* event_identifier, handle_post_cb_fp_t cb)
 {
     dm_t** dm = dm_object;
     int ret = 0;
@@ -717,7 +717,7 @@ int linkkit_trigger_event(const void* thing_id, const char* event_identifier, ha
     return ret;
 }
 
-int linkkit_post_property(const void* thing_id, const char* property_identifier, handle_post_cb_fp_t cb)
+int IOT_DM_Property_Post(const void* thing_id, const char* property_identifier, handle_post_cb_fp_t cb)
 {
     dm_t** dm = dm_object;
     int ret = 0;
@@ -739,7 +739,7 @@ int linkkit_post_property(const void* thing_id, const char* property_identifier,
 
 #ifdef SUBDEV_ENABLE
 
-void* linkkit_subdev_create(const char* product_key, const char* device_name, const char* tsl, int tsl_len)
+void* IOT_DM_Subdev_Create(const char* product_key, const char* device_name, const char* tsl, int tsl_len)
 {
     const dm_t** dm = dm_object;
 
@@ -750,7 +750,7 @@ void* linkkit_subdev_create(const char* product_key, const char* device_name, co
     return NULL;
 }
 
-int linkkit_subdev_destroy(const void* sub_thing_id)
+int IOT_DM_Subdev_Destroy(const void* sub_thing_id)
 {
     const dm_t** dm = dm_object;
     int ret = -1;
@@ -762,10 +762,10 @@ int linkkit_subdev_destroy(const void* sub_thing_id)
     return ret;
 }
 
-int linkkit_bind_subdev(const void* subdev_product_key, const char* subdev_device_name, const char* subdev_device_secret, handle_subdev_cb_fp_t cb)
+int IOT_DM_Subdev_Bind(const void* subdev_product_key, const char* subdev_device_name, const char* subdev_device_secret, handle_subdev_cb_fp_t cb)
 {
     const dm_t** dm = dm_object;
-    linkkit_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
+    iotx_dm_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
     int ret = -1;
 
     if (dm && *dm && subdev_product_key && subdev_device_name) {
@@ -779,10 +779,10 @@ int linkkit_bind_subdev(const void* subdev_product_key, const char* subdev_devic
     return ret;
 }
 
-int linkkit_unbind_subdev(const void* subdev_product_key, const void* subdev_device_name, handle_subdev_cb_fp_t cb)
+int IOT_DM_Subdev_Unbind(const void* subdev_product_key, const void* subdev_device_name, handle_subdev_cb_fp_t cb)
 {
     const dm_t** dm = dm_object;
-    linkkit_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
+    iotx_dm_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
 
     int ret = -1;
 
@@ -798,10 +798,10 @@ int linkkit_unbind_subdev(const void* subdev_product_key, const void* subdev_dev
 }
 
 
-int linkkit_subdev_login(const void* sub_thing_id, const char* subdev_device_secret, handle_subdev_cb_fp_t cb)
+int IOT_DM_Subdev_Login(const void* sub_thing_id, const char* subdev_device_secret, handle_subdev_cb_fp_t cb)
 {
     const dm_t** dm = dm_object;
-    linkkit_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
+    iotx_dm_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
     int ret = -1;
 
     if (dm && *dm && sub_thing_id && subdev_device_secret) {
@@ -816,10 +816,10 @@ int linkkit_subdev_login(const void* sub_thing_id, const char* subdev_device_sec
 }
 
 
-int linkkit_subdev_logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb)
+int IOT_DM_Subdev_Logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb)
 {
     const dm_t** dm = dm_object;
-    linkkit_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
+    iotx_dm_subdev_ops_t* linkkit_subdev_ops = g_linkkit_subdev_ops;
     int ret = -1;
 
     if (dm && *dm && sub_thing_id) {
