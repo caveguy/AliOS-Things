@@ -1099,7 +1099,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8 *bssid, u8 channel,
     zconfig_aplist[i].encry[0] = group_cipher;
     zconfig_aplist[i].encry[1] = pairwise_cipher;
 
-    log("[%d] ssid:%s, mac:%02x%02x%02x%02x%02x%02x, chn:%d, auth:%s, %s, %s\r\n",
+    os_printf("[%d] ssid:%s, mac:%02x%02x%02x%02x%02x%02x, chn:%d, auth:%s, %s, %s\r\n",
         i, ssid, bssid[0], bssid[1], bssid[2],
         bssid[3], bssid[4], bssid[5], channel,
         zconfig_auth_str(auth),
@@ -1111,7 +1111,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8 *bssid, u8 channel,
      */
     if (!memcmp(zc_bssid, bssid, ETH_ALEN) && ssid[0] != '\0') {
         strcpy((char *)zc_ssid, (char const *)ssid);
-        info("save ssid %s\r\n", ssid);
+        os_printf("got ssid %s from aplist\r\n", ssid);
     }
 
     return 0;

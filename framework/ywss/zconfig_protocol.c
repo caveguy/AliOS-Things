@@ -1785,7 +1785,7 @@ int zconfig_recv_callback_zero_config(struct parser_res *res)
 #ifdef  AWSS_SUPPORT_HT40
 u8 ht40_hint_frame_cnt[64];
 u8 ht40_filter;
-char ht40_rssi_low, ht40_rssi_high;
+signed char ht40_rssi_low, ht40_rssi_high;
 #define ht40_rssi_range         (15)    /* suggested by Fuzhibo */
 /* for ios: start frame interval is 20/100 ms */
 #define HIT_FRAME_PER_CHANNEL   (2)
@@ -1833,7 +1833,7 @@ int ht40_lock_channel(u8 channel, u8 filter)
     return 0;
 }
 
-int ht40_scanning_hint_frame(u8 filter, char rssi, u32 length, u8 channel)
+int ht40_scanning_hint_frame(u8 filter, signed char rssi, u32 length, u8 channel)
 {
     u8 channel_locked = 0, next_loop = 0;
     int hint_pos = -1;
@@ -1954,7 +1954,7 @@ int ht40_get_qos_auth_group_info(u32 length)
     return 0;
 }
 
-int zconfig_recv_callback_ht40_ctrl(u8 filter, char rssi, u32 length, u8 channel)
+int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 channel)
 {
     u32 now = os_get_time_ms();
     int pkg_type = PKG_INVALID;

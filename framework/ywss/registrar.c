@@ -13,7 +13,7 @@
 #include "aos/aos.h"
 
 static int registrar_event(int type, void *data, int dlen, void *result, int *rlen);
-static void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, char rssi, int buffer_type);
+static void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, signed char rssi, int buffer_type);
 static void registrar_raw_frame_init(struct enrollee_info *enr);
 static void registrar_raw_frame_send(void);
 static void registrar_raw_frame_destroy(void);
@@ -592,7 +592,7 @@ extern const unsigned char *cfg80211_find_vendor_ie(
  * @see None.
  * @note None.
  */
-void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, char rssi, int buffer_type)
+void awss_wifi_mgnt_frame_callback(uint8_t *buffer, int length, signed char rssi, int buffer_type)
 {
 #define MGMT_BEACON (0x80)
 #define MGMT_PROBE_REQ  (0x40)

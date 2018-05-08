@@ -66,7 +66,7 @@ struct ap_info {
 	u8 encry[2];
 	u8 mac[ETH_ALEN];
 	char ssid[ZC_MAX_SSID_LEN];
-	char rssi;
+	signed char rssi;
 };
 
 struct adha_info {
