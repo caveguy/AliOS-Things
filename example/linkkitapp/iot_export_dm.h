@@ -1,5 +1,5 @@
-#ifndef LINKKIT_EXPORT_H
-#define LINKKIT_EXPORT_H
+#ifndef _IOT_EXPORT_DM_H_
+#define _IOT_EXPORT_DM_H_
 
 #ifdef __cplusplus
 extern "C" {

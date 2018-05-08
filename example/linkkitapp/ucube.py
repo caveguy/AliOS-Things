@@ -1,8 +1,7 @@
 src =Split(''' 
     linkkit-example.c
     linkkit_app.c
-    linkkit_export.c
-    lite_queue.c
+    iotx_dm_api.c
 ''')
 component =aos_component('linkkitapp', src)
 
@@ -16,6 +15,7 @@ dependencis =Split('''
     framework/protocol/linkkit/dm
     framework/protocol/linkkit/alcs
     framework/ywss4linkkit
+    framework/protocol/linkkit/iotkit/base/utils/misc
     tools/cli
 ''')
 for i in dependencis:
