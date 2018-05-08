@@ -227,10 +227,11 @@ static int awss_report_token_to_cloud()
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_MATCH_REPORT, topic, TOPIC_LEN_MAX);
 
-    awss_cmp_mqtt_send(topic, packet, packet_len);
+    int ret = awss_cmp_mqtt_send(topic, packet, packet_len);
     os_free(packet);
+    awss_debug("report token result:%d\r\n", ret);
 
-    return 0;
+    return ret;
 }
 
 static int awss_report_reset_to_cloud()
@@ -260,6 +261,7 @@ static int awss_report_reset_to_cloud()
     awss_build_topic(TOPIC_RESET_REPORT, topic, TOPIC_LEN_MAX);
     ret = awss_cmp_mqtt_send(topic, packet, packet_len);
     os_free(packet);
+    awss_debug("report reset result:%d\r\n", ret);
 
     return ret;
 }
