@@ -12,7 +12,7 @@
 #include "dm_cm_msg_info.h"
 #include "dm_logger.h"
 #include "dm_import.h"
-#include "dm_impl_abstract.h"
+#include "iot_export_dm.h"
 #include "dm_slist.h"
 
 #define DM_CM_MSG_INFO_EXTENTED_ROOM_FOR_STRING_MALLOC 1

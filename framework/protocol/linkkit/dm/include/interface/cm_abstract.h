@@ -10,7 +10,7 @@ extern "C" {
 
 #include "iot_import.h"
 #include "iot_export_cm.h"
-#include "dm_impl_abstract.h"
+#include "iot_export_dm.h"
 
 #include "message_info_abstract.h"
 

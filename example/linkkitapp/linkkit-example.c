@@ -29,6 +29,8 @@
 #include "iot_export.h"
 #include "iot_export_mqtt.h"
 #include "linkkit_app.h"
+#include "awss.h"
+#include "awss_cmp.h"
 #ifdef AOS_ATCMD
 #include <atparser.h>
 #endif
@@ -103,8 +105,6 @@ static void start_netmgr(void *p)
     netmgr_start(true);
     //aos_task_exit(0);
 }
-
-extern int awss_report_reset();
 
 void do_awss_active()
 {

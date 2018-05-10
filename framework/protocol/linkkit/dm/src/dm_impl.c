@@ -12,7 +12,7 @@
 #include "dm_logger.h"
 #include "dm_thing.h"
 #include "dm_slist.h"
-#include "dm_impl_abstract.h"
+#include "iot_export_dm.h"
 #include "iot_import.h"
 #include "lite-utils.h"
 #include "class_interface.h"
