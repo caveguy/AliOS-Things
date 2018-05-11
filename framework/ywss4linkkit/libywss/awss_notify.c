@@ -79,25 +79,25 @@ static const struct notify_map_t notify_map[] = {
 };
 
 static struct work_struct awss_connectap_notify_work = {
-    .func = (work_func_t)&awss_connectap_notify,
+    .func = (work_func_t) &awss_connectap_notify,
     .prio = 1, /* smaller digit means higher priority */
     .name = "connectap",
 };
 
 static struct work_struct awss_devinfo_notify_work = {
-    .func = (work_func_t)&awss_devinfo_notify,
+    .func = (work_func_t) &awss_devinfo_notify,
     .prio = 1, /* smaller digit means higher priority */
     .name = "devinfo",
 };
 
 static struct work_struct awss_suc_notify_work = {
-    .func = (work_func_t)&awss_suc_notify,
+    .func = (work_func_t) &awss_suc_notify,
     .prio = 1, /* smaller digit means higher priority */
     .name = "success",
 };
 
 static struct work_struct awss_get_devinfo_work = {
-    .func = (work_func_t)&awss_process_get_devinfo,
+    .func = (work_func_t) &awss_process_get_devinfo,
     .prio = 1, /* smaller digit means higher priority */
     .name = "get",
 };
@@ -128,41 +128,50 @@ static int awss_notify_response(int type, int result, void *message)
 {
     awss_debug("%s, type:%d\n", __func__, type);
 
-    if (message == NULL)
+    if (message == NULL) {
         return -1;
+    }
 
-    if (result != 0)
+    if (result != 0) {
         return 0;
+    }
 
-    if (awss_cmp_get_coap_code(message) >= 0x60)
+    if (awss_cmp_get_coap_code(message) >= 0x60) {
         return 0;
+    }
 
     {
         int val = 0;
         int len = 0, mlen = 0;
         char *payload = NULL, *elem = NULL;
 
-        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0)
+        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0) {
             return 0;
+        }
 
         elem = json_get_value_by_name(payload, len, AWSS_JSON_ID, &mlen, 0);
-        if (elem == NULL)
+        if (elem == NULL) {
             return 0;
+        }
         val = atoi(elem);
-        if (val != 123 && val >= g_notify_id)
+        if (val != 123 && val >= g_notify_id) {
             return 0;
+        }
         elem = json_get_value_by_name(payload, len, AWSS_JSON_CODE, &mlen, 0);
-        if (elem == NULL)
+        if (elem == NULL) {
             return 0;
+        }
         val = atoi(elem);
-        if (val != 200)
+        if (val != 200) {
             return 0;
+        }
     }
 
     unsigned char i = 0;
     for (i = 0; i < sizeof(notify_map) / sizeof(notify_map[0]); i ++) {
-        if (notify_map[i].notify_type != type)
+        if (notify_map[i].notify_type != type) {
             continue;
+        }
         awss_notify_resp[type] = 1;
         break;
     }
@@ -180,21 +189,24 @@ int awss_notify_dev_info(int type, int count)
         void *cb = NULL;
         char *method = NULL, *topic = NULL;
         for (i = 0; i < sizeof(notify_map) / sizeof(notify_map[0]); i ++) {
-            if (notify_map[i].notify_type != type)
+            if (notify_map[i].notify_type != type) {
                 continue;
+            }
 
             method = notify_map[i].notify_method;
             topic = notify_map[i].notify_topic;
             cb = notify_map[i].cb;
             break;
         }
-        if (method == NULL || topic == NULL)
+        if (method == NULL || topic == NULL) {
             break;
+        }
 
         buf = os_zalloc(DEV_INFO_LEN_MAX);
         dev_info = os_zalloc(DEV_INFO_LEN_MAX);
-        if (buf == NULL || dev_info == NULL)
+        if (buf == NULL || dev_info == NULL) {
             break;
+        }
 
         platform_netaddr_t notify_sa = {0};
 
@@ -208,14 +220,21 @@ int awss_notify_dev_info(int type, int count)
         awss_debug("topic:%s, %s\n", topic, buf);
         for (i = 0; i < count; i ++) {
             awss_cmp_coap_send(buf, strlen(buf), &notify_sa, topic, cb, &g_notify_msg_id);
-            if (count > 1) os_msleep(200 + 100 * i);
-            if (awss_notify_resp[type])
+            if (count > 1) {
+                os_msleep(200 + 100 * i);
+            }
+            if (awss_notify_resp[type]) {
                 break;
+            }
         }
     } while (0);
 
-    if (buf) os_free(buf);
-    if (dev_info) os_free(dev_info);
+    if (buf) {
+        os_free(buf);
+    }
+    if (dev_info) {
+        os_free(dev_info);
+    }
 
     return awss_notify_resp[type];
 }
@@ -237,8 +256,9 @@ static int awss_process_get_devinfo()
         return 0;
     }
 
-    if (coap_session_ctx == NULL)
+    if (coap_session_ctx == NULL) {
         return -1;
+    }
 
     char *buf = NULL;
     char *dev_info = NULL;
@@ -248,14 +268,17 @@ static int awss_process_get_devinfo()
     struct coap_session_ctx_t *ctx = (struct coap_session_ctx_t *)coap_session_ctx;
 
     buf = os_zalloc(DEV_INFO_LEN_MAX);
-    if (buf == NULL)
+    if (buf == NULL) {
         goto GET_DEV_INFO_ERR;
+    }
     dev_info = os_zalloc(DEV_INFO_LEN_MAX);
-    if (dev_info == NULL)
+    if (dev_info == NULL) {
         goto GET_DEV_INFO_ERR;
+    }
     msg = awss_cmp_get_coap_payload(ctx->request, &len);
-    if (msg == NULL)
+    if (msg == NULL) {
         goto GET_DEV_INFO_ERR;
+    }
     id = json_get_value_by_name(msg, len, "id", &id_len, 0);
     memset(req_msg_id, 0, sizeof(req_msg_id));
     memcpy(req_msg_id, id, id_len);
@@ -269,10 +292,11 @@ static int awss_process_get_devinfo()
 
     awss_debug("sending message to app: %s", buf);
     char topic[TOPIC_LEN_MAX] = {0};
-    if (ctx->is_mcast)
+    if (ctx->is_mcast) {
         awss_build_topic((const char *)TOPIC_GETDEVICEINFO_MCAST, topic, TOPIC_LEN_MAX);
-    else
+    } else {
         awss_build_topic((const char *)TOPIC_GETDEVICEINFO_UCAST, topic, TOPIC_LEN_MAX);
+    }
     if (0 > awss_cmp_coap_send_resp(buf, strlen(buf), ctx->remote, topic, ctx->request)) {
         awss_debug("sending failed.");
     }
@@ -284,8 +308,12 @@ static int awss_process_get_devinfo()
 GET_DEV_INFO_ERR:
     awss_release_coap_ctx(coap_session_ctx);
     coap_session_ctx = NULL;
-    if (buf) os_free(buf);
-    if (dev_info) os_free(dev_info);
+    if (buf) {
+        os_free(buf);
+    }
+    if (dev_info) {
+        os_free(dev_info);
+    }
     return -1;
 }
 
@@ -294,19 +322,22 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
     /*
      * if cloud is not ready, don't response token
      */
-    if (awss_report_token_cnt == 0)
+    if (awss_report_token_cnt == 0) {
         return -1;
+    }
     /*
      * if the last one is not finished, drop current request
      */
-    if (coap_session_ctx != NULL)
+    if (coap_session_ctx != NULL) {
         return -1;
+    }
     /*
      * copy coap session context
      */
     coap_session_ctx = awss_cpy_coap_ctx(request, remote, is_mcast);
-    if (coap_session_ctx == NULL)
+    if (coap_session_ctx == NULL) {
         return -1;
+    }
 
     produce_random(aes_random, sizeof(aes_random));
     awss_report_token();
@@ -340,16 +371,19 @@ int awss_connectap_notify()
     }
 
     do {
-        if (awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] != 0)
+        if (awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] != 0) {
             break;
+        }
 
         unsigned char i = 0;
         for (i = 0; i < RANDOM_MAX_LEN; i ++)
-            if (aes_random[i] != 0x00)
+            if (aes_random[i] != 0x00) {
                 break;
+            }
 
-        if (i >= RANDOM_MAX_LEN)
+        if (i >= RANDOM_MAX_LEN) {
             produce_random(aes_random, sizeof(aes_random));
+        }
 
         awss_notify_dev_info(AWSS_NOTIFY_DEV_TOKEN, 1);
 
@@ -362,7 +396,7 @@ int awss_connectap_notify()
     } while (0);
 
     awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] = 0;
-    connectap_interval = 0; 
+    connectap_interval = 0;
     connectap_cnt = 0;
     return 1;
 }
@@ -386,16 +420,17 @@ int awss_suc_notify()
 
     awss_debug("resp:%d\r\n", awss_notify_resp[AWSS_NOTIFY_SUC]);
     do {
-        if (awss_notify_resp[AWSS_NOTIFY_SUC] != 0)
+        if (awss_notify_resp[AWSS_NOTIFY_SUC] != 0) {
             break;
+        }
 
         awss_notify_dev_info(AWSS_NOTIFY_SUC, 1);
 
         suc_interval += 100;
         if (suc_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
-           awss_notify_resp[AWSS_NOTIFY_SUC] == 0) {
-           queue_delayed_work(&awss_suc_notify_work, suc_interval);
-           return 0;
+            awss_notify_resp[AWSS_NOTIFY_SUC] == 0) {
+            queue_delayed_work(&awss_suc_notify_work, suc_interval);
+            return 0;
         }
     } while (0);
 
@@ -407,25 +442,26 @@ int awss_suc_notify()
 
 int awss_devinfo_notify()
 {
-    static int devinfo_interval = 0; 
+    static int devinfo_interval = 0;
     static char devinfo_cnt = 0;
 
     do {
-        if (awss_notify_resp[AWSS_NOTIFY_DEV_RAND] != 0)
+        if (awss_notify_resp[AWSS_NOTIFY_DEV_RAND] != 0) {
             break;
+        }
 
         awss_notify_dev_info(AWSS_NOTIFY_DEV_RAND, 1);
 
         devinfo_interval += 100;
         if (devinfo_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
-           awss_notify_resp[AWSS_NOTIFY_DEV_RAND] == 0) {
-           queue_delayed_work(&awss_devinfo_notify_work, devinfo_interval);
-           return 0;
+            awss_notify_resp[AWSS_NOTIFY_DEV_RAND] == 0) {
+            queue_delayed_work(&awss_devinfo_notify_work, devinfo_interval);
+            return 0;
         }
     } while (0);
 
     awss_notify_resp[AWSS_NOTIFY_DEV_RAND] = 0;
-    devinfo_interval = 0; 
+    devinfo_interval = 0;
     devinfo_cnt = 0;
     return 1;
 }

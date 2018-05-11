@@ -398,8 +398,8 @@ static int set_wifi_ssid(void)
             g_netmgr_cxt.ap_config.pwd,
             sizeof(g_netmgr_cxt.saved_conf.pwd) - 1);
     memcpy(g_netmgr_cxt.saved_conf.bssid,
-            g_netmgr_cxt.ap_config.bssid,
-            sizeof(g_netmgr_cxt.saved_conf.bssid));
+           g_netmgr_cxt.ap_config.bssid,
+           sizeof(g_netmgr_cxt.saved_conf.bssid));
     ret = aos_kv_set(NETMGR_WIFI_KEY, (unsigned char *)&g_netmgr_cxt.saved_conf,
                      sizeof(netmgr_ap_config_t), 1);
 
@@ -675,8 +675,11 @@ bool netmgr_get_scan_cb_finished()
 /* Returned IP[16] is in dot format, eg. 192.168.1.1. */
 void netmgr_wifi_get_ip(char ip[])
 {
-    if (!ip) {LOGE(TAG, "Invalid argument in %s", __func__);}
-    else format_ip(g_netmgr_cxt.ipv4_owned, ip);
+    if (!ip) {
+        LOGE(TAG, "Invalid argument in %s", __func__);
+    } else {
+        format_ip(g_netmgr_cxt.ipv4_owned, ip);
+    }
 }
 
 #if !defined(CONFIG_YWSS) || defined(CSP_LINUXHOST)
