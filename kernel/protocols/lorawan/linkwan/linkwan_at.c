@@ -122,7 +122,7 @@ void linkwan_serial_input(uint8_t cmd)
             ret = true;
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", \
                      LORA_AT_APPKEY, key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
-                                     key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15]);
+                     key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15]);
         } else if (atcmd_index == (strlen(LORA_AT_APPKEY) + 32)) {
             length = hex2bin(&atcmd[strlen(LORA_AT_APPKEY)], buf, 16);
             if (length == 16) {
@@ -130,7 +130,7 @@ void linkwan_serial_input(uint8_t cmd)
                 if (ret == true) {
                     snprintf(atcmd, ATCMD_SIZE, "\r\n%s %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", \
                              LORA_AT_APPKEY, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-                                             buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+                             buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
                 }
             }
         }
