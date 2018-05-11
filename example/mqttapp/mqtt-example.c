@@ -83,10 +83,12 @@ static void wifi_service_event(input_event_t *event, void *priv_data) {
 static void mqtt_sub_callback(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
 {
     LOG("----");
-    LOG("Topic: '%s' (Length: %d)",
+    LOG("Topic: '%.*s' (Length: %d)",
+                  topic_len,
                   topic,
                   topic_len);
-    LOG("Payload: '%s' (Length: %d)",
+    LOG("Payload: '%.*s' (Length: %d)",
+                  payload_len,
                   (char*)payload,
                   payload_len);
     LOG("----");
