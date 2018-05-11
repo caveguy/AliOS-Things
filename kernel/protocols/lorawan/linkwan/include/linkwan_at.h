@@ -17,7 +17,7 @@
 #define LORA_AT_CLASS "AT+CLASS"  // class
 
 #define LORA_AT_CFM "AT+CFM"  // confirmation mode
-#define LORA_AT_CFMTRIALS "AT+CFMTRIALS"  // cfm trials
+#define LORA_AT_CFMTRIALS "AT+CTRIALS"  // cfm trials
 #define LORA_AT_JOIN "AT+JOIN"  // join network
 
 #define LORA_AT_DCS "AT+DCS"  // dutycycle

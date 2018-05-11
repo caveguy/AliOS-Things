@@ -218,7 +218,7 @@ void linkwan_serial_input(uint8_t cmd)
             ret = true;
             trials = get_lora_tx_cfm_trials();
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_CFMTRIALS, trials);
-        } else if (atcmd_index == (strlen(LORA_AT_CFMTRIALS) + 1)) {
+        } else if (atcmd_index > strlen(LORA_AT_CFMTRIALS)) {
             trials = strtol(atcmd + strlen(LORA_AT_CFMTRIALS), NULL, 0);
             ret = set_lora_tx_cfm_trials(trials);
             if (ret == true) {
@@ -265,7 +265,7 @@ void linkwan_serial_input(uint8_t cmd)
 
 exit:
     if (ret == false) {
-        snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_APPEUI);
+        snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", atcmd);
     }
     linkwan_serial_output(atcmd, strlen(atcmd));
     atcmd_index = 0;
