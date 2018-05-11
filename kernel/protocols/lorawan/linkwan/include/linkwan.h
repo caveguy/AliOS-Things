@@ -67,20 +67,20 @@ typedef enum join_method_s {
 #endif
 
 typedef enum eTxEventType {
-/*!
- * @brief AppdataTransmition issue based on timer every TxDutyCycleTime
- */
+    /*!
+     * @brief AppdataTransmition issue based on timer every TxDutyCycleTime
+     */
     TX_ON_TIMER,
-/*!
- * @brief AppdataTransmition external event plugged on OnSendEvent( )
- */
+    /*!
+     * @brief AppdataTransmition external event plugged on OnSendEvent( )
+     */
     TX_ON_EVENT
 } TxEventType_t;
 
 typedef struct {
-  uint8_t* Buff;
-  uint8_t BuffSize;
-  uint8_t Port;
+    uint8_t *Buff;
+    uint8_t BuffSize;
+    uint8_t Port;
 } lora_AppData_t;
 
 typedef struct sLoRaMainCallback {

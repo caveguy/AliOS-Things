@@ -264,7 +264,8 @@ static uint32_t generate_rejoin_delay(void)
     return rejoin_delay;
 }
 
-static uint8_t get_freqband_num(void) {
+static uint8_t get_freqband_num(void)
+{
     for (uint8_t i = 0; i < 16; i++) {
         if ((get_lora_freqband_mask() & (1 << i)) && i != 1) {
             g_freqband_num++;
@@ -762,7 +763,7 @@ uint8_t *get_lora_app_key(void)
 
 bool set_lora_freqband_mask(uint16_t mask)
 {
-    
+
     g_freqband_mask = mask;
     return true;
 }
