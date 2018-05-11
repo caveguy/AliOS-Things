@@ -328,7 +328,7 @@ int online_ucast_get_device_info(void *ctx, void *resource, void *remote, void *
 
 int awss_connectap_notify()
 {
-    static int connectap_interval = 300; 
+    static int connectap_interval = 300;
     static char connectap_cnt = 0;
 
     /*
