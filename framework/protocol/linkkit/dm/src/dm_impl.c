@@ -70,133 +70,207 @@ static void* dm_impl_generate_new_thing(void* _self, const char* tsl, int tsl_le
 {
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
     thing_t** thing = NULL;
 
     assert(thing_manager && tsl && tsl_len > 0);
 
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
     thing = (thing_t**)(*thing_manager)->generate_new_local_thing(thing_manager, tsl, tsl_len);
-
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+	
     return thing;
 }
 
 static int dm_impl_set_property_value(void* _self, const void* thing_id, const void* identifier, const void* value, const char* value_str)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->set_thing_property_value && thing_id && identifier && (value || value_str));
 
-    return (*thing_manager)->set_thing_property_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->set_thing_property_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_set_event_output_value(void* _self, const void* thing_id, const void* identifier, const void* value, const char* value_str)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->set_thing_event_output_value && thing_id && identifier && (value || value_str));
     if (strcmp(identifier, "post") == 0) {
         return -1;
     }
-    return (*thing_manager)->set_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->set_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+	
+	return res;
 }
 
 static int dm_impl_set_service_output_value(void* _self, const void* thing_id, const void* identifier, const void* value, const char* value_str)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->set_thing_service_output_value && thing_id && identifier && (value || value_str));
     if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
         return -1;
     }
-    return (*thing_manager)->set_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->set_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_get_property_value(const void* _self, const void* thing_id, const void* identifier, void* value, char** value_str)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_property_value && thing_id && identifier && (value || value_str));
 
-    return (*thing_manager)->get_thing_property_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->get_thing_property_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_get_service_input_value(const void* _self, const void* thing_id, const void* identifier, void* value, char** value_str)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_service_input_value && thing_id && identifier && (value || value_str));
     if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
         return -1;
     }
-    return (*thing_manager)->get_thing_service_input_value(thing_manager, thing_id, identifier, value, value_str);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->get_thing_service_input_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_get_service_output_value(const void* _self, const void* thing_id, const void* identifier, void* value, char** value_str)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_service_output_value && thing_id && identifier && (value || value_str));
     if (strcmp(identifier, "set") == 0 || strcmp(identifier, "get") == 0) {
         return -1;
     }
-    return (*thing_manager)->get_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->get_thing_service_output_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_get_event_output_value(const void* _self, const void* thing_id, const void* identifier, void* value, char** value_str)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     const thing_manager_t** thing_manager = (const thing_manager_t**)self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->get_thing_event_output_value && thing_id && identifier && (value || value_str));
     if (strcmp(identifier, "post") == 0) {
         return -1;
     }
-    return (*thing_manager)->get_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->get_thing_event_output_value(thing_manager, thing_id, identifier, value, value_str);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_install_callback_function(void* _self, handle_dm_callback_fp_t linkkit_callback_fp)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     if (!linkkit_callback_fp) return -1;
 
-    return (*thing_manager)->add_callback_function(thing_manager, linkkit_callback_fp);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->add_callback_function(thing_manager, linkkit_callback_fp);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_trigger_event(const void* _self, const void* thing_id, const void* event_identifier, const char* property_identifier)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->trigger_event && thing_id && event_identifier);
 
-    return (*thing_manager)->trigger_event(thing_manager, thing_id, event_identifier, property_identifier);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->trigger_event(thing_manager, thing_id, event_identifier, property_identifier);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 #ifdef EXTENDED_INFO_ENABLED
 static int dm_impl_trigger_deviceinfo_update(const void* _self, const void* thing_id, const char* params)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->trigger_extended_info_update && thing_id && params);
 
-    return (*thing_manager)->trigger_extended_info_update(thing_manager, thing_id, params);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->trigger_extended_info_update(thing_manager, thing_id, params);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_trigger_deviceinfo_delete(const void* _self, const void* thing_id, const char* params)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->trigger_extended_info_delete && thing_id && params);
 
-    return (*thing_manager)->trigger_extended_info_delete(thing_manager, thing_id, params);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+	res = (*thing_manager)->trigger_extended_info_delete(thing_manager, thing_id, params);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 #endif /* EXTENDED_INFO_ENABLED*/
 #ifdef RRPC_ENABLED
@@ -205,35 +279,54 @@ static int dm_impl_answer_service(const void* _self, const void* thing_id, const
 static int dm_impl_answer_service(const void* _self, const void* thing_id, const void* identifier, int response_id, int code)
 #endif /* RRPC_ENABLED */
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->answer_service && thing_id && identifier);
+
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
 #ifdef RRPC_ENABLED
-    return (*thing_manager)->answer_service(thing_manager, thing_id, identifier, response_id, code, rrpc);
+    res = (*thing_manager)->answer_service(thing_manager, thing_id, identifier, response_id, code, rrpc);
 #else
-    return (*thing_manager)->answer_service(thing_manager, thing_id, identifier, response_id, code);
+    res = (*thing_manager)->answer_service(thing_manager, thing_id, identifier, response_id, code);
 #endif /* RRPC_ENABLED */
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_invoke_raw_service(const void* _self, const void* thing_id, void* raw_data, int raw_data_length)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->invoke_raw_service && thing_id);
 
-    return (*thing_manager)->invoke_raw_service(thing_manager, thing_id, raw_data, raw_data_length);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->invoke_raw_service(thing_manager, thing_id, raw_data, raw_data_length);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_answer_raw_service(const void* _self, const void* thing_id, void* raw_data, int raw_data_length)
 {
+	int res = 0;
     const dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && (*thing_manager)->invoke_raw_service && thing_id);
 
-    return (*thing_manager)->answer_raw_service(thing_manager, thing_id, raw_data, raw_data_length);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->answer_raw_service(thing_manager, thing_id, raw_data, raw_data_length);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 #ifndef CM_SUPPORT_MULTI_THREAD
 static int dm_impl_yield(const void* _self, int timeout_ms)
@@ -321,85 +414,130 @@ void dm_lltoa(long long n, char* str, int radix)
 #ifdef SUBDEV_ENABLE
 int dm_impl_add_subdev_callback_function(void* _self, handle_dm_subdev_callback_fp_t subdev_callback_func)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     if (!subdev_callback_func) return -1;
 
-    return (*thing_manager)->add_subdev_callback_function(thing_manager, subdev_callback_func);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->add_subdev_callback_function(thing_manager, subdev_callback_func);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static void* dm_impl_generate_new_subthing(void* _self, const char* product_key, const char* device_name, const char* tsl, int tsl_len)
 {
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
     void* thing = NULL;
 
     assert(thing_manager && *thing_manager && product_key && device_name);
 
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
     thing = (*thing_manager)->generate_new_sub_thing(thing_manager, product_key, device_name, tsl, tsl_len);
-
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+	
     return thing;
 }
 
 static int dm_impl_remove_subthing(void* _self, const void* sub_thing_id)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && sub_thing_id);
 
-    return (*thing_manager)->remove_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->remove_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_bind_sub_thing(void* _self, const char* pk, const char* dn, const char* ds)
 {
+	int res =0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && pk && dn);
 
-    return (*thing_manager)->bind_sub_thing(thing_manager, pk, dn, ds);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->bind_sub_thing(thing_manager, pk, dn, ds);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_unbind_sub_thing(void* _self, const char* pk, const char* dn)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && pk && dn);
 
-    return (*thing_manager)->unbind_sub_thing(thing_manager, pk, dn);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->unbind_sub_thing(thing_manager, pk, dn);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_login_sub_thing(void* _self, const void* sub_thing_id, const char* ds)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && sub_thing_id && ds);
 
-    return (*thing_manager)->login_sub_thing(thing_manager, sub_thing_id, ds);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->login_sub_thing(thing_manager, sub_thing_id, ds);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_logout_sub_thing(void* _self, const void* sub_thing_id)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && sub_thing_id);
 
-    return (*thing_manager)->logout_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->logout_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 
 static int dm_impl_topo_delete_subthing(void* _self, const void* sub_thing_id)
 {
+	int res = 0;
     dm_impl_t* self = _self;
     thing_manager_t** thing_manager = self->_thing_manager;
+	dm_thing_manager_t* thing_manager_object = self->_thing_manager;
 
     assert(thing_manager && *thing_manager && sub_thing_id);
 
-    return (*thing_manager)->topo_delete_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexLock(thing_manager_object->_usercall_mutex);
+    res = (*thing_manager)->topo_delete_sub_thing(thing_manager, sub_thing_id);
+	HAL_MutexUnlock(thing_manager_object->_usercall_mutex);
+
+	return res;
 }
 #endif
 

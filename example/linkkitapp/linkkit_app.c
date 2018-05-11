@@ -60,9 +60,23 @@ typedef struct _sample_context {
 
 
 sample_context_t g_sample_context;
+static pthread_t g_linkkit_set_post_thread = NULL;
 
 void post_property_cb(const void* thing_id, int respons_id, int code, const char* response_message, void* ctx)
 {
+	#if 0
+	sample_context_t* sample_ctx = &g_sample_context;
+	char event_output_identifier[64];
+    snprintf(event_output_identifier, sizeof(event_output_identifier), "%s.%s", EVENT_ERROR_IDENTIFIER, EVENT_ERROR_OUTPUT_INFO_IDENTIFIER);
+
+    int errorCode = 0;
+    linkkit_set_value(linkkit_method_set_event_output_value,
+                      sample_ctx->thing,
+                      event_output_identifier,
+                      &errorCode, NULL);
+
+    return linkkit_trigger_event(sample_ctx->thing, EVENT_ERROR_IDENTIFIER, post_property_cb);
+	#endif
     LINKKIT_PRINTF("thing@%p: response arrived:\nid:%d\tcode:%d\tmessage:%s\n", thing_id, respons_id, code, response_message == NULL ? "NULL" : response_message);
 }
 
@@ -387,7 +401,6 @@ static int post_property_wifi_status_once(sample_context_t* sample_ctx)
 void linkkit_action(void *params)
 {
     static unsigned long long now = 0;
-
     //static int now_size = 0;
     //static int last_size = 0;
 
@@ -405,9 +418,10 @@ void linkkit_action(void *params)
 
 #if 1
 	/* about 60 seconds, assume trigger event about every 60s. */
-    if (now % 600 == 0 && is_active(sample_ctx)) {
+    if (now % 50 == 0 && is_active(sample_ctx)) {
         int id_send = 0;
         int ret;
+		LINKKIT_PRINTF("====================Thread1====================\n");
         ret = post_event_error(sample_ctx);
         if (ret > 0) {
             id_send = ret;
@@ -431,6 +445,63 @@ void linkkit_action(void *params)
     aos_post_delayed_action(100, linkkit_action, sample_ctx);
 }
 
+void linkkit_set_post_thread_action(void *params)
+{
+	static unsigned long long now = 0;
+    //static int now_size = 0;
+    //static int last_size = 0;
+
+    sample_context_t* sample_ctx = params;
+
+    //linkkit_dispatch();
+
+    now += 1;
+
+#ifdef POST_WIFI_STATUS
+    if(now % 10 == 0) {
+        post_property_wifi_status_once(sample_ctx);
+    }
+#endif
+
+#if 1
+	/* about 60 seconds, assume trigger event about every 60s. */
+    if (now % 10 == 0 && is_active(sample_ctx)) {
+        int id_send = 0;
+        int ret;
+		LINKKIT_PRINTF("====================Thread2====================\n");
+        ret = post_event_error(sample_ctx);
+        if (ret > 0) {
+            id_send = ret;
+            LINKKIT_PRINTF("send id:%d\n", id_send);
+        }
+    }
+#endif
+
+#if 0
+    now_size = system_get_free_heap_size();
+    if (now_size != last_size) {
+        last_size = now_size;
+        if ((now_size - last_size) > 256 ||  (last_size - now_size) > 256) {
+            LINKKIT_PRINTF("[heap check task] free heap size:%d\n", now_size);
+        }
+    } else if (now % 600 == 0) {
+        LINKKIT_PRINTF("[heap check task] free heap size:%d Bytes(now time:%d)\n", now_size, now);
+	}
+#endif
+
+    aos_post_delayed_action(100, linkkit_set_post_thread_action, sample_ctx);
+}
+
+static void *linkkit_set_post_thread(void *params)
+{
+	sample_context_t* sample_ctx = &g_sample_context;
+	
+	aos_post_delayed_action(100, linkkit_set_post_thread_action, sample_ctx);
+
+	while (1) {
+		HAL_SleepMs(5000);
+	}
+}
 
 int linkkit_main()
 {
@@ -452,6 +523,9 @@ int linkkit_main()
 
     aos_post_delayed_action(100, linkkit_action, sample_ctx);
 
+	int stack_used = 0;
+	aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);
+	
     return 0;
 }
 

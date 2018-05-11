@@ -81,6 +81,7 @@ extern "C" {
 typedef struct {
     const  void*         _;
     char*                _name; /* dm thing manager object name. */
+	void*                _usercall_mutex;
     void*                _local_thing_list; /* local thing list. */
     void*                _local_thing_name_list; /* local thing list. */
     void*                _sub_thing_list; /* sub thing list. currently not use. */

@@ -38,7 +38,8 @@ typedef struct {
     char  device_secret[DEVICE_SECRET_MAXLEN];
 }request_info_t;
 #endif
-
+static void *g_dm_thing_manager_callback_mutex = NULL;
+static void *g_dm_thing_manager_usercall_mutex = NULL;
 static const char string_dm_thing_manager_class_name[] __DM_READ_ONLY__ = "dm_thg_mng_cls";
 static const char string_thing_service_property_set[] __DM_READ_ONLY__ = "thing.service.property.set";
 static const char string_thing_service_property_get[] __DM_READ_ONLY__ = "thing.service.property.get";
@@ -189,12 +190,14 @@ static void invoke_callback_list(void* _dm_thing_manager, dm_callback_type_t dm_
 
     assert(dm_callback_type < dm_callback_type_number);
 
+	HAL_MutexUnlock(g_dm_thing_manager_usercall_mutex);
     /* invoke callback funtions. */
     list = dm_thing_manager->_callback_list;
     if (list && !(*list)->empty(list)) {
         dm_thing_manager->_callback_type = dm_callback_type;
         callback_list_iterator(dm_thing_manager, invoke_callback_func);
     }
+	HAL_MutexLock(g_dm_thing_manager_usercall_mutex);
 }
 
 #ifdef SUBDEV_ENABLE
@@ -308,6 +311,8 @@ static void dm_cm_event_handler(void* pcontext, iotx_cm_event_msg_t* msg, void* 
     char* file_content = NULL;
     void* thing;
 #endif
+	HAL_MutexLock(g_dm_thing_manager_callback_mutex);
+	HAL_MutexLock(g_dm_thing_manager_usercall_mutex);
     dm_printf("%s", string_cm_event_handler_prompt_start);
     if (IOTX_CM_EVENT_REGISTER_RESULT == msg->event_id) {
         iotx_cm_event_result_t* cm_event_result = (iotx_cm_event_result_t*)msg->msg;
@@ -355,6 +360,8 @@ static void dm_cm_event_handler(void* pcontext, iotx_cm_event_msg_t* msg, void* 
                 thing = dm_thing_manager_generate_new_local_thing(dm_thing_manager, file_content, strlen(file_content));
                 if (NULL == thing) {
                     dm_log_err("generate new thing failed");
+					HAL_MutexUnlock(g_dm_thing_manager_usercall_mutex);
+					HAL_MutexUnlock(g_dm_thing_manager_callback_mutex);
                     return;
                 }
                 dm_lite_free(file_content);
@@ -426,6 +433,8 @@ static void dm_cm_event_handler(void* pcontext, iotx_cm_event_msg_t* msg, void* 
     }
 
     dm_printf("\nevent %d(%s)%s", msg->event_id, event_str, string_cm_event_handler_prompt_end);
+	HAL_MutexUnlock(g_dm_thing_manager_usercall_mutex);
+	HAL_MutexUnlock(g_dm_thing_manager_callback_mutex);
 }
 
 static void print_iotx_cm_message_info(const void* _source, const void* _msg)
@@ -1702,7 +1711,7 @@ static void* dm_thing_manager_ctor(void* _self, va_list* params)
     self->_cloud_domain = va_arg(*params, int);
 
     assert(self->_name);
-
+	
     self->_local_thing_list = new_object(DM_SLIST_CLASS, string_local_thing_list);
     self->_local_thing_name_list = new_object(DM_SLIST_CLASS, string_local_thing_name_list);
     self->_sub_thing_list = new_object(DM_SLIST_CLASS, string_sub_thing_list);
@@ -1763,6 +1772,12 @@ static void* dm_thing_manager_ctor(void* _self, va_list* params)
     self->_permit_time_ms = 200000;
     self->_uptime_ms = HAL_UptimeMs();
 #endif
+
+	self->_usercall_mutex = NULL;
+	self->_usercall_mutex = HAL_MutexCreate();
+	g_dm_thing_manager_usercall_mutex = self->_usercall_mutex;
+	g_dm_thing_manager_callback_mutex = HAL_MutexCreate();
+	assert(g_dm_thing_manager_callback_mutex && g_dm_thing_manager_usercall_mutex);
     return self;
 }
 
@@ -1807,6 +1822,12 @@ static void* dm_thing_manager_dtor(void* _self)
     self->_id = 0;
     self->_method = NULL;
 
+	HAL_MutexDestroy(self->_usercall_mutex);
+	self->_usercall_mutex = NULL;
+	g_dm_thing_manager_usercall_mutex = NULL;
+
+	HAL_MutexDestroy(g_dm_thing_manager_callback_mutex);
+	g_dm_thing_manager_callback_mutex = NULL;
     return self;
 }
 
