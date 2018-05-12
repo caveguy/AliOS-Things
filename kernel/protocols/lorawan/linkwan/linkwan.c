@@ -59,31 +59,28 @@ static bool send_frame(void)
     LoRaMacTxInfo_t txInfo;
 
     if (LoRaMacQueryTxPossible(app_data.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
-        // Send empty frame in order to flush MAC commands
+        return true;
+    }
+
+    if (is_tx_confirmed == DISABLE) {
         mcpsReq.Type = MCPS_UNCONFIRMED;
-        mcpsReq.Req.Unconfirmed.fBuffer = NULL;
-        mcpsReq.Req.Unconfirmed.fBufferSize = 0;
+        mcpsReq.Req.Unconfirmed.fPort = app_data.Port;
+        mcpsReq.Req.Unconfirmed.fBuffer = app_data.Buff;
+        mcpsReq.Req.Unconfirmed.fBufferSize = app_data.BuffSize;
         mcpsReq.Req.Unconfirmed.Datarate = lora_param.TxDatarate;
     } else {
-        if (is_tx_confirmed == DISABLE) {
-            mcpsReq.Type = MCPS_UNCONFIRMED;
-            mcpsReq.Req.Unconfirmed.fPort = app_data.Port;
-            mcpsReq.Req.Unconfirmed.fBuffer = app_data.Buff;
-            mcpsReq.Req.Unconfirmed.fBufferSize = app_data.BuffSize;
-            mcpsReq.Req.Unconfirmed.Datarate = lora_param.TxDatarate;
-        } else {
-            mcpsReq.Type = MCPS_CONFIRMED;
-            mcpsReq.Req.Confirmed.fPort = app_data.Port;
-            mcpsReq.Req.Confirmed.fBuffer = app_data.Buff;
-            mcpsReq.Req.Confirmed.fBufferSize = app_data.BuffSize;
-            mcpsReq.Req.Confirmed.NbTrials = num_trials;
-            mcpsReq.Req.Confirmed.Datarate = lora_param.TxDatarate;
-        }
+        mcpsReq.Type = MCPS_CONFIRMED;
+        mcpsReq.Req.Confirmed.fPort = app_data.Port;
+        mcpsReq.Req.Confirmed.fBuffer = app_data.Buff;
+        mcpsReq.Req.Confirmed.fBufferSize = app_data.BuffSize;
+        mcpsReq.Req.Confirmed.NbTrials = num_trials;
+        mcpsReq.Req.Confirmed.Datarate = lora_param.TxDatarate;
     }
 
     if (LoRaMacMcpsRequest(&mcpsReq) == LORAMAC_STATUS_OK) {
         return false;
     }
+
     return true;
 }
 
