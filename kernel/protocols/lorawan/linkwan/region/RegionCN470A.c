@@ -172,7 +172,7 @@ PhyParam_t RegionCN470AGetPhyParam( GetPhyParams_t *getPhy )
             break;
         }
         case PHY_NEXT_LOWER_TX_DR: {
-            phyParam.Value = GetNextLowerTxDr( getPhy->Datarate, CN470A_TX_MIN_DATARATE );
+            phyParam.Value = GetNextLowerTxDr( getPhy->Datarate, DR_2);
             break;
         }
         case PHY_DEF_TX_POWER: {
