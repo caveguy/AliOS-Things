@@ -60,7 +60,6 @@ typedef struct _sample_context {
 
 
 sample_context_t g_sample_context;
-static pthread_t g_linkkit_set_post_thread = NULL;
 
 void post_property_cb(const void* thing_id, int respons_id, int code, const char* response_message, void* ctx)
 {

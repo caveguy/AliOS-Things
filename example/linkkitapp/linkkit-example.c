@@ -29,8 +29,8 @@
 #include "iot_export.h"
 #include "iot_export_mqtt.h"
 #include "linkkit_app.h"
-#include "awss.h"
-#include "awss_cmp.h"
+//#include "awss.h"
+//#include "awss_cmp.h"
 #ifdef AOS_ATCMD
 #include <atparser.h>
 #endif
@@ -112,6 +112,8 @@ void do_awss_active()
     awss_running = 1;
     awss_config_press();
 }
+
+extern int awss_report_reset();
 
 static void do_awss_reset()
 {
