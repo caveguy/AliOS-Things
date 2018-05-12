@@ -9,9 +9,7 @@
 #include <stdio.h>
 
 #define LORAWAN_APP_DATA_BUFF_SIZE 242
-#define APP_TX_DUTYCYCLE 30000
 #define LORAWAN_CONFIRMED_MSG ENABLE
-#define LORAWAN_APP_PORT 100
 #define JOINREQ_NBTRIALS 3
 
 enum {
@@ -68,14 +66,9 @@ typedef enum join_method_s {
 #endif
 
 typedef enum eTxEventType {
-    /*!
-     * @brief AppdataTransmition issue based on timer every TxDutyCycleTime
-     */
     TX_ON_TIMER,
-    /*!
-     * @brief AppdataTransmition external event plugged on OnSendEvent( )
-     */
-    TX_ON_EVENT
+    TX_ON_EVENT,
+    TX_ON_NONE
 } TxEventType_t;
 
 typedef struct {
@@ -138,9 +131,12 @@ bool set_lora_state(DeviceState_t state);
 bool set_lora_tx_dutycycle(uint32_t dutycycle);
 uint32_t get_lora_tx_dutycycle(void);
 
+bool tx_lora_data(void);
+lora_AppData_t *get_lora_data(void);
+
 // for linkWAN test
 bool set_lora_tx_len(uint16_t len);
-uint16_t get_lora_tx_len(void);
+uint8_t get_lora_tx_len(void);
 
 bool send_lora_link_check(void);
 

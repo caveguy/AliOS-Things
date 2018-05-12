@@ -14,8 +14,9 @@
 #include "kvmgr.h"
 #endif
 
-static uint8_t app_data_buff[LORAWAN_APP_DATA_BUFF_SIZE];
-static lora_AppData_t app_data = {app_data_buff, 0, 0};
+static uint8_t data_buff[LORAWAN_APP_DATA_BUFF_SIZE];
+static lora_AppData_t data_buf = {data_buff, 0, 0};
+static uint8_t tx_size = 1;
 
 static LoRaMacPrimitives_t LoRaMacPrimitives;
 static LoRaMacCallback_t LoRaMacCallbacks;
@@ -26,13 +27,15 @@ static int8_t is_tx_confirmed = ENABLE;
 static bool next_tx = true;
 static uint8_t num_trials = 8;
 static bool rejoin_flag = true;
+
 static uint32_t g_ack_index = 0;
+static uint32_t g_msg_index = 0;
 
 static uint8_t g_freqband_num = 0;
 
 static LoRaParam_t lora_param = {
-    TX_ON_TIMER,
-    APP_TX_DUTYCYCLE,
+    TX_ON_NONE,
+    0,
     LORAWAN_ADR_ON,
     DR_0,
     LORAWAN_PUBLIC_NETWORK,
@@ -47,31 +50,28 @@ lora_dev_t g_lora_dev = {LORAWAN_DEVICE_EUI, LORAWAN_APPLICATION_EUI, LORAWAN_AP
 node_freq_type_t g_freq_type = FREQ_TYPE_INTRA;
 join_method_t g_join_method;
 
-static void prepare_tx_frame(void)
-{
-    app_callbacks->LoraTxData(&app_data);
-}
+static void start_dutycycle_timer(void);
 
 static bool send_frame(void)
 {
     McpsReq_t mcpsReq;
     LoRaMacTxInfo_t txInfo;
 
-    if (LoRaMacQueryTxPossible(app_data.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
+    if (LoRaMacQueryTxPossible(data_buf.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
         return true;
     }
 
     if (is_tx_confirmed == DISABLE) {
         mcpsReq.Type = MCPS_UNCONFIRMED;
-        mcpsReq.Req.Unconfirmed.fPort = app_data.Port;
-        mcpsReq.Req.Unconfirmed.fBuffer = app_data.Buff;
-        mcpsReq.Req.Unconfirmed.fBufferSize = app_data.BuffSize;
+        mcpsReq.Req.Unconfirmed.fPort = data_buf.Port;
+        mcpsReq.Req.Unconfirmed.fBuffer = data_buf.Buff;
+        mcpsReq.Req.Unconfirmed.fBufferSize = data_buf.BuffSize;
         mcpsReq.Req.Unconfirmed.Datarate = lora_param.TxDatarate;
     } else {
         mcpsReq.Type = MCPS_CONFIRMED;
-        mcpsReq.Req.Confirmed.fPort = app_data.Port;
-        mcpsReq.Req.Confirmed.fBuffer = app_data.Buff;
-        mcpsReq.Req.Confirmed.fBufferSize = app_data.BuffSize;
+        mcpsReq.Req.Confirmed.fPort = data_buf.Port;
+        mcpsReq.Req.Confirmed.fBuffer = data_buf.Buff;
+        mcpsReq.Req.Confirmed.fBufferSize = data_buf.BuffSize;
         mcpsReq.Req.Confirmed.NbTrials = num_trials;
         mcpsReq.Req.Confirmed.Datarate = lora_param.TxDatarate;
     }
@@ -81,6 +81,13 @@ static bool send_frame(void)
     }
 
     return true;
+}
+
+static void prepare_tx_frame(void)
+{
+    if (lora_param.TxEvent == TX_ON_TIMER) {
+        app_callbacks->LoraTxData(&data_buf);
+    }
 }
 
 static void on_tx_next_packet_timer_event(void)
@@ -236,10 +243,10 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
             case 224:
                 break;
             default:
-                app_data.Port = mcpsIndication->Port;
-                app_data.BuffSize = mcpsIndication->BufferSize;
-                memcpy1(app_data.Buff, mcpsIndication->Buffer, app_data.BuffSize);
-                app_callbacks->LoraRxData(&app_data);
+                data_buf.Port = mcpsIndication->Port;
+                data_buf.BuffSize = mcpsIndication->BufferSize;
+                memcpy1(data_buf.Buff, mcpsIndication->Buffer, data_buf.BuffSize);
+                app_callbacks->LoraRxData(&data_buf);
                 break;
         }
 #ifdef CONFIG_DEBUG_LINKWAN
@@ -541,7 +548,8 @@ void lora_fsm( void )
             case DEVICE_STATE_JOINED: {
                 DBG_LINKWAN("Joined\n\r");
                 store_lora_config();
-                device_state = DEVICE_STATE_SEND;
+                device_state = DEVICE_STATE_SLEEP;
+                start_dutycycle_timer();
                 break;
             }
             case DEVICE_STATE_SEND: {
@@ -549,10 +557,10 @@ void lora_fsm( void )
                     prepare_tx_frame();
                     next_tx = send_frame();
                 }
-                if ( lora_param.TxEvent == TX_ON_TIMER ) {
-                    // Schedule next packet transmission
-                    TimerSetValue(&TxNextPacketTimer, lora_param.TxDutyCycleTime);
-                    TimerStart(&TxNextPacketTimer);
+                if (lora_param.TxEvent == TX_ON_TIMER) {
+                    start_dutycycle_timer();
+                } else if (lora_param.TxEvent == TX_ON_EVENT) {
+                    lora_param.TxEvent = TX_ON_NONE;
                 }
                 device_state = DEVICE_STATE_SLEEP;
                 break;
@@ -625,9 +633,41 @@ int get_lora_adr(void)
     return mib_req.Param.AdrEnable;
 }
 
+static void start_dutycycle_timer(void)
+{
+    MibRequestConfirm_t mibReq;
+    LoRaMacStatus_t status;
+
+    TimerStop(&TxNextPacketTimer);
+    mibReq.Type = MIB_NETWORK_JOINED;
+    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    if (status == LORAMAC_STATUS_OK) {
+        if (mibReq.Param.IsNetworkJoined == true &&
+            lora_param.TxEvent == TX_ON_TIMER && lora_param.TxDutyCycleTime != 0) {
+            TimerSetValue(&TxNextPacketTimer, lora_param.TxDutyCycleTime);
+            TimerStart(&TxNextPacketTimer);
+            return;
+        }
+    }
+    if (lora_param.TxDutyCycleTime == 0 && lora_param.TxEvent == TX_ON_TIMER) {
+        lora_param.TxEvent = TX_ON_NONE;
+    }
+}
+
 bool set_lora_tx_dutycycle(uint32_t dutycycle)
 {
+    if (dutycycle != 0 && dutycycle < 1000) {
+        dutycycle = 1000;
+    }
+
     lora_param.TxDutyCycleTime = dutycycle;
+    TimerStop(&TxNextPacketTimer);
+    if (dutycycle == 0) {
+        lora_param.TxEvent = TX_ON_NONE;
+    } else {
+        start_dutycycle_timer();
+        lora_param.TxEvent = TX_ON_TIMER;
+    }
     return true;
 }
 
@@ -636,19 +676,34 @@ uint32_t get_lora_tx_dutycycle(void)
     return lora_param.TxDutyCycleTime;
 }
 
-bool set_lora_tx_len(uint16_t len)
+lora_AppData_t *get_lora_data(void)
 {
-    if (len <= LORAWAN_APP_DATA_BUFF_SIZE) {
-        app_data.BuffSize = len;
-        return true;
-    } else {
-        return false;
+    if (next_tx == true) {
+        return &data_buf;
     }
+    return NULL;
 }
 
-uint16_t get_lora_tx_len(void)
+bool tx_lora_data(void)
 {
-    return app_data.BuffSize;
+    MibRequestConfirm_t mibReq;
+    LoRaMacStatus_t status;
+
+    if (next_tx == false) {
+        return false;
+    }
+
+    mibReq.Type = MIB_NETWORK_JOINED;
+    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    if (status == LORAMAC_STATUS_OK) {
+        if (mibReq.Param.IsNetworkJoined == true) {
+            TimerStop(&TxNextPacketTimer);
+            lora_param.TxEvent = TX_ON_EVENT;
+            device_state = DEVICE_STATE_SEND;
+            return true;
+        }
+    }
+    return false;
 }
 
 bool set_lora_tx_cfm_flag(int confirmed)
@@ -680,20 +735,6 @@ bool set_lora_state(DeviceState_t state)
     }
     device_state = state;
     return true;
-}
-
-bool send_lora_link_check(void)
-{
-    MlmeReq_t mlmeReq;
-
-    mlmeReq.Type = MLME_LINK_CHECK;
-    if (next_tx == true) {
-        if (LoRaMacMlmeRequest(&mlmeReq) == LORAMAC_STATUS_OK) {
-            next_tx = false;
-            return true;
-        }
-    }
-    return false;
 }
 
 bool set_lora_class(int8_t class)
@@ -771,4 +812,33 @@ bool set_lora_freqband_mask(uint16_t mask)
 uint16_t get_lora_freqband_mask(void)
 {
     return g_lora_dev.mask;
+}
+
+// for linkWAN test
+bool set_lora_tx_len(uint16_t len)
+{
+    if (len <= LORAWAN_APP_DATA_BUFF_SIZE) {
+        tx_size = len;
+        return true;
+    }
+    return false;
+}
+
+uint8_t get_lora_tx_len(void)
+{
+    return tx_size;
+}
+
+bool send_lora_link_check(void)
+{
+    MlmeReq_t mlmeReq;
+
+    mlmeReq.Type = MLME_LINK_CHECK;
+    if (next_tx == true) {
+        if (LoRaMacMlmeRequest(&mlmeReq) == LORAMAC_STATUS_OK) {
+            next_tx = false;
+            return true;
+        }
+    }
+    return false;
 }

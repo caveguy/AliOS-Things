@@ -246,7 +246,7 @@ void linkwan_serial_input(uint8_t cmd)
             }
         }
     } else if (strncmp(atcmd, LORA_AT_TXSIZE, strlen(LORA_AT_TXSIZE)) == 0) {
-        uint16_t len;
+        uint8_t len;
         if (atcmd_index == strlen(LORA_AT_TXSIZE)) {
             ret = true;
             len = get_lora_tx_len();
