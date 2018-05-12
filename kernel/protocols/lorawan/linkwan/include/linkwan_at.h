@@ -15,6 +15,7 @@
 #define LORA_AT_DR "AT+DR"  // datarate
 #define LORA_AT_ADR "AT+ADR"  // ADR
 #define LORA_AT_CLASS "AT+CLASS"  // class
+#define LORA_AT_SCANMASK "AT+SMASK"  // scan mask
 
 #define LORA_AT_CFM "AT+CFM"  // confirmation mode
 #define LORA_AT_CFMTRIALS "AT+CTRIALS"  // cfm trials

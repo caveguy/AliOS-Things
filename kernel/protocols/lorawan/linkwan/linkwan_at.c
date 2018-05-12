@@ -87,6 +87,8 @@ void linkwan_serial_input(uint8_t cmd)
         linkwan_serial_output(atcmd, strlen(atcmd));
         snprintf(atcmd, ATCMD_SIZE, "%s\r\n", LORA_AT_CLASS);
         linkwan_serial_output(atcmd, strlen(atcmd));
+        snprintf(atcmd, ATCMD_SIZE, "%s\r\n", LORA_AT_SCANMASK);
+        linkwan_serial_output(atcmd, strlen(atcmd));
         snprintf(atcmd, ATCMD_SIZE, "%s\r\n", LORA_AT_CFM);
         linkwan_serial_output(atcmd, strlen(atcmd));
         snprintf(atcmd, ATCMD_SIZE, "%s\r\n", LORA_AT_CFMTRIALS);
@@ -260,6 +262,21 @@ void linkwan_serial_input(uint8_t cmd)
         ret = send_lora_link_check();
         if (ret == true) {
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s OK\r\n", LORA_AT_LINKCHK);
+        }
+    } else if (strncmp(atcmd, LORA_AT_SCANMASK, strlen(LORA_AT_SCANMASK)) == 0) {
+        uint8_t mask[2];
+        int length;
+        if (atcmd_index == strlen(LORA_AT_SCANMASK)) {
+            ret = true;
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s 0x%04x\r\n", LORA_AT_SCANMASK, get_lora_freqband_mask());
+        } else if (atcmd_index > strlen(LORA_AT_SCANMASK)) {
+            length = hex2bin(&atcmd[strlen(LORA_AT_SCANMASK)], (uint8_t *)mask, 2);
+            if (length == 2) {
+                ret = set_lora_freqband_mask(mask[1] | (mask[0] << 8));
+                if (ret == true) {
+                    snprintf(atcmd, ATCMD_SIZE, "\r\n%s 0x%04x\r\n", LORA_AT_SCANMASK, get_lora_freqband_mask());
+                }
+            }
         }
     }
 

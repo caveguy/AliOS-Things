@@ -48,6 +48,7 @@ typedef struct lora_dev_s {
     uint8_t app_key[16];
     int8_t class;
     uint8_t mode;  // normal or repeater
+    uint16_t mask;
     uint16_t flag;
 } lora_dev_t;
 

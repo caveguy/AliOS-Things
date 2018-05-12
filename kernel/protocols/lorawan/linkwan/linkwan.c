@@ -28,7 +28,6 @@ static uint8_t num_trials = 8;
 static bool rejoin_flag = true;
 static uint32_t g_ack_index = 0;
 
-static uint16_t g_freqband_mask = 0xffff;
 static uint8_t g_freqband_num = 0;
 
 static LoRaParam_t lora_param = {
@@ -44,7 +43,7 @@ static TimerEvent_t TxNextPacketTimer;
 volatile static DeviceState_t device_state = DEVICE_STATE_INIT;
 
 lora_config_t g_lora_config = {1, DR_5, INVALID_LORA_CONFIG};
-lora_dev_t g_lora_dev = {LORAWAN_DEVICE_EUI, LORAWAN_APPLICATION_EUI, LORAWAN_APPLICATION_KEY, CLASS_A, NODE_MODE_NORMAL, VALID_LORA_CONFIG};
+lora_dev_t g_lora_dev = {LORAWAN_DEVICE_EUI, LORAWAN_APPLICATION_EUI, LORAWAN_APPLICATION_KEY, CLASS_A, NODE_MODE_NORMAL, 0xffff, VALID_LORA_CONFIG};
 node_freq_type_t g_freq_type = FREQ_TYPE_INTRA;
 join_method_t g_join_method;
 
@@ -375,6 +374,7 @@ static void print_dev_addr(void)
 
     DBG_LINKWAN("class type %s\r\n", get_class_name(g_lora_dev.class));
     DBG_LINKWAN("freq type %s\r\n", g_freq_type == FREQ_TYPE_INTER ? "inter" : "intra");
+    DBG_LINKWAN("scan chn mask 0x%04x\r\n", g_lora_dev.mask);
 }
 
 void lora_fsm( void )
@@ -389,6 +389,31 @@ void lora_fsm( void )
     while (1) {
         switch (device_state) {
             case DEVICE_STATE_INIT: {
+#ifdef AOS_KV
+                memset(&lora_config, 0, sizeof(lora_config));
+                len = sizeof(g_lora_config);
+                aos_kv_get("lora", &lora_config, &len);
+                if (lora_config.flag == VALID_LORA_CONFIG) {
+                    memcpy(&g_lora_config, &lora_config, sizeof(g_lora_config));
+                }
+                memset(&lora_dev, 0, sizeof(lora_dev));
+                len = sizeof(g_lora_dev);
+                aos_kv_get("lora_dev", &lora_dev, &len);
+                if (lora_dev.flag == VALID_LORA_CONFIG) {
+                    memcpy(&g_lora_dev, &lora_dev, sizeof(g_lora_dev));
+                }
+#endif
+                if (g_lora_dev.dev_eui[5] & 0x1) {
+                    g_freq_type = FREQ_TYPE_INTER;
+                }
+                print_dev_addr();
+
+                if (g_lora_config.flag == VALID_LORA_CONFIG) {
+                    g_join_method = STORED_JOIN_METHOD;
+                } else {
+                    g_join_method = DEF_JOIN_METHOD;
+                }
+
                 LoRaMacPrimitives.MacMcpsConfirm = mcps_confirm;
                 LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
                 LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
@@ -419,30 +444,6 @@ void lora_fsm( void )
 #error "Please define a region in the compiler options."
 #endif
                 TimerInit( &TxNextPacketTimer, on_tx_next_packet_timer_event );
-#ifdef AOS_KV
-                memset(&lora_config, 0, sizeof(lora_config));
-                len = sizeof(g_lora_config);
-                aos_kv_get("lora", &lora_config, &len);
-                if (lora_config.flag == VALID_LORA_CONFIG) {
-                    memcpy(&g_lora_config, &lora_config, sizeof(g_lora_config));
-                }
-                memset(&lora_dev, 0, sizeof(lora_dev));
-                len = sizeof(g_lora_dev);
-                aos_kv_get("lora_dev", &lora_dev, &len);
-                if (lora_dev.flag == VALID_LORA_CONFIG) {
-                    memcpy(&g_lora_dev, &lora_dev, sizeof(g_lora_dev));
-                }
-#endif
-                if (g_lora_dev.dev_eui[5] & 0x1) {
-                    g_freq_type = FREQ_TYPE_INTER;
-                }
-                print_dev_addr();
-
-                if (g_lora_config.flag == VALID_LORA_CONFIG) {
-                    g_join_method = STORED_JOIN_METHOD;
-                } else {
-                    g_join_method = DEF_JOIN_METHOD;
-                }
 
                 mibReq.Type = MIB_ADR;
                 mibReq.Param.AdrEnable = lora_param.AdrEnable;
@@ -760,12 +761,14 @@ uint8_t *get_lora_app_key(void)
 
 bool set_lora_freqband_mask(uint16_t mask)
 {
-
-    g_freqband_mask = mask;
+    g_lora_dev.mask = mask;
+#ifdef AOS_KV
+    aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
+#endif
     return true;
 }
 
 uint16_t get_lora_freqband_mask(void)
 {
-    return g_freqband_mask;
+    return g_lora_dev.mask;
 }
