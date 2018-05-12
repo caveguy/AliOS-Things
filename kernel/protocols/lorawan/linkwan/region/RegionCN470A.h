@@ -93,7 +93,7 @@
 /*!
  * Minimal Tx output power that can be used by the node
  */
-#define CN470A_MIN_TX_POWER                          TX_POWER_5
+#define CN470A_MIN_TX_POWER                          TX_POWER_7
 
 /*!
  * Maximal Tx output power that can be used by the node
