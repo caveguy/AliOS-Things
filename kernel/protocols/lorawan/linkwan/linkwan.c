@@ -751,7 +751,7 @@ bool set_lora_class(int8_t class)
         g_lora_dev.class = class;
         g_lora_dev.flag = VALID_LORA_CONFIG;
 #ifdef AOS_KV
-        aos_kv_set("lora", &g_lora_config, sizeof(g_lora_config));
+        aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
 #endif
         return true;
     }
