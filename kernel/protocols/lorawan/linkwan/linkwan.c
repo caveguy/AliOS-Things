@@ -565,6 +565,14 @@ void lora_fsm( void )
                 device_state = DEVICE_STATE_SLEEP;
                 break;
             }
+            case DEVICE_STATE_SEND_MAC: {
+                if (next_tx == true) {
+                    data_buf.BuffSize = 0;
+                    next_tx = send_frame();
+                }
+                device_state = DEVICE_STATE_SLEEP;
+                break;
+            }
             case DEVICE_STATE_SLEEP: {
                 // Wake up through events
 #ifndef LOW_POWER_DISABLE
@@ -812,6 +820,13 @@ bool set_lora_freqband_mask(uint16_t mask)
 uint16_t get_lora_freqband_mask(void)
 {
     return g_lora_dev.mask;
+}
+
+void tx_lora_mac_req(void)
+{
+    if (device_state != DEVICE_STATE_SEND) {
+        device_state = DEVICE_STATE_SEND_MAC;
+    }
 }
 
 // for linkWAN test

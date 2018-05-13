@@ -1519,6 +1519,9 @@ static LoRaMacStatus_t AddMacCommand( uint8_t cmd, uint8_t p1, uint8_t p2 )
     }
     if ( status == LORAMAC_STATUS_OK ) {
         MacCommandsInNextTx = true;
+        if (SrvAckRequested) {
+            tx_lora_mac_req();
+        }
     }
     return status;
 }

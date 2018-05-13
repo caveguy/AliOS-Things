@@ -99,6 +99,7 @@ typedef enum eDevicState {
     DEVICE_STATE_JOIN,
     DEVICE_STATE_JOINED,
     DEVICE_STATE_SEND,
+    DEVICE_STATE_SEND_MAC,
     DEVICE_STATE_CYCLE,
     DEVICE_STATE_SLEEP
 } DeviceState_t;
@@ -133,6 +134,7 @@ uint32_t get_lora_tx_dutycycle(void);
 
 bool tx_lora_data(void);
 lora_AppData_t *get_lora_data(void);
+void tx_lora_mac_req(void);
 
 // for linkWAN test
 bool set_lora_tx_len(uint16_t len);
