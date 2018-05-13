@@ -141,14 +141,14 @@ void linkwan_serial_input(uint8_t cmd)
             uint8_t *eui = get_lora_dev_eui();
             ret = true;
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s %02x%02x%02x%02x%02x%02x%02x%02x\r\n", \
-                     LORA_AT_APPEUI, eui[0], eui[1], eui[2], eui[3], eui[4], eui[5], eui[6], eui[7]);
+                     LORA_AT_DEUI, eui[0], eui[1], eui[2], eui[3], eui[4], eui[5], eui[6], eui[7]);
         } else if (atcmd_index == (strlen(LORA_AT_DEUI) + 16)) {
             length = hex2bin(&atcmd[strlen(LORA_AT_DEUI)], buf, 8);
             if (length == 8) {
                 ret = set_lora_dev_eui(buf);
                 if (ret == true) {
                     snprintf(atcmd, ATCMD_SIZE, "\r\n%s %02x%02x%02x%02x%02x%02x%02x%02x\r\n", \
-                             LORA_AT_APPEUI, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+                             LORA_AT_DEUI, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
                 }
             }
         }

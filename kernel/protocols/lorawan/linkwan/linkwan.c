@@ -548,8 +548,7 @@ void lora_fsm( void )
             case DEVICE_STATE_JOINED: {
                 DBG_LINKWAN("Joined\n\r");
                 store_lora_config();
-                device_state = DEVICE_STATE_SLEEP;
-                start_dutycycle_timer();
+                device_state = DEVICE_STATE_SEND;
                 break;
             }
             case DEVICE_STATE_SEND: {
@@ -673,8 +672,8 @@ bool set_lora_tx_dutycycle(uint32_t dutycycle)
     if (dutycycle == 0) {
         lora_param.TxEvent = TX_ON_NONE;
     } else {
-        start_dutycycle_timer();
         lora_param.TxEvent = TX_ON_TIMER;
+        start_dutycycle_timer();
     }
     return true;
 }

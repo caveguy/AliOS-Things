@@ -412,10 +412,6 @@ static uint8_t RxSlot = 0;
  */
 LoRaMacFlags_t LoRaMacFlags;
 
-#ifdef CONFIG_DEBUG_LINKWAN
-bool not_print_debug = false;
-#endif
-
 /*!
  * \brief Function to be executed on Radio Tx Done event
  */
@@ -630,15 +626,9 @@ static void OnRadioTxDone( void )
     if ( LoRaMacDeviceClass != CLASS_C ) {
         Radio.Sleep( );
     } else {
-#ifdef CONFIG_DEBUG_LINKWAN
-        not_print_debug = true;
-#endif
         OnRxWindow2TimerEvent( );
     }
 
-#ifdef CONFIG_DEBUG_LINKWAN
-    not_print_debug = false;
-#endif
     // Setup timers
     if ( IsRxWindowsEnabled == true ) {
         TimerSetValue( &RxWindowTimer1, RxWindow1Delay );
@@ -1379,11 +1369,7 @@ static void OnRxWindow2TimerEvent( void )
         RxWindowSetup( RxWindow2Config.RxContinuous, LoRaMacParams.MaxRxWindow );
         RxSlot = RxWindow2Config.Window;
     }
-#ifdef CONFIG_DEBUG_LINKWAN
-    if (not_print_debug == false) {
-        DBG_LINKWAN("Rx, Freq %d, DR %d, window 2\r\n", RxWindow2Config.Frequency, McpsIndication.RxDatarate);
-    }
-#endif
+    DBG_LINKWAN("Rx, Freq %d, DR %d, window 2\r\n", RxWindow2Config.Frequency, McpsIndication.RxDatarate);
 }
 
 static void OnAckTimeoutTimerEvent( void )

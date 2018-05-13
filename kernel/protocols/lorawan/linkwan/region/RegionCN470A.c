@@ -70,7 +70,7 @@ uint8_t FreqBandNum[16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0, 8, 16, 24, 100, 108, 116, 124, 68, 76, 84, 92, 166, 174, 182, 190};
 uint8_t NextAvailableFreqBandIdx;
 uint8_t InterFreqRx2Chan[16] = {75, 83, 91, 99, 173, 181, 189, 197, 7, 15, 23, 31, 107, 115, 123, 131};
-uint8_t IntraFreqRx2Chan[16] = {7, 15, 75, 83, 23, 31, 91, 99, 107, 115, 173, 181, 123, 131, 189, 197};
+uint8_t IntraFreqRx2Chan[16] = {7, 15, 23, 31, 107, 115, 123, 131, 75, 83, 91, 99, 173, 181, 189, 197};
 
 // Static functions
 static int8_t GetNextLowerTxDr( int8_t dr, int8_t minDr )
