@@ -15,8 +15,10 @@
 #include "kvmgr.h"
 #endif
 
-static uint8_t data_buff[LORAWAN_APP_DATA_BUFF_SIZE];
-static lora_AppData_t data_buf = {data_buff, 0, 0};
+static uint8_t tx_buf[LORAWAN_APP_DATA_BUFF_SIZE];
+static lora_AppData_t tx_data = {tx_buf, 1, 0};
+static uint8_t rx_buf[LORAWAN_APP_DATA_BUFF_SIZE];
+static lora_AppData_t rx_data = {rx_buf, 0, 0};
 static uint8_t tx_size = 1;
 
 static LoRaMacPrimitives_t LoRaMacPrimitives;
@@ -58,21 +60,21 @@ static bool send_frame(void)
     McpsReq_t mcpsReq;
     LoRaMacTxInfo_t txInfo;
 
-    if (LoRaMacQueryTxPossible(data_buf.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
+    if (LoRaMacQueryTxPossible(tx_data.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
         return true;
     }
 
     if (is_tx_confirmed == DISABLE) {
         mcpsReq.Type = MCPS_UNCONFIRMED;
-        mcpsReq.Req.Unconfirmed.fPort = data_buf.Port;
-        mcpsReq.Req.Unconfirmed.fBuffer = data_buf.Buff;
-        mcpsReq.Req.Unconfirmed.fBufferSize = data_buf.BuffSize;
+        mcpsReq.Req.Unconfirmed.fPort = tx_data.Port;
+        mcpsReq.Req.Unconfirmed.fBuffer = tx_data.Buff;
+        mcpsReq.Req.Unconfirmed.fBufferSize = tx_data.BuffSize;
         mcpsReq.Req.Unconfirmed.Datarate = lora_param.TxDatarate;
     } else {
         mcpsReq.Type = MCPS_CONFIRMED;
-        mcpsReq.Req.Confirmed.fPort = data_buf.Port;
-        mcpsReq.Req.Confirmed.fBuffer = data_buf.Buff;
-        mcpsReq.Req.Confirmed.fBufferSize = data_buf.BuffSize;
+        mcpsReq.Req.Confirmed.fPort = tx_data.Port;
+        mcpsReq.Req.Confirmed.fBuffer = tx_data.Buff;
+        mcpsReq.Req.Confirmed.fBufferSize = tx_data.BuffSize;
         mcpsReq.Req.Confirmed.NbTrials = num_trials;
         mcpsReq.Req.Confirmed.Datarate = lora_param.TxDatarate;
     }
@@ -87,7 +89,7 @@ static bool send_frame(void)
 static void prepare_tx_frame(void)
 {
     if (lora_param.TxEvent == TX_ON_TIMER) {
-        app_callbacks->LoraTxData(&data_buf);
+        app_callbacks->LoraTxData(&tx_data);
     }
 }
 
@@ -244,10 +246,10 @@ static void McpsIndication(McpsIndication_t *mcpsIndication)
             case 224:
                 break;
             default:
-                data_buf.Port = mcpsIndication->Port;
-                data_buf.BuffSize = mcpsIndication->BufferSize;
-                memcpy1(data_buf.Buff, mcpsIndication->Buffer, data_buf.BuffSize);
-                app_callbacks->LoraRxData(&data_buf);
+                rx_data.Port = mcpsIndication->Port;
+                rx_data.BuffSize = mcpsIndication->BufferSize;
+                memcpy1(rx_data.Buff, mcpsIndication->Buffer, rx_data.BuffSize);
+                app_callbacks->LoraRxData(&rx_data);
                 break;
         }
 #ifdef CONFIG_DEBUG_LINKWAN
@@ -567,7 +569,7 @@ void lora_fsm( void )
             }
             case DEVICE_STATE_SEND_MAC: {
                 if (next_tx == true) {
-                    data_buf.BuffSize = 0;
+                    tx_data.BuffSize = 0;
                     next_tx = send_frame();
                 }
                 device_state = DEVICE_STATE_SLEEP;
@@ -691,7 +693,7 @@ uint32_t get_lora_tx_dutycycle(void)
 lora_AppData_t *get_lora_data(void)
 {
     if (next_tx == true) {
-        return &data_buf;
+        return &tx_data;
     }
     return NULL;
 }
