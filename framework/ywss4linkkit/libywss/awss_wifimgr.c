@@ -58,62 +58,56 @@ static struct work_struct scan_work = {
     .name = "scan",
 };
 
-static int wifi_scan_runninng;
+static void wifimgr_scan_tx_wifilist();
+static struct work_struct scan_tx_wifilist_work = {
+    .func = (work_func_t)&wifimgr_scan_tx_wifilist,
+    .prio = 1, /* smaller digit means higher priority */
+    .name = "scan",
+};
+
+static char wifi_scan_runninng = 0;
 static void *g_scan_mutex;
-static void *g_scan_sem;
 
 typedef struct scan_list {
     list_head_t entry;
     void *data;
-}scan_list_t;
+} scan_list_t;
+
 static LIST_HEAD(g_scan_list);
 
-static void start_scan_result(void *parms);
-
-int wifi_scan_init(void) {
+int wifimgr_scan_init(void)
+{
     if (wifi_scan_runninng)
         return 0;
 
-    g_scan_sem = (void *) HAL_SemaphoreCreate();
     g_scan_mutex = HAL_MutexCreate();
-
     INIT_LIST_HEAD(&g_scan_list);
-    aos_task_new("start_scan", start_scan_result, NULL, 2048);
     wifi_scan_runninng = 1;
     return 0;
-
 }
 
-static void start_scan_result(void *parms)
+static void wifimgr_scan_tx_wifilist()
 {
-    scan_list_t * item =  NULL;
+    scan_list_t *item =  NULL, *next = NULL;
 
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic((const char *)TOPIC_AWSS_WIFILIST, topic, TOPIC_LEN_MAX);
 
-    while(1) {
-        HAL_SemaphoreWait(g_scan_sem, 5000);
-        HAL_MutexLock(g_scan_mutex);
-        list_for_each_entry(item, &g_scan_list, entry, scan_list_t)
-        {
-            if (item && item->data) {
-                //printf("start_scan_result start %s\n", (char *) (item->data));
-                if (0 != awss_cmp_coap_ob_send(item->data, strlen((char *)(item->data)),
-                                        &g_wifimgr_req_sa, topic, NULL)) {
-                            awss_debug("sending failed.");
-                }
+    HAL_MutexLock(g_scan_mutex);
+    list_for_each_entry_safe(item, next, &g_scan_list, entry, scan_list_t) {
+        if (item && item->data) {
+            if (0 != awss_cmp_coap_ob_send(item->data, strlen((char *)(item->data) + 1),
+                                           &g_wifimgr_req_sa, topic, NULL)) {
+                awss_debug("sending failed.");
             }
-            list_del(&item->entry);
             os_free(item->data);
-            //os_free(item);
-            //item= NULL;
-
         }
-        HAL_MutexUnlock(g_scan_mutex);
+        list_del(&item->entry);
+        os_free(item);
+        item= NULL;
     }
+    HAL_MutexUnlock(g_scan_mutex);
 }
-
-
 
 static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
            const uint8_t bssid[ETH_ALEN],
@@ -123,7 +117,6 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
            int last_ap)
 {
 #define ONE_AP_INFO_LEN_MAX           (141)
-    static char ap_num_in_msg = 0;
     static char *aplist = NULL;
     static int msg_len = 0;
 
@@ -158,7 +151,6 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
                                    encode_ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                    rssi > 0 ? rssi - 256 : rssi, other_apinfo);
             }
-            ap_num_in_msg ++;
         }
 
         if (other_apinfo) os_free(other_apinfo);
@@ -172,35 +164,33 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         }
         msg_len += snprintf(aplist + msg_len, WIFI_APINFO_LIST_LEN - msg_len - 1, "]}");
 
+        uint32_t tlen = DEV_SIMPLE_ACK_LEN + msg_len + 1;
         msg_len = 0;
-        ap_num_in_msg = 0;
-
-        char *msg_aplist = os_zalloc(WIFI_APINFO_LIST_LEN);
+        char *msg_aplist = os_zalloc(tlen);
         if (!msg_aplist) {
             os_free(aplist);
             aplist = NULL;
             return SHUB_ERR;
         }
 
-        snprintf(msg_aplist, WIFI_APINFO_LIST_LEN - 1, AWSS_ACK_FMT, g_req_msg_id, 200, aplist);
+        snprintf(msg_aplist, tlen - 1, AWSS_ACK_FMT, g_req_msg_id, 200, aplist);
         os_free(aplist);
         aplist = NULL;
 
         scan_list_t *list = (scan_list_t *)malloc(sizeof(scan_list_t));
         if (!list) {
             awss_debug("scan list fail\n");
-            os_free(list);
             os_free(msg_aplist);
             list = NULL;
             return SHUB_ERR;
         }
+        list->data = msg_aplist;
         HAL_MutexLock(g_scan_mutex);
         list_add(&list->entry, &g_scan_list);
-        list->data = msg_aplist;
         HAL_MutexUnlock(g_scan_mutex);
 
+        if (last_ap) queue_work(&scan_tx_wifilist_work);
         awss_debug("sending message to app: %s\n", msg_aplist);
-        HAL_SemaphorePost(g_scan_sem);
     }
 
     return 0;
@@ -208,7 +198,7 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
 
 static void wifimgr_scan_request()
 {
-    wifi_scan_init();
+    wifimgr_scan_init();
     os_wifi_scan(&awss_scan_cb);
 }
 /*
