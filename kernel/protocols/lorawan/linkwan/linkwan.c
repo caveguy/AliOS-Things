@@ -7,6 +7,7 @@
 #include "utilities.h"
 #include "LoRaMac.h"
 #include "Region.h"
+#include "RegionCN470A.h"
 #include "timeServer.h"
 #include "radio.h"
 #ifdef AOS_KV
@@ -36,7 +37,7 @@ static uint8_t g_freqband_num = 0;
 static LoRaParam_t lora_param = {
     TX_ON_NONE,
     0,
-    LORAWAN_ADR_ON,
+    true,
     DR_0,
     LORAWAN_PUBLIC_NETWORK,
     JOINREQ_NBTRIALS
@@ -92,16 +93,16 @@ static void prepare_tx_frame(void)
 
 static void on_tx_next_packet_timer_event(void)
 {
-    MibRequestConfirm_t mibReq;
+    MibRequestConfirm_t mib_req;
     LoRaMacStatus_t status;
 
     TimerStop(&TxNextPacketTimer);
 
-    mibReq.Type = MIB_NETWORK_JOINED;
-    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_NETWORK_JOINED;
+    status = LoRaMacMibGetRequestConfirm(&mib_req);
 
     if (status == LORAMAC_STATUS_OK) {
-        if (mibReq.Param.IsNetworkJoined == true) {
+        if (mib_req.Param.IsNetworkJoined == true) {
             device_state = DEVICE_STATE_SEND;
         } else {
             rejoin_flag = true;
@@ -123,23 +124,23 @@ static void reset_join_state(void)
 
 static void store_lora_config(void)
 {
-    MibRequestConfirm_t mibReq;
+    MibRequestConfirm_t mib_req;
     LoRaMacStatus_t status;
     uint32_t freqband;
     int8_t datarate;
 
-    mibReq.Type = MIB_FREQ_BAND;
-    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_FREQ_BAND;
+    status = LoRaMacMibGetRequestConfirm(&mib_req);
     if (status == LORAMAC_STATUS_OK) {
-        freqband = mibReq.Param.freqband;
+        freqband = mib_req.Param.freqband;
     } else {
         return;
     }
 
-    mibReq.Type = MIB_CHANNELS_DATARATE;
-    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_CHANNELS_DATARATE;
+    status = LoRaMacMibGetRequestConfirm(&mib_req);
     if (status == LORAMAC_STATUS_OK) {
-        datarate = mibReq.Param.ChannelsDatarate;
+        datarate = mib_req.Param.ChannelsDatarate;
     } else {
         return;
     }
@@ -599,7 +600,8 @@ node_freq_type_t get_lora_freq_type(void)
 
 bool set_lora_tx_datarate(int8_t datarate)
 {
-    if (datarate >= DR_0 && datarate <= DR_5) {
+    if (datarate >= CN470A_TX_MIN_DATARATE && datarate <= CN470A_TX_MAX_DATARATE &&
+        get_lora_adr() == 0) {
         lora_param.TxDatarate = datarate;
         return true;
     } else {
@@ -619,12 +621,12 @@ bool set_lora_adr(int state)
     bool ret = false;
 
     if (state == 0) {
-        mib_req.Param.AdrEnable = LORAWAN_ADR_OFF;
+        mib_req.Param.AdrEnable = false;
     } else {
-        mib_req.Param.AdrEnable = LORAWAN_ADR_ON;
+        mib_req.Param.AdrEnable = true;
     }
-    mibReq.Type = MIB_ADR;
-    status = LoRaMacMibSetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_ADR;
+    status = LoRaMacMibSetRequestConfirm(&mib_req);
     if (status == LORAMAC_STATUS_OK) {
         ret = true;
     }
@@ -635,21 +637,24 @@ int get_lora_adr(void)
 {
     MibRequestConfirm_t mib_req;
 
-    mibReq.Type = MIB_ADR;
-    LoRaMacMibGetRequestConfirm(&mibReq);
-    return mib_req.Param.AdrEnable;
+    mib_req.Type = MIB_ADR;
+    LoRaMacMibGetRequestConfirm(&mib_req);
+    if (mib_req.Param.AdrEnable == true) {
+        return 1;
+    }
+    return 0;
 }
 
 static void start_dutycycle_timer(void)
 {
-    MibRequestConfirm_t mibReq;
+    MibRequestConfirm_t mib_req;
     LoRaMacStatus_t status;
 
     TimerStop(&TxNextPacketTimer);
-    mibReq.Type = MIB_NETWORK_JOINED;
-    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_NETWORK_JOINED;
+    status = LoRaMacMibGetRequestConfirm(&mib_req);
     if (status == LORAMAC_STATUS_OK) {
-        if (mibReq.Param.IsNetworkJoined == true &&
+        if (mib_req.Param.IsNetworkJoined == true &&
             lora_param.TxEvent == TX_ON_TIMER && lora_param.TxDutyCycleTime != 0) {
             TimerSetValue(&TxNextPacketTimer, lora_param.TxDutyCycleTime);
             TimerStart(&TxNextPacketTimer);
@@ -693,17 +698,17 @@ lora_AppData_t *get_lora_data(void)
 
 bool tx_lora_data(void)
 {
-    MibRequestConfirm_t mibReq;
+    MibRequestConfirm_t mib_req;
     LoRaMacStatus_t status;
 
     if (next_tx == false) {
         return false;
     }
 
-    mibReq.Type = MIB_NETWORK_JOINED;
-    status = LoRaMacMibGetRequestConfirm(&mibReq);
+    mib_req.Type = MIB_NETWORK_JOINED;
+    status = LoRaMacMibGetRequestConfirm(&mib_req);
     if (status == LORAMAC_STATUS_OK) {
-        if (mibReq.Param.IsNetworkJoined == true) {
+        if (mib_req.Param.IsNetworkJoined == true) {
             TimerStop(&TxNextPacketTimer);
             lora_param.TxEvent = TX_ON_EVENT;
             device_state = DEVICE_STATE_SEND;

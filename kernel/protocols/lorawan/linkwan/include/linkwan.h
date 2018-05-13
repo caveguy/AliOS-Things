@@ -12,11 +12,6 @@
 #define LORAWAN_CONFIRMED_MSG ENABLE
 #define JOINREQ_NBTRIALS 3
 
-enum {
-    LORAWAN_ADR_OFF = 0,
-    LORAWAN_ADR_ON = 1,
-};
-
 typedef enum node_mode_s {
     NODE_MODE_NORMAL = 0,
     NODE_MODE_REPEATER = 1,  // Alibaba Node Repeater

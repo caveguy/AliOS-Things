@@ -171,7 +171,7 @@ void linkwan_serial_input(uint8_t cmd)
             }
         }
     } else if (strncmp(atcmd, LORA_AT_ADR, strlen(LORA_AT_ADR)) == 0) {
-        int8_t adr;
+        int adr;
         if (atcmd_index == strlen(LORA_AT_ADR)) {
             ret = true;
             adr = get_lora_adr();
