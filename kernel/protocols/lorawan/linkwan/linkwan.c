@@ -397,6 +397,11 @@ void lora_fsm( void )
 #endif
 
     while (1) {
+#ifdef CONFIG_LINKWAN_AT
+        extern void process_linkwan_at(void);
+        process_linkwan_at();
+#endif
+
         switch (device_state) {
             case DEVICE_STATE_INIT: {
 #ifdef AOS_KV

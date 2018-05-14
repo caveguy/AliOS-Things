@@ -7,9 +7,9 @@
 #include "linkwan.h"
 #include "linkwan_at.h"
 
-#define ATCMD_SIZE 50
-uint8_t atcmd[ATCMD_SIZE + 1];
-uint8_t atcmd_index = 0;
+#define ATCMD_SIZE 64
+uint8_t atcmd[ATCMD_SIZE];
+uint16_t atcmd_index = 0;
 
 static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
 {
@@ -47,8 +47,22 @@ static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
     return cur - bin;
 }
 
+// this can be in intrpt context
 void linkwan_serial_input(uint8_t cmd)
 {
+    if ((cmd >= '0' && cmd <= '9') || (cmd >= 'a' && cmd <= 'z') ||
+        (cmd >= 'A' && cmd <= 'Z') || cmd == '?' || cmd == '+') {
+        atcmd[atcmd_index++] = cmd;
+    } else if (cmd == '\r' || cmd == '\n') {
+        atcmd[atcmd_index++] = '\0';
+    }
+
+    if (atcmd_index > ATCMD_SIZE) {
+        atcmd_index = 0;
+    }
+}
+
+void process_linkwan_at(void) {
     bool ret = false;
     int value;
     MibRequestConfirm_t mibReq;
@@ -56,19 +70,9 @@ void linkwan_serial_input(uint8_t cmd)
     uint8_t length;
     uint8_t buf[16];
 
-    if (atcmd_index >= ATCMD_SIZE) {
-        goto exit;
-    }
-    if ((cmd >= '0' && cmd <= '9') || (cmd >= 'a' && cmd <= 'z') ||
-        (cmd >= 'A' && cmd <= 'Z') || cmd == '?' || cmd == '+') {
-        atcmd[atcmd_index++] = cmd;
+    if (atcmd_index == 0 || atcmd[atcmd_index - 1] != '\0') {
         return;
-    } else if (cmd == ' ') {
-        return;
-    } else if (cmd != '\r') {
-        goto exit;
     }
-    atcmd[atcmd_index] = '\0';
 
     if (strncmp(atcmd, LORA_AT_HELP, strlen(LORA_AT_HELP)) == 0) {
         snprintf(atcmd, ATCMD_SIZE, "\r\n%s\r\n", LORA_AT_HELP);
