@@ -69,6 +69,7 @@ uint8_t NumFreqBand;
 uint8_t FreqBandNum[16] = {0};
 uint8_t FreqBandStartChannelNum[16] = {0, 8, 16, 24, 100, 108, 116, 124, 68, 76, 84, 92, 166, 174, 182, 190};
 uint8_t NextAvailableFreqBandIdx;
+uint16_t scan_mask;
 uint8_t InterFreqRx2Chan[16] = {75, 83, 91, 99, 173, 181, 189, 197, 7, 15, 23, 31, 107, 115, 123, 131};
 uint8_t IntraFreqRx2Chan[16] = {7, 15, 23, 31, 107, 115, 123, 131, 75, 83, 91, 99, 173, 181, 189, 197};
 
@@ -300,7 +301,7 @@ void RegionCN470AInitDefaults( InitType_t type )
             //set default freqband = 1A2(No.=1,471.9Mhz)
             NumFreqBand = 1;
             FreqBandNum[0] = 1; //1A2
-            NextAvailableFreqBandIdx = 0;
+            scan_mask = 0;
 
             //save other freqband from mask
             for (uint8_t i = 0; i < 16; i++) {
@@ -308,6 +309,7 @@ void RegionCN470AInitDefaults( InitType_t type )
                     FreqBandNum[NumFreqBand++] = i;
                 }
             }
+            NextAvailableFreqBandIdx = 0;
             break;
         }
         case INIT_TYPE_RESTORE: {
@@ -827,6 +829,25 @@ void RegionCN470ACalcBackOff( CalcBackOffParams_t *calcBackOff )
     }
 }
 
+static uint8_t find_next_available_freqband()
+{
+    uint8_t index;
+    uint8_t freqband;
+
+    if (scan_mask == 0) {
+        for (index = 0; index < NumFreqBand - 1; index++) {
+            scan_mask |= (1 << index);
+        }
+    }
+
+    freqband = randr(0, NumFreqBand - 2);
+    while ((scan_mask & (1 << freqband)) == 0) {
+        freqband = ((freqband + 1) % (NumFreqBand -1));
+    }
+    scan_mask &= (~(1 << freqband));
+    return freqband + 1;
+}
+
 bool RegionCN470ANextChannel( NextChanParams_t *nextChanParams, uint8_t *channel, TimerTime_t *time,
                               TimerTime_t *aggregatedTimeOff )
 {
@@ -885,10 +906,7 @@ bool RegionCN470ANextChannel( NextChanParams_t *nextChanParams, uint8_t *channel
             TxFreqBandNum = nextChanParams->freqband;
         } else {
             if (nextChanParams->joinmethod == SCAN_JOIN_METHOD && nextChanParams->update_freqband) {
-                NextAvailableFreqBandIdx++;
-                if (NextAvailableFreqBandIdx >= NumFreqBand) {
-                    NextAvailableFreqBandIdx = 0;
-                }
+                NextAvailableFreqBandIdx = find_next_available_freqband();
             } else if (nextChanParams->joinmethod == DEF_JOIN_METHOD) {
                 NextAvailableFreqBandIdx = 0;
             }

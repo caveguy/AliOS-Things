@@ -60,6 +60,10 @@ static bool send_frame(void)
     McpsReq_t mcpsReq;
     LoRaMacTxInfo_t txInfo;
 
+    if (tx_data.BuffSize > LINKWAN_APP_DATA_SIZE) {
+        tx_data.BuffSize = LINKWAN_APP_DATA_SIZE;
+    }
+
     if (LoRaMacQueryTxPossible(tx_data.BuffSize, &txInfo) != LORAMAC_STATUS_OK) {
         return true;
     }
@@ -821,6 +825,9 @@ uint8_t *get_lora_app_key(void)
 
 bool set_lora_freqband_mask(uint16_t mask)
 {
+    if (mask == 0 || mask == 0x0002) {
+        return false;
+    }
     g_lora_dev.mask = mask;
 #ifdef AOS_KV
     aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));

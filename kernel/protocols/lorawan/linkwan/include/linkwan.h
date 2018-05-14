@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #define LORAWAN_APP_DATA_BUFF_SIZE 242
+#define LINKWAN_APP_DATA_SIZE 51
 #define LORAWAN_CONFIRMED_MSG ENABLE
 #define JOINREQ_NBTRIALS 3
 

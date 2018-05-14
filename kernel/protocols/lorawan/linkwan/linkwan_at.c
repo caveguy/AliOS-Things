@@ -54,7 +54,7 @@ void linkwan_serial_input(uint8_t cmd)
         (cmd >= 'A' && cmd <= 'Z') || cmd == '?' || cmd == '+') {
         atcmd[atcmd_index++] = cmd;
     } else if (cmd == '\r' || cmd == '\n') {
-        atcmd[atcmd_index++] = '\0';
+        atcmd[atcmd_index] = '\0';
     }
 
     if (atcmd_index > ATCMD_SIZE) {
@@ -71,10 +71,9 @@ void process_linkwan_at(void)
     uint8_t length;
     uint8_t buf[16];
 
-    if (atcmd_index == 0 || atcmd[atcmd_index - 1] != '\0') {
+    if (atcmd_index == 0 || atcmd[atcmd_index] != '\0') {
         return;
     }
-
     if (strncmp(atcmd, LORA_AT_HELP, strlen(LORA_AT_HELP)) == 0) {
         snprintf(atcmd, ATCMD_SIZE, "\r\n%s\r\n", LORA_AT_HELP);
         linkwan_serial_output(atcmd, strlen(atcmd));
@@ -123,6 +122,9 @@ void process_linkwan_at(void)
                 }
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_APPEUI);
+        }
     } else if (strncmp(atcmd, LORA_AT_APPKEY, strlen(LORA_AT_APPKEY)) == 0) {
         if (atcmd_index == strlen(LORA_AT_APPKEY)) {
             uint8_t *key = get_lora_app_key();
@@ -141,6 +143,9 @@ void process_linkwan_at(void)
                 }
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_APPKEY);
+        }
     } else if (strncmp(atcmd, LORA_AT_DEUI, strlen(LORA_AT_DEUI)) == 0) {
         if (atcmd_index == strlen(LORA_AT_DEUI)) {
             uint8_t *eui = get_lora_dev_eui();
@@ -156,6 +161,9 @@ void process_linkwan_at(void)
                              LORA_AT_DEUI, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
                 }
             }
+        }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_DEUI);
         }
     } else if (strncmp(atcmd, LORA_AT_RM, strlen(LORA_AT_RM)) == 0) {
         aos_kv_del("lora");
@@ -175,6 +183,9 @@ void process_linkwan_at(void)
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_DR, datarate);
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_DR);
+        }
     } else if (strncmp(atcmd, LORA_AT_ADR, strlen(LORA_AT_ADR)) == 0) {
         int adr;
         if (atcmd_index == strlen(LORA_AT_ADR)) {
@@ -187,6 +198,9 @@ void process_linkwan_at(void)
             if (ret == true) {
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_ADR, adr);
             }
+        }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_ADR);
         }
     } else if (strncmp(atcmd, LORA_AT_CLASS, strlen(LORA_AT_CLASS)) == 0) {
         int8_t class;
@@ -206,6 +220,9 @@ void process_linkwan_at(void)
                 atcmd_index = strlen(atcmd);
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_CLASS);
+        }
     } else if (strncmp(atcmd, LORA_AT_CFM, strlen(LORA_AT_CFM)) == 0) {
         int cfm;
         if (atcmd_index == strlen(LORA_AT_CFM)) {
@@ -218,6 +235,9 @@ void process_linkwan_at(void)
             if (ret == true) {
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_CFM, cfm);
             }
+        }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_CFM);
         }
     } else if (strncmp(atcmd, LORA_AT_CFMTRIALS, strlen(LORA_AT_CFMTRIALS)) == 0) {
         uint8_t trials;
@@ -232,10 +252,16 @@ void process_linkwan_at(void)
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_CFMTRIALS, trials);
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_CFMTRIALS);
+        }
     } else if (strncmp(atcmd, LORA_AT_JOIN, strlen(LORA_AT_JOIN)) == 0) {
         ret = set_lora_state(DEVICE_STATE_JOIN);
         if (ret == true) {
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s OK\r\n", LORA_AT_JOIN);
+        }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_JOIN);
         }
     } else if (strncmp(atcmd, LORA_AT_DCS, strlen(LORA_AT_DCS)) == 0) {
         uint32_t dutycycle;
@@ -250,6 +276,9 @@ void process_linkwan_at(void)
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_DCS, dutycycle);
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_DCS);
+        }
     } else if (strncmp(atcmd, LORA_AT_TXSIZE, strlen(LORA_AT_TXSIZE)) == 0) {
         uint8_t len;
         if (atcmd_index == strlen(LORA_AT_TXSIZE)) {
@@ -263,10 +292,16 @@ void process_linkwan_at(void)
                 snprintf(atcmd, ATCMD_SIZE, "\r\n%s %d\r\n", LORA_AT_TXSIZE, len);
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_TXSIZE);
+        }
     } else if (strncmp(atcmd, LORA_AT_LINKCHK, strlen(LORA_AT_LINKCHK)) == 0) {
         ret = send_lora_link_check();
         if (ret == true) {
             snprintf(atcmd, ATCMD_SIZE, "\r\n%s OK\r\n", LORA_AT_LINKCHK);
+        }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_LINKCHK);
         }
     } else if (strncmp(atcmd, LORA_AT_SCANMASK, strlen(LORA_AT_SCANMASK)) == 0) {
         uint8_t mask[2];
@@ -283,12 +318,14 @@ void process_linkwan_at(void)
                 }
             }
         }
+        if (ret == false) {
+            snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", LORA_AT_SCANMASK);
+        }
+    } else {
+        snprintf(atcmd, ATCMD_SIZE, "\r\nERROR\r\n");
     }
 
 exit:
-    if (ret == false) {
-        snprintf(atcmd, ATCMD_SIZE, "\r\n%s ERROR\r\n", atcmd);
-    }
     linkwan_serial_output(atcmd, strlen(atcmd));
     atcmd_index = 0;
 }
