@@ -43,13 +43,17 @@ extern "C"
 #define MATCH_REPORT_CNT_MAX      (2)
 
 volatile char awss_report_token_suc = 0;
-static char awss_report_reset_suc = 0;
 volatile char awss_report_token_cnt = 0;
+static char awss_report_reset_suc = 0;
 static char awss_report_reset_cnt = 0;
 static char awss_report_id = 0;
+static char switchap_ssid[OS_MAX_SSID_LEN + 1] = {0};
+static char switchap_passwd[OS_MAX_PASSWD_LEN] = {0};
+static uint8_t switchap_bssid[ETH_ALEN] = {0};
 
 static int awss_report_token_to_cloud();
 static int awss_report_reset_to_cloud();
+static int awss_switch_ap_online();
 
 static struct work_struct match_work = {
     .func = (work_func_t)&awss_report_token_to_cloud,
@@ -61,6 +65,12 @@ static struct work_struct reset_work = {
     .func = (work_func_t)&awss_report_reset_to_cloud,
     .prio = DEFAULT_WORK_PRIO,
     .name = "reset",
+};
+
+static struct work_struct switchap_work = {
+    .func = (work_func_t)&awss_switch_ap_online,
+    .prio = DEFAULT_WORK_PRIO,
+    .name = "switchap",
 };
 
 int awss_report_token_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
@@ -90,8 +100,6 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
     int len = 0, switch_mode = 1, timeout = 0;
     char *packet = NULL, *awss_info = NULL, *elem = NULL;
     int packet_len = SWITCHAP_RSP_LEN, awss_info_len = 0;
-    char ssid[OS_MAX_SSID_LEN + 1] = {0}, passwd[OS_MAX_PASSWD_LEN] = {0};
-    uint8_t bssid[ETH_ALEN] = {0};
 
     awss_debug("%s\r\n", __func__);
     if (payload == NULL || payload_len == 0)
@@ -112,27 +120,31 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
     elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_SSID, &len, NULL);
     if (elem == NULL || len <= 0 || len >= OS_MAX_SSID_LEN)
         goto ONLINE_SWITCHAP_FAIL;
-    memcpy(ssid, elem, len);
+    memset(switchap_ssid, 0, sizeof(switchap_ssid));
+    memcpy(switchap_ssid, elem, len);
 
     len = 0;
     elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_PASSWD, &len, NULL);
-    if (elem != NULL && len >0 && len < OS_MAX_PASSWD_LEN)
-        memcpy(passwd, elem, len);
+    if (elem == NULL && len <= 0 && len >= OS_MAX_PASSWD_LEN)
+        goto ONLINE_SWITCHAP_FAIL;
+    memset(switchap_passwd, 0, sizeof(switchap_passwd));
+    memcpy(switchap_passwd, elem, len);
 
     len = 0;
+    memset(switchap_bssid, 0, sizeof(switchap_bssid));
     elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_BSSID, &len, NULL);
     if (elem != NULL && len == AWSS_BSSID_STR_LEN) {
         uint8_t i = 0;
         char *bssid_str = elem;
         // convert bssid string to bssid value
-        while(i < OS_ETH_ALEN) {
-            bssid[i ++] = (uint8_t)strtol(bssid_str, &bssid_str, 16);
+        while (i < OS_ETH_ALEN) {
+            switchap_bssid[i ++] = (uint8_t)strtol(bssid_str, &bssid_str, 16);
             ++ bssid_str;
             /*
              * fix the format of bssid string is not legal.
              */
             if ((uint32_t)((uint32_t)bssid_str - (uint32_t)elem) > AWSS_BSSID_STR_LEN) {
-                memset(bssid, 0, sizeof(bssid));
+                memset(switchap_bssid, 0, sizeof(switchap_bssid));
                 break;
             }
         }
@@ -158,35 +170,41 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
         memcpy(id_str, id, len > MSG_REQ_ID_LEN - 1 ? MSG_REQ_ID_LEN - 1 : len);
         awss_build_packet(AWSS_CMP_PKT_TYPE_RSP, id_str, ILOP_VER, METHOD_EVENT_ZC_SWITCHAP, "{}", 200, packet, &packet_len);
     }
-
-    char reply[TOPIC_LEN_MAX] = {0};
-    awss_build_topic(TOPIC_SWITCHAP_REPLY, reply, TOPIC_LEN_MAX);
-    awss_cmp_mqtt_send(reply, packet, packet_len);
-    os_free(packet);
-
-    /* make sure the packet is sent to cloud */
-    os_msleep(1000);
+    {
+        char reply[TOPIC_LEN_MAX] = {0};
+        awss_build_topic(TOPIC_SWITCHAP_REPLY, reply, TOPIC_LEN_MAX);
+        awss_cmp_mqtt_send(reply, packet, packet_len);
+        os_free(packet);
+    }
 
     /*
-     * wait for timeout to switch ap instantaneously
+     * make sure the response would been received
      */
-    if (switch_mode == 0 && timeout > 1000)
-        os_msleep(timeout - 1000);
+    if (switch_mode == 0 && timeout < 1000)
+        timeout = 1000;
 
-    int ret = os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, ssid, passwd,
-                                 AWSS_AUTH_TYPE_INVALID, AWSS_ENC_TYPE_INVALID, bssid, 0);
-    /*
-     * if swich ap fail, we reboot device and restore the last ap
-     */
-    if (ret != 0) { // connect fail
-        os_reboot();
-        while (1);
+    {
+        uint8_t bssid[ETH_ALEN] = {0};
+        char ssid[OS_MAX_SSID_LEN + 1] = {0}, passwd[OS_MAX_PASSWD_LEN + 1] = {0};
+        os_wifi_get_ap_info(ssid, passwd, bssid);
+        /*
+         * switch ap when destination ap is differenct from current ap
+         */
+        if (strncmp(ssid, switchap_ssid, sizeof(ssid)) ||
+            memcmp(bssid, switchap_bssid, sizeof(bssid)) ||
+            strncmp(passwd, switchap_passwd, sizeof(passwd))) {
+            cancel_work(&switchap_work);
+            queue_delayed_work(&switchap_work, timeout);
+        }
     }
 
     return 0;
 
 ONLINE_SWITCHAP_FAIL:
     log_warn("ilop online switchap failed");
+    memset(switchap_ssid, 0, sizeof(switchap_ssid));
+    memset(switchap_bssid, 0, sizeof(switchap_bssid));
+    memset(switchap_passwd, 0, sizeof(switchap_passwd));
     if (packet) os_free(packet);
     return -1;
 }
@@ -232,6 +250,19 @@ static int awss_report_token_to_cloud()
     awss_debug("report token result:%d\r\n", ret);
 
     return ret;
+}
+
+static int awss_switch_ap_online()
+{
+    os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, switchap_ssid, switchap_passwd,
+                       AWSS_AUTH_TYPE_INVALID, AWSS_ENC_TYPE_INVALID, switchap_bssid, 0);
+    memset(switchap_ssid, 0, sizeof(switchap_ssid));
+    memset(switchap_bssid, 0, sizeof(switchap_bssid));
+    memset(switchap_passwd, 0, sizeof(switchap_passwd));
+    os_reboot();
+    while (1);
+
+    return 0;
 }
 
 static int awss_report_reset_to_cloud()
