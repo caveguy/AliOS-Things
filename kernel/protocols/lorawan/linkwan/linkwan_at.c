@@ -62,7 +62,8 @@ void linkwan_serial_input(uint8_t cmd)
     }
 }
 
-void process_linkwan_at(void) {
+void process_linkwan_at(void)
+{
     bool ret = false;
     int value;
     MibRequestConfirm_t mibReq;
