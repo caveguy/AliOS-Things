@@ -417,7 +417,7 @@ void linkkit_action(void *params)
 
 #if 1
 	/* about 60 seconds, assume trigger event about every 60s. */
-    if (now % 50 == 0 && is_active(sample_ctx)) {
+    if (now % 600 == 0 && is_active(sample_ctx)) {
         int id_send = 0;
         int ret;
 		LINKKIT_PRINTF("====================Thread1====================\n");
@@ -464,7 +464,7 @@ void linkkit_set_post_thread_action(void *params)
 
 #if 1
 	/* about 60 seconds, assume trigger event about every 60s. */
-    if (now % 10 == 0 && is_active(sample_ctx)) {
+    if (now % 600 == 0 && is_active(sample_ctx)) {
         int id_send = 0;
         int ret;
 		LINKKIT_PRINTF("====================Thread2====================\n");
@@ -522,8 +522,8 @@ int linkkit_main()
 
     aos_post_delayed_action(100, linkkit_action, sample_ctx);
 
-	int stack_used = 0;
-	aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);
+	//int stack_used = 0;
+	//aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);
 	
     return 0;
 }
