@@ -91,6 +91,7 @@ static void awss_open_aha_monitor()
 
 int awss_report_cloud()
 {
+    wifi_scan_stop();
     awss_cmp_online_init();
     work_queue_init();
     awss_report_token();

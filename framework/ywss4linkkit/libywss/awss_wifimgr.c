@@ -66,6 +66,7 @@ typedef struct scan_list {
     list_head_t entry;
     void *data;
 }scan_list_t;
+
 static LIST_HEAD(g_scan_list);
 
 static void start_scan_result(void *parms);
@@ -78,39 +79,41 @@ int wifi_scan_init(void) {
     g_scan_mutex = HAL_MutexCreate();
 
     INIT_LIST_HEAD(&g_scan_list);
-    aos_task_new("start_scan", start_scan_result, NULL, 2048);
     wifi_scan_runninng = 1;
+    aos_task_new("start_scan", start_scan_result, NULL, 2048);
     return 0;
 
 }
 
+void wifi_scan_stop(void ){
+    wifi_scan_runninng = 0;
+}
+
 static void start_scan_result(void *parms)
 {
-    scan_list_t * item =  NULL;
+    scan_list_t * pos, *tmp =  NULL;
 
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic((const char *)TOPIC_AWSS_WIFILIST, topic, TOPIC_LEN_MAX);
 
-    while(1) {
+    while(wifi_scan_runninng) {
         HAL_SemaphoreWait(g_scan_sem, 5000);
         HAL_MutexLock(g_scan_mutex);
-        list_for_each_entry(item, &g_scan_list, entry, scan_list_t)
-        {
-            if (item && item->data) {
-                //printf("start_scan_result start %s\n", (char *) (item->data));
-                if (0 != awss_cmp_coap_ob_send(item->data, strlen((char *)(item->data)),
+        list_for_each_entry_safe(pos, tmp, &g_scan_list, entry, scan_list_t) {
+            if (pos->data) {
+                 if (0 != awss_cmp_coap_ob_send(pos->data, strlen((char *)(pos->data)),
                                         &g_wifimgr_req_sa, topic, NULL)) {
                             awss_debug("sending failed.");
                 }
+                os_free(pos->data);
             }
-            list_del(&item->entry);
-            os_free(item->data);
-            //os_free(item);
-            //item= NULL;
-
+            list_del(&pos->entry);
+            os_free(pos);
         }
+
         HAL_MutexUnlock(g_scan_mutex);
     }
+    awss_debug("------------------scan task exit--------------.\n");
 }
 
 
@@ -189,9 +192,7 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         scan_list_t *list = (scan_list_t *)malloc(sizeof(scan_list_t));
         if (!list) {
             awss_debug("scan list fail\n");
-            os_free(list);
             os_free(msg_aplist);
-            list = NULL;
             return SHUB_ERR;
         }
         HAL_MutexLock(g_scan_mutex);
