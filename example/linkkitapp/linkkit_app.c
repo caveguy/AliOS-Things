@@ -41,7 +41,8 @@
 static void ota_init();
 
 /* PLEASE set RIGHT tsl string according to your product. */
-const char TSL_STRING[] = "{\"profile\":{\"productKey\":\"a1aYoI3ZbWv\"},\"services\":[{\"outputData\":[],\"identifier\":\"set\",\"method\":\"thing.service.property.set\",\"required\":true,\"callType\":\"sync\"},{\"identifier\":\"get\",\"inputData\":[\"WIFI_Band\",\"WIFI_Channel\",\"WiFI_RSSI\",\"WiFI_SNR\",\"WIFI_AP_BSSID\",\"WIFI_Tx_Rate\",\"WIFI_Rx_Rate\",\"RGBColor\",\"HSVColor\",\"HSLColor\",\"WorkMode\",\"NightLightSwitch\",\"Brightness\",\"LightSwitch\",\"ColorTemperature\",\"PropertyCharacter\",\"Propertypoint\"],\"method\":\"thing.service.property.get\",\"required\":true,\"callType\":\"sync\"},{\"outputData\":[{\"identifier\":\"Contrastratio\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"identifier\":\"Custom\",\"inputData\":[{\"identifier\":\"transparency\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"method\":\"thing.service.Custom\",\"required\":false,\"callType\":\"async\"}],\"properties\":[{\"identifier\":\"WIFI_Band\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Channel\",\"dataType\":{\"specs\":{\"min\":\"1\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_RSSI\",\"dataType\":{\"specs\":{\"min\":\"-127\",\"max\":\"-1\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_SNR\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_AP_BSSID\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Tx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Rx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"RGBColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Red\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Green\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Blue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSVColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Value\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSLColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"360\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Lightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"WorkMode\",\"dataType\":{\"specs\":{\"0\":\"手动\",\"1\":\"阅读\",\"2\":\"影院\",\"3\":\"夜灯\",\"4\":\"生活\",\"5\":\"柔和\"},\"type\":\"enum\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"NightLightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Brightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"LightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"ColorTemperature\",\"dataType\":{\"specs\":{\"min\":\"2700\",\"max\":\"6500\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"PropertyCharacter\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Propertypoint\",\"dataType\":{\"specs\":{\"min\":\"-100\",\"max\":\"100\"},\"type\":\"double\"},\"accessMode\":\"rw\",\"required\":false}],\"events\":[{\"identifier\":\"post\",\"method\":\"thing.event.property.post\",\"type\":\"info\",\"required\":true},{\"outputData\":[{\"identifier\":\"ErrorCode\",\"dataType\":{\"specs\":{\"0\":\"恢复正常\"},\"type\":\"enum\"}}],\"identifier\":\"Error\",\"method\":\"thing.event.Error.post\",\"type\":\"info\",\"required\":false}]}";
+const char TSL_STRING[] = "{\"profile\":{\"productKey\":\"a1aYoI3ZbWv\"},\"services\":[{\"outputData\":[],\"identifier\":\"set\",\"method\":\"thing.service.property.set\",\"required\":true,\"callType\":\"sync\"},{\"identifier\":\"get\",\"inputData\":[\"WIFI_Band\",\"WIFI_Channel\",\"WiFI_RSSI\",\"WiFI_SNR\",\"WIFI_AP_BSSID\",\"WIFI_Tx_Rate\",\"WIFI_Rx_Rate\",\"RGBColor\",\"HSVColor\",\"HSLColor\",\"WorkMode\",\"NightLightSwitch\",\"Brightness\",\"LightSwitch\",\"ColorTemperature\",\"PropertyCharacter\",\"Propertypoint\"],\"method\":\"thing.service.property.get\",\"required\":true,\"callType\":\"sync\"},{\"outputData\":[{\"identifier\":\"Contrastratio\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"identifier\":\"Custom\",\"inputData\":[{\"identifier\":\"transparency\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"method\":\"thing.service.Custom\",\"required\":false,\"callType\":\"async\"}],\"properties\":[{\"identifier\":\"WIFI_Band\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Channel\",\"dataType\":{\"specs\":{\"min\":\"1\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_RSSI\",\"dataType\":{\"specs\":{\"min\":\"-127\",\"max\":\"-1\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WiFI_SNR\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_AP_BSSID\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Tx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"WIFI_Rx_Rate\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"99999\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":true},{\"identifier\":\"RGBColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Red\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Green\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}},{\"identifier\":\"Blue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"255\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSVColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Value\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"HSLColor\",\"dataType\":{\"specs\":[{\"identifier\":\"Hue\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"360\"},\"type\":\"int\"}},{\"identifier\":\"Saturation\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}},{\"identifier\":\"Lightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"}}],\"type\":\"struct\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"WorkMode\",\"dataType\":{\"specs\":{\"0\":\"手动\",\"1\":\"阅读\",\"2\":\"影院\",\"3\":\"夜灯\",\"4\":\"生活\",\"5\":\"柔和\"},\"type\":\"enum\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"NightLightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Brightness\",\"dataType\":{\"specs\":{\"min\":\"0\",\"max\":\"100\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"LightSwitch\",\"dataType\":{\"specs\":{\"0\":\"关闭\",\"1\":\"开启\"},\"type\":\"bool\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"ColorTemperature\",\"dataType\":"
+"{\"specs\":{\"min\":\"2700\",\"max\":\"6500\"},\"type\":\"int\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"PropertyCharacter\",\"dataType\":{\"specs\":{\"length\":\"255\"},\"type\":\"text\"},\"accessMode\":\"rw\",\"required\":false},{\"identifier\":\"Propertypoint\",\"dataType\":{\"specs\":{\"min\":\"-100\",\"max\":\"100\"},\"type\":\"double\"},\"accessMode\":\"rw\",\"required\":false}],\"events\":[{\"identifier\":\"post\",\"method\":\"thing.event.property.post\",\"type\":\"info\",\"required\":true},{\"outputData\":[{\"identifier\":\"ErrorCode\",\"dataType\":{\"specs\":{\"0\":\"恢复正常\"},\"type\":\"enum\"}}],\"identifier\":\"Error\",\"method\":\"thing.event.Error.post\",\"type\":\"info\",\"required\":false}]}";
 /* user sample context struct. */
 typedef struct _sample_context {
     const void*   thing;
@@ -494,7 +495,7 @@ void linkkit_set_post_thread_action(void *params)
 static void *linkkit_set_post_thread(void *params)
 {
 	sample_context_t* sample_ctx = &g_sample_context;
-	
+
 	aos_post_delayed_action(100, linkkit_set_post_thread_action, sample_ctx);
 
 	while (1) {
@@ -502,11 +503,21 @@ static void *linkkit_set_post_thread(void *params)
 	}
 }
 
+int get_tsl_from_cloud = 0;
+
+void linkkit_set_tsl_action(void *params)
+{
+    LINKKIT_PRINTF("tsl_from_cloud %d\n", get_tsl_from_cloud);
+    if (!get_tsl_from_cloud) {
+        linkkit_set_tsl(TSL_STRING, strlen(TSL_STRING));
+    }
+}
+
+
 int linkkit_main()
 {
     sample_context_t* sample_ctx = &g_sample_context;
     int execution_time = 0;
-    int get_tsl_from_cloud = 0;
 
     execution_time = execution_time < 1 ? 1 : execution_time;
     LINKKIT_PRINTF("sample execution time: %d minutes\n", execution_time);
@@ -516,15 +527,13 @@ int linkkit_main()
     sample_ctx->thing_enabled = 1;
 
     linkkit_start(16, get_tsl_from_cloud, linkkit_loglevel_debug, &alink_ops, linkkit_cloud_domain_shanghai, sample_ctx);
-    if (!get_tsl_from_cloud) {
-        linkkit_set_tsl(TSL_STRING, strlen(TSL_STRING));
-    }
 
+    aos_post_delayed_action(5000, linkkit_set_tsl_action, NULL);
     aos_post_delayed_action(100, linkkit_action, sample_ctx);
 
 	//int stack_used = 0;
 	//aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);
-	
+
     return 0;
 }
 
