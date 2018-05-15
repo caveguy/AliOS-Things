@@ -66,7 +66,8 @@ static const char string_EXT_URI_1[] CM_READ_ONLY = "/ext/%s/%s/%s";
 static const char string_SHA_METHOD[] CM_READ_ONLY = "hmacsha1";
 static const char string_MD5_METHOD[] CM_READ_ONLY = "hmacmd5";
 static const char string_TIMESTAMP[] CM_READ_ONLY = "2524608000000";
-static const char string_AUTH_URL[] CM_READ_ONLY = "https://iot-auth.alibaba.net/auth/register/device";
+static const char string_AUTH_URL[] CM_READ_ONLY = "https://iot-auth.cn-shanghai.aliyuncs.com/auth/register/device";
+static const char string_AUTH_URL_1[] CM_READ_ONLY = "https://iot-auth.ap-southeast-1.aliyuncs.com/auth/register/device";
 static const char string_AUTH_CONTENT_TYPE[] CM_READ_ONLY = "application/x-www-form-urlencoded";
 static const char string_hmac_format[] CM_READ_ONLY = "deviceName%s" "productKey%s" "random%s";
 static const char string_auth_req_format[] CM_READ_ONLY = "productKey=%s&" "deviceName=%s&" "signMethod=%s&" "sign=%s&" "version=default&" "clientId=%s&" "random=%s&" "resources=mqtt";
@@ -207,7 +208,7 @@ static char *_set_auth_req_str(const char *product_key, const char *device_name,
                  , string_auth_req_format
                  , product_key
                  , device_name
-#if USING_SHA1_IN_HMAC
+#ifdef USING_SHA1_IN_HMAC
                  , string_SHA_METHOD
 #else
                  , string_MD5_METHOD
@@ -309,7 +310,7 @@ static int _calc_hmac_signature(
     char signature[64];
     char hmac_source[512];
     int ret = FAIL_RETURN;
-    char product_secret[DEVICE_SECRET_LEN + 1] = {0};
+    char product_secret[PRODUCT_SECRET_LEN + 1] = {0};
 
     memset(signature, 0, sizeof(signature));
     memset(hmac_source, 0, sizeof(hmac_source));
@@ -323,7 +324,7 @@ static int _calc_hmac_signature(
                       product_key,
                       random);
 
-#if USING_SHA1_IN_HMAC
+#ifdef USING_SHA1_IN_HMAC
     utils_hmac_sha1(hmac_source, strlen(hmac_source),
                     signature,
                     product_secret,
@@ -335,7 +336,7 @@ static int _calc_hmac_signature(
                    strlen(product_secret));
 #endif
 
-
+    memset(hmac_sigbuf, 0x0, hmac_buflen);
     memcpy(hmac_sigbuf, signature, hmac_buflen);
     return ret;
 }
@@ -352,12 +353,17 @@ int iotx_cm_auth(const char *product_key, const char *device_name, const char *c
     req_str = _set_auth_req_str(product_key, device_name, client_id, guider_sign, s_random);
     CM_INFO(cm_log_info_auth_req, req_str);
 
+#ifdef SUPPORT_SINGAPORE_DOMAIN
+    if (SUCCESS_RETURN != _get_device_secret(product_key, device_name, client_id, string_AUTH_URL_1, req_str)) {
+#else /* SUPPORT_SINGAPORE_DOMAIN */
     if (SUCCESS_RETURN != _get_device_secret(product_key, device_name, client_id, string_AUTH_URL, req_str)) {
+#endif /* SUPPORT_SINGAPORE_DOMAIN */
         if (req_str) LITE_free(req_str);
         if (s_random) LITE_free(s_random);
         CM_ERR(cm_log_error_auth);
         return FAIL_RETURN;
     }
+	if (req_str) LITE_free(req_str);
     if (s_random) LITE_free(s_random);
     return SUCCESS_RETURN;
 }
@@ -1355,6 +1361,8 @@ int iotx_cm_send_data(iotx_cm_conntext_t* cm_ctx, iotx_cm_send_peer_t* target, v
     return rc;
 }
 
+extern int awss_report_cloud();
+
 static void invoke_event_callback_func(void* _cb_usr_ctx, va_list* params)
 {
     iotx_cm_event_cb_usr_ctx_t* cb_usr_ctx = _cb_usr_ctx;
@@ -1367,6 +1375,8 @@ static void invoke_event_callback_func(void* _cb_usr_ctx, va_list* params)
     assert(cm_ctx && cb_usr_ctx && msg);
 
     if (cb_usr_ctx && cm_ctx &&  cb_usr_ctx->event_func) {
+        if (IOTX_CM_EVENT_CLOUD_CONNECTED == msg->event_id)
+            awss_report_cloud();
         cb_usr_ctx->event_func(cm_ctx, msg, cb_usr_ctx->user_data);
     }
 }

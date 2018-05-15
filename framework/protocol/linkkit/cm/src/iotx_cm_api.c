@@ -49,7 +49,7 @@ static void cm_trigger_connected_event_handler(void* list_node, va_list* params)
         iotx_cm_event_msg_t event_msg = {0};
         event_msg.event_id = IOTX_CM_EVENT_CLOUD_CONNECTED;
         event_msg.msg = NULL;
-        init_param->event_func(g_cm_ctx, &event_msg, init_param->user_data);
+        init_param->event_func(cm_ctx, &event_msg, init_param->user_data);
     }
 }
 
@@ -87,11 +87,7 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
 
 #ifdef SUPPORT_PRODUCT_SECRET
         /* product secret */
-        if (IOTX_CM_DEVICE_SECRET_PRODUCT == pparam->secret_type) {
-            HAL_GetDeviceSecret(device_secret);
-            if (strlen(device_secret) != 0) {
-                return SUCCESS_RETURN;
-            }
+        if (IOTX_CM_DEVICE_SECRET_PRODUCT == pparam->secret_type && 0 >= HAL_GetDeviceSecret(device_secret)) {
 
             HAL_GetProductSecret(product_secret);
             if (strlen(product_secret) == 0) {
