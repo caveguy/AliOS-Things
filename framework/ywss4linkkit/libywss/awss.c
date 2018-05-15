@@ -47,7 +47,7 @@ void adha_monitor(void)
 
 #define ADHA_WORK_CYCLE      (5 * 1000)
 static struct work_struct adha_work = {
-    .func = (work_func_t)&adha_monitor,
+    .func = (work_func_t) &adha_monitor,
     .prio = DEFAULT_WORK_PRIO,
     .name = "adha",
 };
@@ -55,7 +55,7 @@ static struct work_struct adha_work = {
 static void aha_monitor(void);
 #define AHA_MONITOR_TIMEOUT_MS  (1 * 60 * 1000)
 static struct work_struct aha_work = {
-    .func = (work_func_t)&aha_monitor,
+    .func = (work_func_t) &aha_monitor,
     .prio = 1, /* smaller digit means higher priority */
     .name = "aha",
 };
@@ -81,10 +81,11 @@ int awss_cancel_aha_monitor()
 static void awss_open_aha_monitor()
 {
     char ssid[PLATFORM_MAX_SSID_LEN + 1] = {0};
-    os_wifi_get_ap_info(ssid ,NULL, NULL);
+    os_wifi_get_ap_info(ssid , NULL, NULL);
     awss_debug("aha monitor, ssid:%s, strlen:%d\n", ssid, strlen(ssid));
-    if (strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) // not adha AP
+    if (strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) { // not adha AP
         return;
+    }
     aha_timeout = 0;
     queue_delayed_work(&aha_work, AHA_MONITOR_TIMEOUT_MS);
 }
@@ -124,32 +125,37 @@ int awss_start()
     do {
         while (1) {
             memset(ssid, 0, sizeof(ssid));
-            os_wifi_get_ap_info(ssid ,NULL, NULL);
+            os_wifi_get_ap_info(ssid , NULL, NULL);
             awss_debug("start, ssid:%s, strlen:%d\n", ssid, strlen(ssid));
-            if (strlen(ssid) > 0 && strcmp(ssid, ADHA_SSID)) // not adha AP
+            if (strlen(ssid) > 0 && strcmp(ssid, ADHA_SSID)) { // not adha AP
                 break;
+            }
 
             if (os_sys_net_is_ready()) { // skip the adha failed
                 awss_cmp_local_init();
 
                 adha_switch = 0;
                 queue_delayed_work(&adha_work, ADHA_WORK_CYCLE);
-                while (!adha_switch)
+                while (!adha_switch) {
                     os_msleep(200);
+                }
                 adha_switch = 0;
 
                 awss_cmp_local_deinit();
             }
 
-            if (switch_ap_done || awss_stopped)
+            if (switch_ap_done || awss_stopped) {
                 break;
+            }
             netmgr_clear_ap_config();
             __awss_start();
         }
-        if (switch_ap_done || awss_stopped)
+        if (switch_ap_done || awss_stopped) {
             break;
-        if (strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID))  // not AHA
+        }
+        if (strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) { // not AHA
             break;
+        }
 
         awss_open_aha_monitor();
 
@@ -157,7 +163,7 @@ int awss_start()
         char dest_ap = 0;
         while (!aha_is_timeout()) {
             memset(ssid, 0, sizeof(ssid));
-            os_wifi_get_ap_info(ssid ,NULL, NULL);
+            os_wifi_get_ap_info(ssid , NULL, NULL);
             if (os_sys_net_is_ready() &&
                 strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) {  // not AHA
                 dest_ap = 1;
@@ -167,17 +173,20 @@ int awss_start()
         }
 
         awss_cmp_local_deinit();
-        if (switch_ap_done || awss_stopped)
+        if (switch_ap_done || awss_stopped) {
             break;
+        }
 
-        if (dest_ap == 1)
+        if (dest_ap == 1) {
             break;
+        }
 
         __awss_start();
     } while (1);
 
-    if (os_sys_net_is_ready() == 0)
+    if (os_sys_net_is_ready() == 0) {
         return -1;
+    }
 
     awss_success_notify();
 
