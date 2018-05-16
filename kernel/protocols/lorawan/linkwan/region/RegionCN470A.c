@@ -840,6 +840,10 @@ static uint8_t find_next_available_freqband()
         }
     }
 
+    if (scan_mask == 0) {
+        return 0;
+    }
+
     freqband = randr(0, NumFreqBand - 2);
     while ((scan_mask & (1 << freqband)) == 0) {
         freqband = ((freqband + 1) % (NumFreqBand -1));

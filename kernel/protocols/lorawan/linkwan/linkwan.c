@@ -301,15 +301,15 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
                     if (g_join_method == SCAN_JOIN_METHOD) {
                         get_freqband_num();
                     }
+                }
+
+                if (g_freqband_num == 0) {
+                    g_join_method = DEF_JOIN_METHOD;
+                    rejoin_delay = 60 * 60 * 1000;  // 1 hour
+                    DBG_LINKWAN("Wait 1 hour for new round of scan\r\n");
                 } else {
                     g_freqband_num--;
-                    if (g_freqband_num == 0) {
-                        g_join_method = DEF_JOIN_METHOD;
-                        rejoin_delay = 60 * 60 * 1000;  // 1 hour
-                        DBG_LINKWAN("Wait 1 hour for new round of scan\r\n");
-                    } else {
-                        rejoin_delay = generate_rejoin_delay();
-                    }
+                    rejoin_delay = generate_rejoin_delay();
                 }
                 TimerSetValue(&TxNextPacketTimer, rejoin_delay);
                 TimerStart(&TxNextPacketTimer);
@@ -825,9 +825,6 @@ uint8_t *get_lora_app_key(void)
 
 bool set_lora_freqband_mask(uint16_t mask)
 {
-    if (mask == 0 || mask == 0x0002) {
-        return false;
-    }
     g_lora_dev.mask = mask;
 #ifdef AOS_KV
     aos_kv_set("lora_dev", &g_lora_dev, sizeof(g_lora_dev));
