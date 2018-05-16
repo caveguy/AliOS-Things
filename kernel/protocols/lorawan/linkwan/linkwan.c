@@ -350,7 +350,10 @@ void lora_init(LoRaMainCallback_t *callbacks)
 #ifdef AOS_KV
     assert(aos_kv_init() == 0);
 #endif
-
+#ifdef CONFIG_LINKWAN_AT
+    extern void linkwan_at_init(void);
+    linkwan_at_init();
+#endif
 }
 
 static void print_dev_addr(void)

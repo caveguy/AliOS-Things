@@ -328,4 +328,11 @@ void process_linkwan_at(void)
 exit:
     linkwan_serial_output(atcmd, strlen(atcmd));
     atcmd_index = 0;
+    memset(atcmd, 0xff, ATCMD_SIZE);
+}
+
+void linkwan_at_init(void)
+{
+    atcmd_index = 0;
+    memset(atcmd, 0xff, ATCMD_SIZE);
 }
