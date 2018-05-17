@@ -1377,6 +1377,7 @@ extern int awss_report_cloud();
 
 static void invoke_event_callback_func(void* _cb_usr_ctx, va_list* params)
 {
+    static char report_token = 0;
     iotx_cm_event_cb_usr_ctx_t* cb_usr_ctx = _cb_usr_ctx;
     iotx_cm_conntext_t* cm_ctx;
     iotx_cm_event_msg_t* msg;
@@ -1387,8 +1388,10 @@ static void invoke_event_callback_func(void* _cb_usr_ctx, va_list* params)
     assert(cm_ctx && cb_usr_ctx && msg);
 
     if (cb_usr_ctx && cm_ctx &&  cb_usr_ctx->event_func) {
-        if (IOTX_CM_EVENT_CLOUD_CONNECTED == msg->event_id)
+        if (IOTX_CM_EVENT_CLOUD_CONNECTED == msg->event_id && report_token == 0) {
             awss_report_cloud();
+            report_token = 1;
+        }
         cb_usr_ctx->event_func(cm_ctx, msg, cb_usr_ctx->user_data);
     }
 }

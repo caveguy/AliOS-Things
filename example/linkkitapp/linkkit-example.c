@@ -78,14 +78,7 @@ void reboot_system(void *parms)
     aos_reboot();
 }
 
-void report_token(void *parms)
-{
-    LOG("report token");
-    awss_report_cloud();
-}
-
 static void cloud_service_event(input_event_t *event, void *priv_data) {
-    static uint8_t awss_reported=0;
     if (event->type != EV_YUNIO) {
         return;
     }
@@ -94,10 +87,6 @@ static void cloud_service_event(input_event_t *event, void *priv_data) {
 
     if (event->code == CODE_YUNIO_ON_CONNECTED) {
         LOG("user sub and pub here");
-        if(!awss_reported) {
-            aos_post_delayed_action(100, report_token, NULL);
-            awss_reported=1;
-        }
         return;
     }
 

@@ -329,7 +329,7 @@ int HAL_Awss_Connect_Ap(
         strncpy(config.pwd, passwd, sizeof(config.pwd) - 1);
     }
     if (bssid != NULL) {
-        memcpy(config.bssid, bssid, sizeof(config.bssid));
+        memcpy(config.bssid, bssid, ETH_ALEN);
     }
     ret = netmgr_set_ap_config(&config);
 #ifndef ESP8266_CONFIG
