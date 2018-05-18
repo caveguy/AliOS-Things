@@ -97,7 +97,7 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
 #define AWSS_SWITCH_MODE   "switchMode"
 #define AWSS_TIMEOUT       "timeout"
 
-    int len = 0, switch_mode = 1, timeout = 0;
+    int len = 0, timeout = 0;
     char *packet = NULL, *awss_info = NULL, *elem = NULL;
     int packet_len = SWITCHAP_RSP_LEN, awss_info_len = 0;
 
@@ -125,7 +125,7 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
 
     len = 0;
     elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_PASSWD, &len, NULL);
-    if (elem == NULL && len <= 0 && len >= OS_MAX_PASSWD_LEN)
+    if (elem == NULL || len <= 0 || len >= OS_MAX_PASSWD_LEN)
         goto ONLINE_SWITCHAP_FAIL;
     memset(switchap_passwd, 0, sizeof(switchap_passwd));
     memcpy(switchap_passwd, elem, len);
@@ -152,15 +152,10 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
 
     len = 0;
     elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_SWITCH_MODE, &len, NULL);
-    if (elem != NULL && (elem[0] == '0' || elem[0] == 0))
-        switch_mode = 0;
-
-    if (switch_mode == 0) {
+    if (elem != NULL && (elem[0] == '0' || elem[0] == 0)) {
         elem = json_get_value_by_name(awss_info, awss_info_len, AWSS_TIMEOUT, &len, NULL);
         if (elem)
             timeout = (int)strtol(elem, &elem, 16);
-        if (timeout < 1000)
-            timeout = 1000;
     }
 
     {  // reduce stack used
@@ -180,7 +175,7 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
     /*
      * make sure the response would been received
      */
-    if (switch_mode == 0 && timeout < 1000)
+    if (timeout < 1000)
         timeout = 1000;
 
     {
