@@ -87,7 +87,7 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
 
 #ifdef SUPPORT_PRODUCT_SECRET
         /* product secret */
-        if (IOTX_CM_DEVICE_SECRET_PRODUCT == pparam->secret_type && 0 >= HAL_GetDeviceSecret(device_secret)) {
+        if (IOTX_CM_DEVICE_SECRET_PRODUCT == init_param->secret_type && 0 >= HAL_GetDeviceSecret(device_secret)) {
 
             HAL_GetProductSecret(product_secret);
             if (strlen(product_secret) == 0) {

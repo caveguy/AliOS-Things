@@ -312,7 +312,7 @@ static int _calc_hmac_signature(
     char signature[64];
     char hmac_source[512];
     int ret = FAIL_RETURN;
-    char product_secret[PRODUCT_SECRET_LEN + 1] = {0};
+    char product_secret[DEVICE_SECRET_LEN + 1] = {0};
 
     memset(signature, 0, sizeof(signature));
     memset(hmac_source, 0, sizeof(hmac_source));
