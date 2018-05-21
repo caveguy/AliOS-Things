@@ -142,19 +142,23 @@ static int awss_notify_response(int type, int result, void *message)
         int len = 0, mlen = 0;
         char *payload = NULL, *elem = NULL;
 
-        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0)
+        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 0x40 || len == 0)
             return 0;
+
+        awss_debug("payload:%s\r\n", payload);
 
         elem = json_get_value_by_name(payload, len, AWSS_JSON_ID, &mlen, 0);
         if (elem == NULL)
             return 0;
         val = atoi(elem);
-        if (val != 123 && val >= g_notify_id)
+        awss_debug("id:%u, nid:%u\r\n", val, g_notify_id);
+        if (val != 123 && val > g_notify_id)
             return 0;
         elem = json_get_value_by_name(payload, len, AWSS_JSON_CODE, &mlen, 0);
         if (elem == NULL)
             return 0;
         val = atoi(elem);
+        awss_debug("code:%u\r\n", val);
         if (val != 200)
             return 0;
     }
