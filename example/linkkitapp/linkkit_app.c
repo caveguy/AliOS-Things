@@ -350,39 +350,39 @@ static int is_active(sample_context_t* sample_ctx)
 static int post_property_wifi_status_once(sample_context_t* sample_ctx)
 {
     int ret = -1;
-    int i = 0;
     static int is_post = 0;
-    char val_buf[32];
-    char ssid[33];
-    char passwd[65];
-    uint8_t bssid[6];
-    hal_wireless_info_t wireless_info;
 
-    char* band = NULL;
-    int channel = 0;
-    int rssi = 0;
-    int snr = 0;
-    int tx_rate = 0;
-    int rx_rate = 0;
+    if (is_active(sample_ctx) && 0 == is_post) {
+        int i = 0;
+        uint8_t bssid[6];
+        char val_buf[20] = {0};
+        
+        char *band = NULL;
+        int channel = 0;
+        int rssi = 0;
+        int snr = 0;
+        int tx_rate = 0;
+        int rx_rate = 0;
+        {
+            hal_wireless_info_t wireless_info;
 
-    if(is_active(sample_ctx) && 0 == is_post) {
-        HAL_GetWirelessInfo(&wireless_info);
-        HAL_Wifi_Get_Ap_Info(ssid, passwd, bssid);
+            HAL_GetWirelessInfo(&wireless_info);
+            band = wireless_info.band == 0 ? "2.4G" : "5G";
+            channel = wireless_info.channel;
+            rssi = wireless_info.rssi;
+            snr = wireless_info.snr;
+            tx_rate = wireless_info.tx_rate;
+            rx_rate = wireless_info.rx_rate;
+        }
 
-        band = wireless_info.band == 0 ? "2.4G" : "5G";
-        channel = wireless_info.channel;
-        rssi = wireless_info.rssi;
-        snr = wireless_info.snr;
-        tx_rate = wireless_info.tx_rate;
-        rx_rate = wireless_info.rx_rate;
+        HAL_Wifi_Get_Ap_Info(NULL, NULL, bssid);
 
         linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Band", band, NULL);
         linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Channel", &channel, NULL);
         linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_RSSI", &rssi, NULL);
         linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_SNR", &snr, NULL);
 
-        memset(val_buf, 0, sizeof(val_buf));
-        for(i = 0; i < 6; i++) {
+        for (i = 0; i < 6; i ++) {
             snprintf(val_buf + strlen(val_buf), sizeof(val_buf) - strlen(val_buf), "%02X:", bssid[i]);
         }
         if(strlen(val_buf) > 0 && val_buf[strlen(val_buf) - 1] == ':') val_buf[strlen(val_buf) - 1] = '\0';

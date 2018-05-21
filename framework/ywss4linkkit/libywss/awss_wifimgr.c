@@ -96,7 +96,7 @@ static void wifimgr_scan_tx_wifilist()
     HAL_MutexLock(g_scan_mutex);
     list_for_each_entry_safe(item, next, &g_scan_list, entry, scan_list_t) {
         if (item && item->data) {
-            if (0 != awss_cmp_coap_ob_send(item->data, strlen((char *)item->data) + 1,
+            if (0 != awss_cmp_coap_ob_send(item->data, strlen((char *)item->data),
                                            &g_wifimgr_req_sa, topic, NULL)) {
                 awss_debug("sending failed.");
             }
