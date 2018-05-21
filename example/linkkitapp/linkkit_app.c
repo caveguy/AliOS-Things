@@ -529,7 +529,7 @@ int linkkit_main()
     linkkit_start(16, get_tsl_from_cloud, linkkit_loglevel_debug, &alink_ops, linkkit_cloud_domain_shanghai, sample_ctx);
 
     aos_post_delayed_action(5000, linkkit_set_tsl_action, NULL);
-    aos_post_delayed_action(100, linkkit_action, sample_ctx);
+    aos_post_delayed_action(6000, linkkit_action, sample_ctx);
 
 	//int stack_used = 0;
 	//aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);

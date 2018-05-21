@@ -142,7 +142,11 @@ static void dm_callback(dm_callback_type_t callback_type,
     }
 #endif
 
-    lite_queue_insert(g_message_queue, dm_msg);
+    if (lite_queue_insert(g_message_queue, dm_msg) == -1) {
+        if (dm_msg->response_message != NULL)
+            free(dm_msg->response_message);
+        free(dm_msg);
+    }
 #ifdef CM_SUPPORT_MULTI_THREAD
     HAL_SemaphorePost(sem_dispatch);
 #endif /*  */
@@ -177,7 +181,11 @@ static void dm_subdev_callback(dm_subdev_callback_type_t callback_type, void* su
         if (subdev_ds_from_register) deep_strcpy(&dm_msg->subdev_ds, subdev_ds_from_register);
     }
 
-    lite_queue_insert(g_message_queue, dm_msg);
+    if (lite_queue_insert(g_message_queue, dm_msg) == -1) {
+        if (dm_msg->response_message != NULL)
+            free(dm_msg->response_message);
+        free(dm_msg);
+    }
 }
 #endif
 
@@ -288,6 +296,7 @@ static void handle_masterdev_request(dm_msg_t* dm_msg, void* ctx)
                 handle_post_cb_fp(dm_msg->thing_id, dm_msg->id, dm_msg->code, dm_msg->response_message, context);
 
                 linked_list_remove(list, post_cb);
+                free(post_cb);
             }
         }
         break;
@@ -677,7 +686,6 @@ static void insert_post_cb(int id_send, linked_list_t* list, void* cb)
     post_cb_t* post_cb;
     post_cb_t* post_cb_oldest = NULL;
     unsigned long long current_time_ms;
-
     post_cb = calloc(1, sizeof(post_cb_t));
     if (!post_cb) return;
 
@@ -692,7 +700,10 @@ static void insert_post_cb(int id_send, linked_list_t* list, void* cb)
     if (list_size > LINKKIT_MAX_POST_CB_NUMBER) {
         /* find oldest cb and remove */
         linked_list_iterator(list, find_oldest_post_cb, &post_cb_oldest, current_time_ms);
-        if (post_cb_oldest) linked_list_remove(list, post_cb_oldest);
+        if (post_cb_oldest) {
+            linked_list_remove(list, post_cb_oldest);
+            free(post_cb_oldest);
+        }
     }
 }
 
