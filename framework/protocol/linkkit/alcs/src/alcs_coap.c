@@ -76,7 +76,7 @@ static int do_sendmsg (CoAPContext *context, NetworkAddr* addr, CoAPMessage *mes
     }
 
     ret = CoAPMessage_send (context, addr, message);
-    CoAPMessage_destory(message);
+    alcs_msg_deinit(message);
     return ret;
 }
 

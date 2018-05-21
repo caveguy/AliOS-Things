@@ -503,7 +503,6 @@ int iotx_cm_parse_payload(void* _payload, int payload_length, iotx_cm_message_in
         msg->parameter = CM_malloc(payload_length + 1);
         if (NULL == msg->parameter) {
             CM_ERR(cm_log_error_memory);
-            LITE_free(node);
             return FAIL_RETURN;
         }
         memset(msg->parameter, 0x0, payload_length);
