@@ -82,10 +82,40 @@ int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
  */
 int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
 {
-    int len = sizeof(DEVICE_SECRET);
+    int len = 0;
+	
+#ifdef SUPPORT_PRODUCT_SECRET
+    len = DEVICE_SECRET_MAXLEN-1;
+    aos_kv_get("linkkit", device_secret, &len);
+#else
+    len = sizeof(DEVICE_SECRET);
     strncpy(device_secret, DEVICE_SECRET, len);
+#endif
     return len;
 }
+
+/**
+ * @brief   设置设备的`DeviceSecret`, 用于标识设备单品的密钥, 三元组之一
+ *
+ * @param   device_secret : DeviceSecret字符串的数组
+ * @return  device_secret[]数组中的字符长度, 单位是字节(Byte)
+ */
+#ifdef SUPPORT_PRODUCT_SECRET
+int HAL_SetDeviceSecret(const char device_secret[DEVICE_SECRET_MAXLEN])
+{
+    if (!device_secret) {
+        return -1;
+    }
+
+    if(strlen(device_secret) >= DEVICE_SECRET_MAXLEN)
+    {
+        printf("strlen(device_secret) error == %d\n",strlen(device_secret));
+        return -1;
+    }
+
+    return aos_kv_set("linkkit", device_secret, strlen(device_secret)+1, 1);
+}
+#endif
 
 /**
  * @brief   获取设备的`ProductSecret`, 用于标识设备单品的密钥, 三元组之一
