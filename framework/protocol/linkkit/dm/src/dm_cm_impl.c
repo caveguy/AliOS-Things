@@ -23,6 +23,10 @@ static const char string_up_raw[] __DM_READ_ONLY__ = "up_raw";
 static const char string_up_raw_reply[] __DM_READ_ONLY__ = "up_raw_reply";
 static const char string__reply[] __DM_READ_ONLY__ = "_reply";
 
+typedef void (*aos_run_call_t)(void *arg);
+extern int aos_post_delayed_action(int ms, aos_run_call_t action, void *arg);
+
+
 static void* dm_cm_impl_ctor(void* _self, va_list* params)
 {
     dm_cm_impl_t* self = _self;
@@ -56,6 +60,11 @@ static int dm_cm_impl_init(void* _self, const char* _product_key, const char* _d
     init_param.user_data = pcontext;
 
     init_param.domain_type = (iotx_cm_cloud_domain_types_t)domain_type;
+#ifdef SUPPORT_PRODUCT_SECRET
+    init_param.secret_type = IOTX_CM_DEVICE_SECRET_PRODUCT;
+#else
+    init_param.secret_type = IOTX_CM_DEVICE_SECRET_DEVICE;
+#endif
 
     ret = IOT_CM_Init(&init_param, NULL);
 
@@ -79,11 +88,33 @@ static int dm_cm_impl_deinit(void* _self)
     return IOT_CM_Deinit(NULL);;
 }
 
+static void dm_cm_register_action(void *params)
+{
+    int ret = 0;
+    iotx_cm_register_param_t *param = (iotx_cm_register_param_t *)params;
+    dm_printf("CM_Register:%s\n", param->URI);
+    ret = IOT_CM_Register(param, NULL);
+
+    dm_lite_free(param->URI);
+
+    dm_lite_free(param);
+
+    dm_log_debug("ret = IOT_CM_Register() = %d\n", ret);
+
+    if (FAIL_RETURN == ret) {
+        dm_printf("register fail\n");
+    }
+}
+
+
 static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t register_cb, void* context)
 {
     iotx_cm_register_param_t register_param;
-    int ret;
-
+    int ret = 0;
+    static int time = 0;
+    iotx_cm_register_param_t *para = NULL;
+    char *topic = NULL;
+    int topic_len = 0;
     if(!uri || !register_cb || !context) {
         dm_log_err("invalid param!");
         return FAIL_RETURN;
@@ -91,6 +122,7 @@ static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t regis
 
     dm_printf("%s: uri: %s\n", __FUNCTION__, uri);
 
+	memset(&register_param,0,sizeof(iotx_cm_register_param_t));
     /* Subscribe the specific topic */
     register_param.URI = uri;
 
@@ -104,13 +136,19 @@ static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t regis
 
     register_param.register_func = register_cb;
     register_param.user_data = context;
-    ret = IOT_CM_Register(&register_param, NULL);
+    time = time + 200;
+    para = dm_lite_calloc(1, sizeof(iotx_cm_register_param_t));
+    memcpy(para, &register_param, sizeof(iotx_cm_register_param_t));
+    topic_len = strlen(register_param.URI);
+    topic = dm_lite_calloc(1, topic_len + 1);
+    memcpy(topic, register_param.URI, topic_len);
+    para->URI = topic;
 
-    dm_log_debug("ret = IOT_CM_Register() = %d\n", ret);
+    dm_printf("post_delayed() before: %d, uri: %s\n", time, para->URI);
+    ret = aos_post_delayed_action(time, dm_cm_register_action, para);
+    //ret = IOT_CM_Register(&register_param, NULL);
 
-    if (FAIL_RETURN == ret) {
-        dm_printf("register fail\n");
-    }
+    dm_log_debug("post_delayed() = %d\n", ret);
 
     return ret;
 }
@@ -191,6 +229,7 @@ int dm_cm_impl_add_service(void* _self, char* uri, iotx_cm_register_fp_t registe
 
     dm_printf("%s: uri: %s\n", __FUNCTION__, uri);
 
+	memset(&add_service_param,0,sizeof(iotx_cm_add_service_param_t));
     /* Subscribe the specific topic */
     add_service_param.URI = uri;
     add_service_param.message_type = IOTX_CM_MESSAGE_REQUEST;

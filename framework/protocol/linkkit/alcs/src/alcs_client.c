@@ -2,6 +2,7 @@
 #include "json_parser.h"
 #include "CoAPPlatform.h"
 #include "utils_hmac.h"
+#include "CoAPResource.h"
 
 #ifdef ALCSCLIENT
 static int default_heart_interval = 30000;
@@ -74,13 +75,25 @@ bool fillAccessKey(CoAPContext*ctx, char* buf)
     ctl_key_item *node = NULL, *next = NULL;
     list_for_each_entry_safe(node, next, &lst->lst_ctl, lst, ctl_key_item) {
         char* format;
-        if (!list_is_last(&node->lst, &lst->lst_ctl)) {
+        if (lst->ctl_group_count || !list_is_last(&node->lst, &lst->lst_ctl)) {
             format = "\"%s\",";
         } else {
             format = "\"%s\"]";
         }
         sprintf (buf + strlen(buf), format, node->accessKey);
     }
+
+    ctl_group_item* gnode = NULL, *gnext = NULL;
+    list_for_each_entry_safe(gnode, gnext, &lst->lst_ctl_group, lst, ctl_group_item) {
+        char* format;
+        if (!list_is_last(&gnode->lst, &lst->lst_ctl_group)) {
+            format = "\"%s\",";
+        } else {
+            format = "\"%s\"]";
+        }
+        sprintf (buf + strlen(buf), format, gnode->accessKey);
+    }
+
     HAL_MutexUnlock(lst->list_mutex);
     return 1;
 }
@@ -94,6 +107,10 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
     if(COAP_RECV_RESP_TIMEOUT == result){
         ResponseMsg msg = {-1, "response time!"};
         auth_param->handler (ctx, remote, auth_param->user_data, &msg);
+        coap_free (auth_param->productKey);
+        coap_free (auth_param->deviceName);
+        coap_free (auth_param);
+
     } else {
         COAP_DEBUG("recv response message");
         int seq, datalen;
@@ -114,25 +131,38 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
             COAP_DEBUG("accesskey:%.*s", keylen, accessKey);
 
             auth_list* lst = get_list (ctx);
-            ctl_key_item *node = NULL, *next = NULL, *nodeFound = NULL;
+            ctl_key_item *node = NULL, *next = NULL;
+            char*accessTokenFound = NULL;
             HAL_MutexLock(lst->list_mutex);
 
             list_for_each_entry_safe(node, next, &lst->lst_ctl, lst, ctl_key_item) {
                 COAP_DEBUG("node:%s", node->accessKey);
                 if (strncmp(node->accessKey, accessKey, keylen) == 0){
-                    nodeFound = node;
+                    accessTokenFound = node->accessToken;
                     break;
                 }
             }
+            
+            if (!accessTokenFound) {
+                ctl_group_item*gnode = NULL, *gnext = NULL;
+                list_for_each_entry_safe(gnode, gnext, &lst->lst_ctl_group, lst, ctl_group_item) {
+                    COAP_DEBUG("node:%s", gnode->accessKey);
+                    if (strncmp(gnode->accessKey, accessKey, keylen) == 0){
+                        accessTokenFound = gnode->accessKey;
+                        break;
+                    }
+                }
+            }
+
             HAL_MutexUnlock(lst->list_mutex);
 
-            if (nodeFound) {
+            if (accessTokenFound) {
                 ctl_key_item item;
                 item.deviceName = auth_param->deviceName;
                 item.productKey = auth_param->productKey;
 
                 item.accessKey = accessKey;
-                item.accessToken = nodeFound->accessToken;
+                item.accessToken = accessTokenFound;
                 char back;
                 backup_json_str_last_char (accessKey, keylen, back);
                 do_auth (ctx, remote, &item, auth_param->user_data, auth_param->handler);
@@ -148,6 +178,10 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
         //todo
         ResponseMsg tmp = {-1, ""};
         auth_param->handler (ctx, remote, auth_param->user_data, &tmp);
+        coap_free (auth_param->productKey);
+        coap_free (auth_param->deviceName);
+        coap_free (auth_param);
+
     }
 }
 
@@ -191,59 +225,23 @@ static int CoAPServerPath_2_option(char *uri, CoAPMessage *message)
     return COAP_SUCCESS;
 }
 
-int negotiate_key (CoAPContext*ctx, NetworkAddr* addr, AuthParam* auth_param)
-{
-    int ret = COAP_SUCCESS;
-    COAP_DEBUG ("negotiate_key");
-
-    device_auth_list* dev = get_device (ctx);
-    if (!dev) {
-        COAP_INFO ("no device!");
-        return COAP_ERROR_INVALID_PARAM;
-    }
-
-    char accesskeys[1024] = {0};
-    if (!fillAccessKey (ctx, accesskeys)) {
-        COAP_INFO ("no ctl key!");
-        return ALCS_ERR_AUTH_NOCTLKEY;
-    }
-    COAP_INFO ("accesskeys:%s", accesskeys);
-
-    const char* method = "core/service/auth/select";
-    char payloadbuf[1024];
-    sprintf (payloadbuf, payload_format, method, ++dev->seq, auth_param->productKey, auth_param->deviceName, accesskeys);
-
-    CoAPLenString payload;
-    payload.data = (unsigned char *)payloadbuf;
-    payload.len = strlen(payloadbuf);
-    CoAPMessage message;
-    alcs_msg_init (ctx, &message, COAP_MSG_CODE_GET, COAP_MESSAGE_TYPE_CON, 0, &payload, NULL);
-
-    char path[120];
-    sprintf (path, "/dev/%s/%s/core/service/auth/select", auth_param->productKey, auth_param->deviceName);
-    CoAPServerPath_2_option (path, &message);
-
-    message.user = auth_param;
-    message.handler = nego_cb;
-    ret = CoAPMessage_send (ctx, addr, &message);
-    CoAPMessage_destory(&message);
-
-    return ret;
-}
-
 void  auth_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAddr *remote, CoAPMessage *message)
 {
     COAP_DEBUG("recv auth_cb response message");
 
-    session_item* session = get_ctl_session (ctx, remote);
-    if (!session) {
-        COAP_INFO ("receive unknown auth_cb response!");
-        return;
-    }
-
     AuthParam* auth_param = (AuthParam*)userdata;
 
-    if (COAP_RECV_RESP_TIMEOUT == result){
+    AlcsDeviceKey devKey = {0};
+    memcpy (&devKey.addr, remote, sizeof(NetworkAddr));
+    devKey.pk = auth_param->productKey;
+    devKey.dn = auth_param->deviceName;
+    session_item* session = get_ctl_session (ctx, &devKey);
+
+    if (!session) {
+        COAP_INFO ("receive unknown auth_cb response, pk:%s, dn:%s", devKey.pk, devKey.dn);
+        ResponseMsg msg = {-1, "no session found!"};
+        auth_param->handler (ctx, remote, auth_param->user_data, &msg);
+    } else if (COAP_RECV_RESP_TIMEOUT == result){
         COAP_ERR("response time!");
         ResponseMsg msg = {-1, "response time!"};
         auth_param->handler (ctx, remote, auth_param->user_data, &msg);
@@ -255,47 +253,50 @@ void  auth_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
 
         res_parse ((const char *)message->payload, message->payloadlen, &seq, &msg, &data, &datalen);
         if (msg.code == 200) {
-            int tmplen;
-            char* tmp;
+            do {
+                int tmplen;
+                char* tmp;
 
-            tmp = json_get_value_by_name(data, datalen, "sessionId", &tmplen, NULL);
-            if (!tmp) {
+                tmp = json_get_value_by_name(data, datalen, "sessionId", &tmplen, NULL);
+                if (!tmp) {
+                    msg.code = -1;
+                    msg.msg = "sessionid = NULL!";
+                    COAP_ERR ("sessionid = NULL!");
+                    auth_param->handler (ctx, remote, auth_param->user_data, &msg);
+                    break;
+                }
+                char back;
+                backup_json_str_last_char (tmp, tmplen, back);
+                session->sessionId = atoi (tmp);
+                restore_json_str_last_char (tmp, tmplen, back);
+                COAP_INFO ("sessionId:%d", session->sessionId);
 
-                msg.code = -1;
-                msg.msg = "sessionid = NULL!";
-                COAP_ERR ("sessionid = NULL!");
-                auth_param->handler (ctx, remote, auth_param->user_data, &msg);
-                return;
-            }
-            char back;
-            backup_json_str_last_char (tmp, tmplen, back);
-            session->sessionId = atoi (tmp);
-            restore_json_str_last_char (tmp, tmplen, back);
-            COAP_INFO ("sessionId:%d", session->sessionId);
+                tmp = json_get_value_by_name(data, datalen, "randomKey", &tmplen, NULL);
+                if (!tmp) {
+                    msg.code = -1;
+                    msg.msg = "randomKey = NULL!";
+                    COAP_ERR ("randomKey = NULL!");
+                    auth_param->handler (ctx, remote, auth_param->user_data, &msg);
+                    break;
+                }
 
-            tmp = json_get_value_by_name(data, datalen, "randomKey", &tmplen, NULL);
-            if (!tmp) {
-                msg.code = -1;
-                msg.msg = "randomKey = NULL!";
-                COAP_ERR ("randomKey = NULL!");
-                auth_param->handler (ctx, remote, auth_param->user_data, &msg);
-                return;
-            }
-
-            char buf[32];
-            snprintf (buf, sizeof(buf), "%s%.*s", session->randomKey, tmplen, tmp);
-            utils_hmac_sha1_raw (buf,strlen(buf), session->sessionKey, auth_param->accessToken, strlen(auth_param->accessToken));
-            session->authed_time = HAL_UptimeMs ();
-            session->heart_time = session->authed_time;
-            session->interval = default_heart_interval;
-            COAP_INFO("sessionKey is created");
-
+                char buf[32];
+                snprintf (buf, sizeof(buf), "%s%.*s", session->randomKey, tmplen, tmp);
+                utils_hmac_sha1_raw (buf,strlen(buf), session->sessionKey, auth_param->accessToken, strlen(auth_param->accessToken));
+                session->authed_time = HAL_UptimeMs ();
+                session->heart_time = session->authed_time;
+                session->interval = default_heart_interval;
+                COAP_INFO("sessionKey is created");
+            } while (0);
         } else {
             remove_session (ctx, session);
             COAP_ERR("message code :%d", msg.code);
         }
         auth_param->handler (ctx, remote, auth_param->user_data, &msg);
     }
+
+    coap_free (auth_param->productKey);
+    coap_free (auth_param->deviceName);
     coap_free (auth_param->accessToken);
     coap_free (auth_param);
 }
@@ -310,7 +311,12 @@ int do_auth (CoAPContext *ctx, NetworkAddr* addr, ctl_key_item* ctl_item, void *
         return COAP_ERROR_INVALID_PARAM;
     }
 
-    session_item* session = get_ctl_session (ctx, addr);
+    AlcsDeviceKey devKey = {0};
+    memcpy (&devKey.addr, addr, sizeof(NetworkAddr));
+    devKey.pk = ctl_item->productKey;
+    devKey.dn = ctl_item->deviceName; 
+
+    session_item* session = get_ctl_session (ctx, &devKey);
     if (session) {
         if (session->sessionId) {
             COAP_INFO ("no need to reauth!");
@@ -327,6 +333,12 @@ int do_auth (CoAPContext *ctx, NetworkAddr* addr, ctl_key_item* ctl_item, void *
     {
         session = (session_item*)coap_malloc(sizeof(session_item));
         memset (session, 0, sizeof(session_item));
+ 
+        char path[100] = {0};
+        strncpy(path, ctl_item->productKey, sizeof(path));
+        strncat(path, ctl_item->deviceName, sizeof(path));
+        CoAPPathMD5_sum (path, strlen(path), session->pk_dn, PK_DN_CHECKSUM_LEN);
+        COAP_INFO ("pk:%s, dn:%s, checksum:%s", devKey.pk, devKey.dn, session->pk_dn); 
         memcpy (&session->addr, addr, sizeof(NetworkAddr));
         gen_random_key((unsigned char *)session->randomKey, RANDOMKEY_LEN);
 
@@ -357,6 +369,10 @@ int do_auth (CoAPContext *ctx, NetworkAddr* addr, ctl_key_item* ctl_item, void *
     AuthParam* authParam = (AuthParam*) coap_malloc (sizeof(AuthParam));
     authParam->handler = handler;
     authParam->user_data = user_data;
+    authParam->productKey = (char*) coap_malloc (strlen(ctl_item->productKey) + 1);
+    strcpy (authParam->productKey, ctl_item->productKey);
+    authParam->deviceName = (char*) coap_malloc (strlen(ctl_item->deviceName) + 1);
+    strcpy (authParam->deviceName, ctl_item->deviceName);
     authParam->accessToken = (char*) coap_malloc (strlen(ctl_item->accessToken) + 1);
     strcpy (authParam->accessToken, ctl_item->accessToken);
     message.user = authParam;
@@ -374,23 +390,55 @@ void alcs_auth_has_key (CoAPContext *ctx, NetworkAddr* addr, AuthParam* auth_par
     item.accessKey = auth_param->accessKey;
     item.deviceName = auth_param->deviceName;
     item.productKey = auth_param->productKey;
-    item.accessToken = (char*) coap_malloc (strlen(auth_param->accessToken) + 1);
-    strcpy (item.accessToken, auth_param->accessToken);
+    item.accessToken = auth_param->accessToken;//(char*) coap_malloc (strlen(auth_param->accessToken) + 1);
+    //strcpy (item.accessToken, auth_param->accessToken);
     do_auth (ctx, addr, &item, auth_param->user_data, auth_param->handler);
 }
 
-void alcs_auth_nego_key (CoAPContext *ctx, NetworkAddr* addr, const char* productKey, const char* deviceName, AuthHandler handler)
+void alcs_auth_nego_key (CoAPContext *ctx, AlcsDeviceKey* devKey, AuthHandler handler)
 {
+    COAP_DEBUG ("alcs_auth_nego_key");
+
+    device_auth_list* dev = get_device (ctx);
+    if (!dev) {
+        COAP_INFO ("no device!");
+        return;
+    }
+
+    char accesskeys[1024] = {0};
+    if (!fillAccessKey (ctx, accesskeys)) {
+        COAP_INFO ("no ctl key!");
+        return;
+    }
+    COAP_INFO ("accesskeys:%s", accesskeys);
+
+    const char* method = "core/service/auth/select";
+    char payloadbuf[1024];
+    sprintf (payloadbuf, payload_format, method, ++dev->seq, devKey->pk, devKey->dn, accesskeys);
+
+    CoAPLenString payload;
+    payload.data = (unsigned char *)payloadbuf;
+    payload.len = strlen(payloadbuf);
+    CoAPMessage message;
+    alcs_msg_init (ctx, &message, COAP_MSG_CODE_GET, COAP_MESSAGE_TYPE_CON, 0, &payload, NULL);
+
+    char path[120];
+    sprintf (path, "/dev/%s/%s/core/service/auth/select", devKey->pk, devKey->dn);
+    CoAPServerPath_2_option (path, &message);
+
     AuthParam* authParam = (AuthParam*) coap_malloc (sizeof(AuthParam));
     memset (authParam, 0, sizeof(AuthParam));
 
     authParam->handler = handler;
-    authParam->productKey = (char*) coap_malloc (strlen(productKey) + 1);
-    strcpy (authParam->productKey, productKey);
-    authParam->deviceName = (char*) coap_malloc (strlen(deviceName) + 1);
-    strcpy (authParam->deviceName, deviceName);
+    authParam->productKey = (char*) coap_malloc (strlen(devKey->pk) + 1);
+    strcpy (authParam->productKey, devKey->pk);
+    authParam->deviceName = (char*) coap_malloc (strlen(devKey->dn) + 1);
+    strcpy (authParam->deviceName, devKey->dn);
 
-    negotiate_key (ctx, addr, authParam);
+    message.user = authParam;
+    message.handler = nego_cb;
+    CoAPMessage_send (ctx, &devKey->addr, &message);
+    CoAPMessage_destory(&message);
 }
 
 int alcs_add_client_key(CoAPContext *ctx, const char* accesskey, const char* accesstoken, const char* productKey, const char* deviceName)
@@ -450,31 +498,44 @@ int alcs_remove_client_key (CoAPContext *ctx, const char* key, char isfullkey)
     return COAP_SUCCESS;
 }
 
-bool alcs_device_online (CoAPContext *ctx, NetworkAddr* addr)
+bool alcs_device_online (CoAPContext *ctx, AlcsDeviceKey* devKey)
 {
-    session_item* session = get_ctl_session (ctx, addr);
+    session_item* session = get_ctl_session (ctx, devKey);
     return session && session->sessionId? 1 : 0;
 }
 
 void heart_beat_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAddr *remote, CoAPMessage *message)
 {
     COAP_DEBUG ("heart_beat_cb, message addr:%p, networkaddr:%p!", message, remote);
-    session_item* session = get_ctl_session (ctx, remote);
+
+    struct list_head* ctl_head = get_ctl_session_list (ctx);
+    if (!ctl_head || list_empty(ctl_head)) {
+        return;
+    }
 
     if (result == COAP_RECV_RESP_TIMEOUT) {
         COAP_ERR ("heart beat timeout");
-        if (session) {
-            remove_session (ctx, session);
+        session_item *node = NULL, *next = NULL;
+        list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
+            if (node->sessionId && is_networkadd_same(&node->addr, remote)) {
+                remove_session (ctx, node);
+            }
         }
     } else {
-        unsigned int sessionId = 0;
-        CoAPUintOption_get (message, COAP_OPTION_SESSIONID, &sessionId);
+        session_item *node = NULL, *next = NULL;
+        list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
 
-        if (!session || session->sessionId != sessionId) {
-            COAP_INFO ("receive stale heart beat response");
-            remove_session (ctx, session);
-        } else {
-            session->heart_time = HAL_UptimeMs();
+            if(node->sessionId && is_networkadd_same(&node->addr, remote)) {
+                unsigned int sessionId = 0;
+                CoAPUintOption_get (message, COAP_OPTION_SESSIONID, &sessionId);
+
+                if (!node || node->sessionId != sessionId) {
+                    COAP_INFO ("receive stale heart beat response");
+                    remove_session (ctx, node);
+                } else {
+                    node->heart_time = HAL_UptimeMs();
+                }
+            }
         }
     }
 }
@@ -498,7 +559,11 @@ void on_client_auth_timer (CoAPContext* ctx)
 
     session_item *node = NULL, *next = NULL;
     list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
-        if(node->sessionId && node->heart_time + node->interval < tick) {
+        if (!node->sessionId) {
+            continue;
+        }
+
+        if(node->heart_time + node->interval > tick) {
             CoAPMessage message;
             alcs_msg_init (ctx, &message, COAP_MSG_CODE_GET, COAP_MESSAGE_TYPE_CON, 0, &payload, NULL);
             CoAPServerPath_2_option ("/dev/core/service/heartBeat", &message);

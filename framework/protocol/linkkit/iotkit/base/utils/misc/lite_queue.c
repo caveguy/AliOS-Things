@@ -43,7 +43,7 @@ err_handler:
 
     if (lite_queue) free(lite_queue);
 
-    return lite_queue;
+    return NULL;
 }
 
 void lite_queue_destroy(lite_queue_t* _lite_queue)

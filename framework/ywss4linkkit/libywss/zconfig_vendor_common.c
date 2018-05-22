@@ -428,7 +428,7 @@ static void clr_aplist_monitor()
     queue_delayed_work(&clr_aplist_monitor_work, CLR_APLIST_MONITOR_TIMEOUT_MS);
 }
 
-int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, char rssi)
+int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi)
 {
     static unsigned int lock_start;
 

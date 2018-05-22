@@ -23,7 +23,7 @@ struct ap_info {
     u8 auth;
     u8 encry[2];
     u8 channel;
-    u8 rssi;
+    signed char rssi;
     char ssid[ZC_MAX_SSID_LEN];
     char passwd[ZC_MAX_PASSWD_LEN];
     u8 mac[ETH_ALEN];

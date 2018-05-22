@@ -46,6 +46,8 @@ int awss_start();
  *
  * @retval  -1 : failure
  * @retval  0 : sucess
+ * @note
+ *      if awss_stop is called before exit of awss_start, awss and notify will stop.
  */
 int awss_stop();
 
@@ -64,6 +66,16 @@ int awss_config_press();
  * @retval  0 : sucess
  */
 int awss_report_cloud();
+
+/**
+ * @brief   report reset to cloud when device connects cloud.
+ *
+ * @retval  -1 : failure
+ * @retval  0 : sucess
+ * @note
+ *      if device dosen't connect cloud, device will fails to send reset to cloud.
+ */
+int awss_report_reset();
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 }

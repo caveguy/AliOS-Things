@@ -593,24 +593,18 @@ int aws_get_ssid_passwd(char *ssid, char *passwd, unsigned char *bssid,
                         char *auth, char *encry, unsigned char *channel)
 {
     if (aws_state == AWS_SUCCESS) {
-        if (ssid) {
+        if (ssid)
             strncpy(ssid, (char *)aws_result_ssid, ZC_MAX_SSID_LEN);
-        }
-        if (passwd) {
+        if (passwd)
             strncpy(passwd, (char *)aws_result_passwd, ZC_MAX_PASSWD_LEN);
-        }
-        if (bssid) {
+        if (bssid)
             memcpy(bssid, aws_result_bssid, ETH_ALEN);
-        }
-        if (auth) {
+        if (auth)
             *auth = aws_result_auth;
-        }
-        if (encry) {
+        if (encry)
             *encry = aws_result_encry;
-        }
-        if (channel) {
+        if (channel)
             *channel = aws_result_channel;
-        }
         return 1;
     } else {
         return 0;

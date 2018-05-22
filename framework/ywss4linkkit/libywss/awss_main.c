@@ -55,7 +55,7 @@ int __awss_start(void)
     uint8_t channel = 0;
     int ret;
 
-    awss_debug("awss version: %s", zconfig_lib_version());
+    os_printf("awss version: %s", zconfig_lib_version());
     awss_stop_connecting = 0;
     awss_finished = 0;
 #ifndef SIMULATE_NETMGR
