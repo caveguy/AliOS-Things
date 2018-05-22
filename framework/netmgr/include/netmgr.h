@@ -14,7 +14,6 @@ extern "C"
 #endif
 
 #define MAX_SSID_SIZE  32
-#define MAX_BSSID_SIZE 6
 #define MAX_PWD_SIZE   64
 
 #ifndef MAX_SSID_LEN
@@ -29,7 +28,7 @@ extern "C"
 /* 1 bigger than actual size for holding \0 */
 typedef struct {
     char ssid[MAX_SSID_SIZE + 1];
-    char bssid[MAX_BSSID_SIZE + 1];
+    uint8_t bssid[ETH_ALEN];
     char pwd[MAX_PWD_SIZE + 1];
 } netmgr_ap_config_t;
 
@@ -72,7 +71,7 @@ typedef int (*netmgr_wifi_scan_result_cb_t)(
     const uint8_t bssid[ETH_ALEN],
     enum NETMGR_AWSS_AUTH_TYPE auth,
     enum NETMGR_AWSS_ENC_TYPE encry,
-    uint8_t channel, char rssi,
+    uint8_t channel, signed char rssi,
     int is_last_ap);
 
 void wifi_get_ip(char ips[16]);

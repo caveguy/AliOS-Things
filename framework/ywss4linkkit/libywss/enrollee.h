@@ -117,7 +117,7 @@ struct enrollee_info {
     uint8_t sign_len;
     uint8_t sign[ENROLLEE_SIGN_SIZE];
 
-    char rssi;
+    signed char rssi;
 
     uint8_t key[MAX_KEY_LEN + 1];  // aes key
 

@@ -128,43 +128,38 @@ static int awss_notify_response(int type, int result, void *message)
 {
     awss_debug("%s, type:%d\n", __func__, type);
 
-    if (message == NULL) {
+    if (message == NULL)
         return -1;
-    }
 
-    if (result != 0) {
+    if (result != 0)
         return 0;
-    }
 
-    if (awss_cmp_get_coap_code(message) >= 0x60) {
+    if (awss_cmp_get_coap_code(message) >= 0x60)
         return 0;
-    }
 
     {
         int val = 0;
         int len = 0, mlen = 0;
         char *payload = NULL, *elem = NULL;
 
-        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 40 || len == 0) {
+        if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 0x40 || len == 0)
             return 0;
-        }
 
         elem = json_get_value_by_name(payload, len, AWSS_JSON_ID, &mlen, 0);
-        if (elem == NULL) {
+        if (elem == NULL)
             return 0;
-        }
+
         val = atoi(elem);
-        if (val != 123 && val >= g_notify_id) {
+        if (val != 123 && val > g_notify_id)
             return 0;
-        }
+
         elem = json_get_value_by_name(payload, len, AWSS_JSON_CODE, &mlen, 0);
-        if (elem == NULL) {
+        if (elem == NULL)
             return 0;
-        }
+
         val = atoi(elem);
-        if (val != 200) {
+        if (val != 200)
             return 0;
-        }
     }
 
     unsigned char i = 0;

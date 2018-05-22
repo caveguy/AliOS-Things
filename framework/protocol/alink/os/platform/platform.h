@@ -1114,7 +1114,7 @@ int platform_wifi_send_80211_raw_frame(_IN_ enum platform_awss_frame_type type,
  * @note None.
  */
 typedef void (*platform_wifi_mgnt_frame_cb_t)(_IN_ uint8_t *buffer,
-                                              _IN_ int len, _IN_ char rssi_dbm, _IN_ int buffer_type);
+                                              _IN_ int len, _IN_ signed char rssi_dbm, _IN_ int buffer_type);
 
 /**
  * @brief enable/disable filter specific management frame in wifi station mode
@@ -1145,7 +1145,7 @@ typedef struct {
     enum AWSS_AUTH_TYPE auth;
     enum AWSS_ENC_TYPE encry;
     uint8_t channel;
-    char rssi_dbm;
+    signed char rssi_dbm;
     char ssid[PLATFORM_MAX_SSID_LEN];
     uint8_t mac[ETH_ALEN];
 } ap_info_t;
@@ -1169,7 +1169,7 @@ typedef int (*platform_wifi_scan_result_cb_t)(
     const uint8_t bssid[ETH_ALEN],
     enum AWSS_AUTH_TYPE auth,
     enum AWSS_ENC_TYPE encry,
-    uint8_t channel, char rssi,
+    uint8_t channel, signed char rssi,
     int is_last_ap);
 
 /**

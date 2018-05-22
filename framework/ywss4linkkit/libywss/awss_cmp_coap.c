@@ -197,7 +197,7 @@ int awss_cmp_local_deinit()
     if (g_coap_ctx == NULL)
         return 0;
     awss_devinfo_notify_stop();
-    awss_cmp_coap_deinit();
+    //awss_cmp_coap_deinit();
 
     return 0;
 }

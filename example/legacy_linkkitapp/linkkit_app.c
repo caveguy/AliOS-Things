@@ -133,7 +133,7 @@ static int smartled_set_property(char *in, char *out, int out_len, void *ctx)
     DPRINT("sample->WorkMode = %d\n", sample->WorkMode);
     DPRINT("sample->LightSwitch = %d\n", sample->LightSwitch);
 
-    linkkit_post_property(sample->lk_dev, in);
+    IOT_DM_Property_Post(sample->lk_dev, in);
 
     return 0;
 }
@@ -163,7 +163,7 @@ static int post_all_properties(sample_context_t *sample)
     snprintf(prop, sizeof(prop),
             "{\"WorkMode\": %d, \"LightSwitch\": %d}",
             sample->WorkMode, sample->LightSwitch);
-    return linkkit_post_property(sample->lk_dev, prop);
+    return IOT_DM_Property_Post(sample->lk_dev, prop);
 }
 
 static int smartled_event_handler(int event_type, void *ctx)
@@ -230,7 +230,7 @@ void *linkkit_thread(void *arg)
         return NULL;
     }
 
-    sample.lk_dev = linkkit_start(&alinkops, &sample);
+    sample.lk_dev = IOT_DM_Construct(&alinkops, &sample);
     if (!sample.lk_dev) {
         DPRINT("linkkit_start failed\n");
         return NULL;
@@ -244,7 +244,7 @@ void *linkkit_thread(void *arg)
     uint64_t prev_time = HAL_UptimeMs();
 
     while (1) {
-        linkkit_dispatch(100);
+        IOT_DM_Dispatch(100);
 
         uint64_t now = HAL_UptimeMs();
         uint64_t itv = now - prev_time;
@@ -267,7 +267,7 @@ static void *dispatch_thread(void *params)
     sample_context_t *sample = params;
 
     while (1) {
-        linkkit_dispatch(100);
+        IOT_DM_Dispatch(100);
 
         uint64_t now = HAL_UptimeMs();
         uint64_t itv = now - prev_time;
