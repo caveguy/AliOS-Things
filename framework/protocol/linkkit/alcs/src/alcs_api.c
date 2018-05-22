@@ -25,12 +25,6 @@ device_auth_list* get_device(CoAPContext *context)
     return NULL;
 }
 
-auth_list* get_list(CoAPContext *context)
-{
-    device_auth_list* dev_lst = get_device (context);
-    return dev_lst? &dev_lst->lst_auth : NULL;
-}
-
 #ifdef ALCSCLIENT
 struct list_head* get_ctl_session_list (CoAPContext *context)
 {
@@ -59,15 +53,27 @@ void remove_session (CoAPContext *ctx, session_item* session)
     if (session) {
         CoapObsServerAll_delete (ctx, &session->addr);
         list_del (&session->lst);
+
         coap_free (session);
     }
 }
 
-session_item* get_session_by_checksum (struct list_head* sessions, NetworkAddr* addr, char ck[PK_DN_CHECKSUM_LEN])
+void remove_session_safe (CoAPContext *ctx, session_item* session)
+{
+    device_auth_list* dev_lst = get_device (ctx);
+    HAL_MutexLock(dev_lst->list_mutex);
+    remove_session (ctx, session);
+    HAL_MutexUnlock(dev_lst->list_mutex);
+}
+
+session_item* get_session_by_checksum (CoAPContext *ctx, struct list_head* sessions, NetworkAddr* addr, char ck[PK_DN_CHECKSUM_LEN])
 {
     if (!sessions || !ck) {
         return NULL;
     }
+
+    device_auth_list* dev_lst = get_device (ctx);
+    HAL_MutexLock(dev_lst->list_mutex);
 
     session_item* node = NULL, *next = NULL;
     list_for_each_entry_safe(node, next, sessions, lst, session_item) {
@@ -75,13 +81,16 @@ session_item* get_session_by_checksum (struct list_head* sessions, NetworkAddr* 
                 && strncmp(node->pk_dn, ck, PK_DN_CHECKSUM_LEN) == 0)
         {
             COAP_DEBUG("find node, sessionid:%d", node->sessionId);
+            HAL_MutexUnlock(dev_lst->list_mutex);
             return node;
         }
     }
+    HAL_MutexUnlock(dev_lst->list_mutex);
+
     return NULL;
 }
 
-static session_item* get_session (struct list_head* sessions, AlcsDeviceKey* devKey)
+static session_item* get_session (CoAPContext *ctx, struct list_head* sessions, AlcsDeviceKey* devKey)
 {
     if (!sessions || !devKey || !devKey->pk || !devKey->dn) {
         return NULL;
@@ -93,7 +102,7 @@ static session_item* get_session (struct list_head* sessions, AlcsDeviceKey* dev
     strcat(path, devKey->dn);
     CoAPPathMD5_sum (path, strlen(path), ck, PK_DN_CHECKSUM_LEN);
 
-    return get_session_by_checksum (sessions, &devKey->addr, ck);
+    return get_session_by_checksum (ctx, sessions, &devKey->addr, ck);
 }
 
 #ifdef ALCSCLIENT
@@ -101,7 +110,7 @@ session_item* get_ctl_session (CoAPContext *ctx, AlcsDeviceKey* devKey)
 {
     struct list_head* sessions = get_ctl_session_list(ctx);
     COAP_DEBUG("get_ctl_session");
-    return get_session (sessions, devKey);
+    return get_session (ctx, sessions, devKey);
 }
 
 #endif
@@ -110,7 +119,7 @@ session_item* get_ctl_session (CoAPContext *ctx, AlcsDeviceKey* devKey)
 session_item* get_svr_session (CoAPContext *ctx, AlcsDeviceKey* devKey)
 {
     struct list_head* sessions = get_svr_session_list(ctx);
-    return get_session (sessions, devKey);
+    return get_session (ctx, sessions, devKey);
 }
 #endif
 
@@ -136,14 +145,14 @@ static session_item* get_auth_session_by_checksum (CoAPContext *ctx, NetworkAddr
 {
 #ifdef ALCSCLIENT
     struct list_head* sessions = get_ctl_session_list(ctx);
-    session_item* node = get_session_by_checksum (sessions, addr, ck);
+    session_item* node = get_session_by_checksum (ctx, sessions, addr, ck);
     if (node && node->sessionId) {
         return node;
     }
 #endif
 #ifdef ALCSSERVER
     struct list_head* sessions1 = get_svr_session_list(ctx);
-    session_item* node1 = get_session_by_checksum (sessions1, addr, ck);
+    session_item* node1 = get_session_by_checksum (ctx, sessions1, addr, ck);
     if (node1 && node1->sessionId) {
         return node1;
     }
@@ -185,31 +194,27 @@ extern void alcs_rec_heart_beat(CoAPContext *context, const char *paths, Network
 
 int alcs_auth_init(CoAPContext *ctx, const char* productKey, const char* deviceName, char role)
 {
-    if (is_inited) {
-        return 0;
-    }
-    is_inited = 1;
-
     device_auth_list* dev;
-    //auth_list* lst_auth;
 
 #ifdef SUPPORT_MULTI_DEVICES
-    INIT_LIST_HEAD(&device_list);
-
+    if (!is_inited) {
+        INIT_LIST_HEAD(&device_list);
+    }
     dev = coap_malloc(sizeof(device_auth_list));
     list_add_tail(&dev->lst, &device_list);
+
 #else
     dev = &_device;
+    INIT_LIST_HEAD(&dev->lst);
 #endif
+    if (!is_inited) {
+        INIT_LIST_HEAD(&secure_resource_cb_head);
+    }
+    is_inited = 1;
     dev->context = ctx;
     dev->seq = 1;
     dev->role = role;
     memset (&dev->lst_auth, 0, sizeof(auth_list));
-    //strcpy (dev->deviceName, deviceName);
-    //strcpy (dev->productKey, productKey);
-
-    INIT_LIST_HEAD(&dev->lst);
-    INIT_LIST_HEAD(&secure_resource_cb_head);
 
     if (role & ROLE_SERVER) {
 #ifdef ALCSSERVER
@@ -234,7 +239,7 @@ int alcs_auth_init(CoAPContext *ctx, const char* productKey, const char* deviceN
 
     INIT_LIST_HEAD(&dev->lst_auth.lst_ctl_group);
     INIT_LIST_HEAD(&dev->lst_auth.lst_svr_group);
-    dev->lst_auth.list_mutex = HAL_MutexCreate();
+    dev->list_mutex = HAL_MutexCreate();
 
     return COAP_SUCCESS;
 }
@@ -512,7 +517,8 @@ void on_auth_timer(void* param)
 
 int alcs_add_ctl_group (CoAPContext *context, const char* groupid, const char* accesskey, const char* accesstoken)
 {
-    auth_list* lst = get_list(context);
+    device_auth_list* dev_lst = get_device (context);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst || lst->ctl_group_count >= KEY_MAXCOUNT) {
         return COAP_ERROR_INVALID_LENGTH;
     }
@@ -537,10 +543,10 @@ int alcs_add_ctl_group (CoAPContext *context, const char* groupid, const char* a
         strcpy (item->accessToken, accesstoken);
         strcpy (item->id, groupid);
 
-        HAL_MutexLock(lst->list_mutex);
+        HAL_MutexLock(dev_lst->list_mutex);
         list_add_tail(&item->lst, &lst->lst_ctl_group);
-            ++lst->ctl_group_count;
-        HAL_MutexUnlock(lst->list_mutex);
+        ++lst->ctl_group_count;
+        HAL_MutexUnlock(dev_lst->list_mutex);
 
         return 0;
 
@@ -561,7 +567,9 @@ int alcs_remove_ctl_group (CoAPContext *context, const char* groupid)
 
 int alcs_add_svr_group (CoAPContext *context, const char* groupid, const char* keyprefix, const char* secret)
 {
-    auth_list* lst = get_list(context);
+    device_auth_list* dev_lst = get_device (context);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
+
     if (!lst || lst->svr_group_count >= KEY_MAXCOUNT) {
         return COAP_ERROR_INVALID_LENGTH;
     }
@@ -583,10 +591,10 @@ int alcs_add_svr_group (CoAPContext *context, const char* groupid, const char* k
         strcpy (item->keyInfo.secret, secret);
         strcpy (item->id, groupid);
 
-        HAL_MutexLock(lst->list_mutex);
+        HAL_MutexLock(dev_lst->list_mutex);
         list_add_tail(&item->lst, &lst->lst_svr_group);
-            ++lst->svr_group_count;
-        HAL_MutexUnlock(lst->list_mutex);
+        ++lst->svr_group_count;
+        HAL_MutexUnlock(dev_lst->list_mutex);
 
         return 0;
 

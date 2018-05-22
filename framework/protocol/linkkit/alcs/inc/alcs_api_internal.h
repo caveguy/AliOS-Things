@@ -52,7 +52,6 @@ typedef struct
 
 typedef struct
 {
-    void                    *list_mutex;
 #ifdef ALCSCLIENT
     struct list_head         lst_ctl;
     unsigned char            ctl_count;
@@ -88,6 +87,7 @@ typedef struct
 typedef struct
 {
     CoAPContext* context;
+    void*  list_mutex;
     int seq;
     auth_list lst_auth;
 #ifdef ALCSSERVER
@@ -104,8 +104,6 @@ typedef struct
 extern struct list_head device_list;
 
 device_auth_list* get_device(CoAPContext *context);
-
-auth_list* get_list(CoAPContext *context);
 
 #ifdef ALCSCLIENT
 struct list_head* get_ctl_session_list (CoAPContext *context);
@@ -126,9 +124,9 @@ extern device_auth_list _device;
 #define get_ctl_session_list(v) (_device.role&ROLE_CLIENT? &_device.lst_ctl_sessions : NULL)
 #endif
 
-#define get_list(v) (&_device.lst_auth)
 #endif
 
+void remove_session_safe (CoAPContext *ctx, session_item* session);
 void remove_session (CoAPContext *ctx, session_item* session);
 
 #ifdef ALCSCLIENT
@@ -137,7 +135,7 @@ session_item* get_ctl_session (CoAPContext *ctx, AlcsDeviceKey* key);
 
 #ifdef ALCSSERVER
 session_item* get_svr_session (CoAPContext *ctx, AlcsDeviceKey* key);
-session_item* get_session_by_checksum (struct list_head* sessions, NetworkAddr* addr, char ck[PK_DN_CHECKSUM_LEN]);
+session_item* get_session_by_checksum (CoAPContext *ctx, struct list_head* sessions, NetworkAddr* addr, char ck[PK_DN_CHECKSUM_LEN]);
 
 #define MAX_PATH_CHECKSUM_LEN (5)
 typedef struct

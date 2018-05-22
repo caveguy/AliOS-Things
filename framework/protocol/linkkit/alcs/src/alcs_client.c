@@ -60,15 +60,16 @@ bool res_parse (const char* payload, int len, int* seq, ResponseMsg* res_msg, ch
 
 bool fillAccessKey(CoAPContext*ctx, char* buf)
 {
-    auth_list* lst = get_list (ctx);
+    device_auth_list* dev_lst = get_device (context);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst) {
         return 0;
     }
 
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
 
     if (list_empty(&lst->lst_ctl)) {
-        HAL_MutexUnlock(lst->list_mutex);
+        HAL_MutexUnlock(dev_lst->list_mutex);
         return 0;
     }
     strcpy (buf, ",\"accessKeys\":[");
@@ -94,7 +95,7 @@ bool fillAccessKey(CoAPContext*ctx, char* buf)
         sprintf (buf + strlen(buf), format, gnode->accessKey);
     }
 
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
     return 1;
 }
 
@@ -130,10 +131,12 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
             }
             COAP_DEBUG("accesskey:%.*s", keylen, accessKey);
 
-            auth_list* lst = get_list (ctx);
+            device_auth_list* dev_lst = get_device (ctx);
+            auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
+
             ctl_key_item *node = NULL, *next = NULL;
             char*accessTokenFound = NULL;
-            HAL_MutexLock(lst->list_mutex);
+            HAL_MutexLock(dev_lst->list_mutex);
 
             list_for_each_entry_safe(node, next, &lst->lst_ctl, lst, ctl_key_item) {
                 COAP_DEBUG("node:%s", node->accessKey);
@@ -154,7 +157,7 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
                 }
             }
 
-            HAL_MutexUnlock(lst->list_mutex);
+            HAL_MutexUnlock(dev_lst->list_mutex);
 
             if (accessTokenFound) {
                 ctl_key_item item;
@@ -245,7 +248,7 @@ void  auth_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
         COAP_ERR("response time!");
         ResponseMsg msg = {-1, "response time!"};
         auth_param->handler (ctx, remote, auth_param->user_data, &msg);
-        remove_session (ctx, session);
+        remove_session_safe (ctx, session);
     } else {
         int seq, datalen;
         ResponseMsg msg;
@@ -289,7 +292,7 @@ void  auth_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
                 COAP_INFO("sessionKey is created");
             } while (0);
         } else {
-            remove_session (ctx, session);
+            remove_session_safe (ctx, session);
             COAP_ERR("message code :%d", msg.code);
         }
         auth_param->handler (ctx, remote, auth_param->user_data, &msg);
@@ -343,7 +346,9 @@ int do_auth (CoAPContext *ctx, NetworkAddr* addr, ctl_key_item* ctl_item, void *
         gen_random_key((unsigned char *)session->randomKey, RANDOMKEY_LEN);
 
         struct list_head* ctl_head = get_ctl_session_list (ctx);
+        HAL_MutexLock(dev->list_mutex);
         list_add_tail(&session->lst, ctl_head);
+        HAL_MutexUnlock(dev->list_mutex);
     }
 
     char sign[64]={0};
@@ -443,7 +448,9 @@ void alcs_auth_nego_key (CoAPContext *ctx, AlcsDeviceKey* devKey, AuthHandler ha
 
 int alcs_add_client_key(CoAPContext *ctx, const char* accesskey, const char* accesstoken, const char* productKey, const char* deviceName)
 {
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
+
     if (!lst || lst->ctl_count >= KEY_MAXCOUNT) {
         return COAP_ERROR_INVALID_LENGTH;
     }
@@ -467,23 +474,24 @@ int alcs_add_client_key(CoAPContext *ctx, const char* accesskey, const char* acc
          strcpy (item->deviceName, deviceName);
     }
 
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
     list_add_tail(&item->lst, &lst->lst_ctl);
     ++lst->ctl_count;
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
 
     return COAP_SUCCESS;
 }
 
 int alcs_remove_client_key (CoAPContext *ctx, const char* key, char isfullkey)
 {
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst) {
         return COAP_ERROR_NULL;
     }
 
     ctl_key_item *node = NULL, *next = NULL;
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
 
     list_for_each_entry_safe(node, next, &lst->lst_ctl, lst, ctl_key_item) {
         if(match_key(node->accessKey, key)){
@@ -494,7 +502,7 @@ int alcs_remove_client_key (CoAPContext *ctx, const char* key, char isfullkey)
             break;
         }
     }
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
     return COAP_SUCCESS;
 }
 
@@ -512,17 +520,23 @@ void heart_beat_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, Netwo
     if (!ctl_head || list_empty(ctl_head)) {
         return;
     }
+    
+    device_auth_list* dev_lst = get_device (ctx);
 
     if (result == COAP_RECV_RESP_TIMEOUT) {
         COAP_ERR ("heart beat timeout");
         session_item *node = NULL, *next = NULL;
+        HAL_MutexLock(dev_lst->list_mutex);    
         list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
             if (node->sessionId && is_networkadd_same(&node->addr, remote)) {
                 remove_session (ctx, node);
             }
         }
+        HAL_MutexUnlock(dev_lst->list_mutex);
+
     } else {
         session_item *node = NULL, *next = NULL;
+        HAL_MutexLock(dev_lst->list_mutex);
         list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
 
             if(node->sessionId && is_networkadd_same(&node->addr, remote)) {
@@ -537,6 +551,7 @@ void heart_beat_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, Netwo
                 }
             }
         }
+        HAL_MutexUnlock(dev_lst->list_mutex);
     }
 }
 
@@ -558,6 +573,8 @@ void on_client_auth_timer (CoAPContext* ctx)
     int tick = HAL_UptimeMs();
 
     session_item *node = NULL, *next = NULL;
+    device_auth_list* dev_lst = get_device (ctx);
+    HAL_MutexLock(dev_lst->list_mutex);
     list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
         if (!node->sessionId) {
             continue;
@@ -573,6 +590,7 @@ void on_client_auth_timer (CoAPContext* ctx)
             CoAPMessage_destory(&message);
         }
     }
+    HAL_MutexUnlock(dev_lst->list_mutex);
 }
 
 #endif
