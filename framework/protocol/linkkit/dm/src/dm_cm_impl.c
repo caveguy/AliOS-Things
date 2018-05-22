@@ -136,7 +136,7 @@ static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t regis
 
     register_param.register_func = register_cb;
     register_param.user_data = context;
-    time = time + 100;
+    time = time + 200;
     para = dm_lite_calloc(1, sizeof(iotx_cm_register_param_t));
     memcpy(para, &register_param, sizeof(iotx_cm_register_param_t));
     topic_len = strlen(register_param.URI);
