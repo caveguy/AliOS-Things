@@ -54,6 +54,7 @@ static uint8_t switchap_bssid[ETH_ALEN] = {0};
 static int awss_report_token_to_cloud();
 static int awss_report_reset_to_cloud();
 static int awss_switch_ap_online();
+static int awss_reboot_system();
 
 static struct work_struct match_work = {
     .func = (work_func_t)&awss_report_token_to_cloud,
@@ -71,6 +72,12 @@ static struct work_struct switchap_work = {
     .func = (work_func_t)&awss_switch_ap_online,
     .prio = DEFAULT_WORK_PRIO,
     .name = "switchap",
+};
+
+static struct work_struct reboot_work = {
+    .func = (work_func_t)&awss_reboot_system,
+    .prio = DEFAULT_WORK_PRIO,
+    .name = "reboot",
 };
 
 int awss_report_token_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
@@ -254,10 +261,15 @@ static int awss_switch_ap_online()
     memset(switchap_ssid, 0, sizeof(switchap_ssid));
     memset(switchap_bssid, 0, sizeof(switchap_bssid));
     memset(switchap_passwd, 0, sizeof(switchap_passwd));
-    os_reboot();
-    while (1);
+    queue_delayed_work(&reboot_work, 1000);
 
     return 0;
+}
+
+static int awss_reboot_system()
+{
+    os_reboot();
+    while(1);
 }
 
 static int awss_report_reset_to_cloud()
