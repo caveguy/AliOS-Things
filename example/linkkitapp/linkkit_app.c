@@ -517,10 +517,7 @@ void linkkit_set_tsl_action(void *params)
 int linkkit_main()
 {
     sample_context_t* sample_ctx = &g_sample_context;
-    int execution_time = 0;
 
-    execution_time = execution_time < 1 ? 1 : execution_time;
-    LINKKIT_PRINTF("sample execution time: %d minutes\n", execution_time);
     LINKKIT_PRINTF("%s tsl from cloud\n", get_tsl_from_cloud == 0 ? "Not get" : "get");
 
     memset(sample_ctx, 0, sizeof(sample_context_t));
