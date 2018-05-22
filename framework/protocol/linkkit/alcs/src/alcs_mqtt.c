@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "iot_import.h"
 #include "iot_export.h"
 
 #include "json_parser.h"
@@ -48,8 +49,8 @@ static alcs_mqtt_status_e __alcs_mqtt_send_response(char *topic, int id, int cod
 
 static alcs_mqtt_status_e __alcs_mqtt_kv_set(const char *key, const void *val, int len, int sync)
 {
-	//if (aos_kv_set(key,val,len,sync) != 0)
-	//	return ALCS_MQTT_STATUS_ERROR;
+	if (HAL_Kv_Set(key,val,len,sync) != 0)
+		return ALCS_MQTT_STATUS_ERROR;
 	
 	log_info("ALCS KV Set, Key: %s, Val: %s, Len: %d",key,val,len);
 	return ALCS_MQTT_STATUS_SUCCESS;
@@ -57,8 +58,8 @@ static alcs_mqtt_status_e __alcs_mqtt_kv_set(const char *key, const void *val, i
 
 static alcs_mqtt_status_e __alcs_mqtt_kv_get(const char *key, void *buffer, int *buffer_len)
 {
-	//if (aos_kv_get(key,buffer,buffer_len) != 0)
-	//	return ALCS_MQTT_STATUS_ERROR;
+	if (HAL_Kv_Get(key,buffer,buffer_len) != 0)
+		return ALCS_MQTT_STATUS_ERROR;
 
 	log_info("ALCS KV Get, Key: %s",key);
 	
@@ -67,8 +68,8 @@ static alcs_mqtt_status_e __alcs_mqtt_kv_get(const char *key, void *buffer, int 
 
 static alcs_mqtt_status_e __alcs_mqtt_kv_del(const char *key)
 {
-	//if (aos_kv_del(key) != 0)
-	//	return ALCS_MQTT_STATUS_ERROR;
+	if (HAL_Kv_Del(key) != 0)
+		return ALCS_MQTT_STATUS_ERROR;
 
 	log_info("ALCS KV Del, Key: %s",key);
 	
