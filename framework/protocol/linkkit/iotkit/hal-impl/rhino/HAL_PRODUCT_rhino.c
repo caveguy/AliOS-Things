@@ -86,7 +86,9 @@ int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
 	
 #ifdef SUPPORT_PRODUCT_SECRET
     len = DEVICE_SECRET_MAXLEN-1;
-    aos_kv_get("linkkit", device_secret, &len);
+    if (0 != aos_kv_get("linkkit", device_secret, &len)) {
+        return -1;
+    }
 #else
     len = sizeof(DEVICE_SECRET);
     strncpy(device_secret, DEVICE_SECRET, len);
@@ -107,9 +109,7 @@ int HAL_SetDeviceSecret(const char device_secret[DEVICE_SECRET_MAXLEN])
         return -1;
     }
 
-    if(strlen(device_secret) >= DEVICE_SECRET_MAXLEN)
-    {
-        printf("strlen(device_secret) error == %d\n",strlen(device_secret));
+     if(strlen(device_secret) >= DEVICE_SECRET_MAXLEN) {
         return -1;
     }
 
