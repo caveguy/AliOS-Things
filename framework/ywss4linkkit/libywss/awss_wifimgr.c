@@ -39,6 +39,9 @@
 #include "awss_notify.h"
 #include "work_queue.h"
 #include "zconfig_utils.h"
+#include "zconfig_lib.h"
+#include "zconfig_protocol.h"
+#include "zconfig_ieee80211.h"
 
 #define WIFI_APINFO_LIST_LEN    (512)
 #define DEV_SIMPLE_ACK_LEN      (64)
@@ -304,6 +307,8 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
     char *str = NULL, *buf = NULL;
     char msg[128] = {0};
     char ssid_found = 0;
+    uint8_t *bssid = NULL;
+    struct ap_info * aplist = NULL;
 
     static char switch_ap_parsed = 0;
     if (switch_ap_parsed != 0)
@@ -420,18 +425,36 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
     if (!success)
         goto SWITCH_AP_END;
 
+    aplist = zconfig_get_apinfo_by_ssid(ssid);
     awss_debug("connect '%s' '%s'", ssid, passwd);
+    if (aplist) {
+        bssid = aplist->mac;
+        awss_debug("bssid: %02x:%02x:%02x:%02x:%02x:%02x", \
+                   bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
+        if (bssid[0] == 0 && bssid[1] == 0 && bssid[2] == 0 && \
+            bssid[3] == 0 && bssid[4] == 0 && bssid[5] == 0) {
+            bssid = NULL;
+        }
+    }
     if (0 != os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT,
                                 ssid, passwd,
                                 AWSS_AUTH_TYPE_INVALID,
                                 AWSS_ENC_TYPE_INVALID,
-                                NULL, 0)) {
+                                bssid, 0)) {
         while (1) {
+            aplist = zconfig_get_apinfo_by_ssid(DEFAULT_SSID);
+            if (aplist) {
+                bssid = aplist->mac;
+                if (bssid[0] == 0 && bssid[1] == 0 && bssid[2] == 0 && \
+                    bssid[3] == 0 && bssid[4] == 0 && bssid[5] == 0) {
+                    bssid = NULL;
+                }
+            }
             if (0 == os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT,
                                         (char *)DEFAULT_SSID, (char *)DEFAULT_PASSWD,
                                         AWSS_AUTH_TYPE_INVALID,
                                         AWSS_ENC_TYPE_INVALID,
-                                        NULL, 0)) {
+                                        bssid, 0)) {
                 break;
             }
             os_msleep(2000);
