@@ -441,24 +441,6 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
                                 AWSS_AUTH_TYPE_INVALID,
                                 AWSS_ENC_TYPE_INVALID,
                                 bssid, 0)) {
-        while (1) {
-            aplist = zconfig_get_apinfo_by_ssid(DEFAULT_SSID);
-            if (aplist) {
-                bssid = aplist->mac;
-                if (bssid[0] == 0 && bssid[1] == 0 && bssid[2] == 0 && \
-                    bssid[3] == 0 && bssid[4] == 0 && bssid[5] == 0) {
-                    bssid = NULL;
-                }
-            }
-            if (0 == os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT,
-                                        (char *)DEFAULT_SSID, (char *)DEFAULT_PASSWD,
-                                        AWSS_AUTH_TYPE_INVALID,
-                                        AWSS_ENC_TYPE_INVALID,
-                                        bssid, 0)) {
-                break;
-            }
-            os_msleep(2000);
-        }
     } else {
         switch_ap_done = 1;
         awss_cancel_aha_monitor();
@@ -468,7 +450,7 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
 
         produce_random(aes_random, sizeof(aes_random));
     }
-    awss_debug("connect '%s' '%s' exit", ssid, passwd);
+    awss_debug("connect '%s' '%s' %s\r\n", ssid, passwd, switch_ap_done == 1 ? "success" : "fail");
 
 SWITCH_AP_END:
     switch_ap_parsed = 0;
