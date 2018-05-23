@@ -340,11 +340,7 @@ uint16_t _xt_isr_handler(uint16_t i)
     return i & ~(1 << index);
 }
 
-#define PANIC_DUMP_STACK
-
 uint32_t g_double_exc;
-char g_panic_title[] = 
-    "Register dump, frame at 0x        \r\n";
 char g_panic_info[]  = 
     "PC       0x         \n"
     "PS       0x         \n"
@@ -368,53 +364,103 @@ char g_panic_info[]  =
     "EXCCAUSE 0x         \n"
     "EXCVADDR 0x         \n"
     ;
-#ifdef PANIC_DUMP_STACK
 char g_panic_stack[]  = 
-    "stack:   0x         \n"
-    "stack:   0x         \n"
-    "stack:   0x         \n"
-    "stack:   0x         \n"
-    ;
-#endif
+    "stack(0x        ): 0x         0x         0x         0x         ";
+
+char g_panic_call[]  = 
+    "Call Stack: 0x         ";
 
 /* itoa, int to ascii */ 
-char *itoa_(int num,char *str,int radix) 
+static char *int_to_hex(int num, char *str) 
 {  
-	char index[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
-	unsigned unum; 
-	int i=0,j,k; 
+	char index[]="0123456789ABCDEF"; 
 
-	if(radix==10&&num<0) 
-	{ 
-		unum=(unsigned)-num; 
-		str[i++]='-'; 
-	} 
-	else unum=(unsigned)num; 
+    str[7]=index[num%16]; 
+    num/=16; 
+    str[6]=index[num%16]; 
+    num/=16; 
+    str[5]=index[num%16]; 
+    num/=16; 
+    str[4]=index[num%16]; 
+    num/=16; 
+    str[3]=index[num%16]; 
+    num/=16; 
+    str[2]=index[num%16]; 
+    num/=16; 
+    str[1]=index[num%16]; 
+    num/=16; 
+    str[0]=index[num%16]; 
+    num/=16; 
 
-	do  
-	{ 
-		str[i++]=index[unum%(unsigned)radix]; 
-		unum/=radix; 
-	}while(unum); 
-	
-	//str[i]='\0'; 	
-
-	if(str[0]=='-') k=1;
-	else k=0; 
-	char temp; 
-	for(j=k;j<=(i-k-1)/2.0;j++) 
-	{ 
-		temp=str[j]; 
-		str[j]=str[i-j-1]; 
-		str[i-j-1]=temp; 
-	} 
 	return str; 
 } 
 
+extern char _text_start[];
+extern char _text_end[];
+extern char _irom0_text_start[];
+extern char _irom0_text_end[];
+
+/* check if pc is valid, return 0 when illegel, other is offset */
+static int panicCheckPcValid(char *pc)
+{
+    if ((unsigned int)(pc-_text_start) < (unsigned int)(_text_end-_text_start))
+    {
+        return pc - _text_start;
+    }
+    else if ((unsigned int)(pc-_irom0_text_start) < (unsigned int)(_irom0_text_end-_irom0_text_start))
+    {
+        return pc - _irom0_text_start;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+/* find current function caller, update PC and SP */
+static int panicFindRetAddr(int  **pSP, char **pPC)
+{
+    int  *SP = *pSP;
+    char *PC = *pPC;
+    char *RA;
+    int  lmt, i;
+    signed char framesize = 0;
+
+    /* func call ways:
+       1. "addi	a1, a1, -N" to set stack frame, N is a multiplier of 16
+          binary code: "12 c1 N"
+       2. RA always be pushed in N-4
+       */
+
+    lmt = panicCheckPcValid(PC);
+    for ( i = 0 ; i < lmt ; i++ )
+    {
+        if ( *(PC - i) == 0x12 && *(PC - i + 1) == 0xc1 && (*(PC - i + 2))%16 == 0)
+        {
+            framesize = *(PC - i + 2);
+            framesize /= -4;
+            break;
+        }
+    }
+
+    if ( framesize == 0 )
+    {
+        return 0;
+    }
+
+    *pSP = SP + framesize;
+    *pPC = (char *)*(SP + framesize - 1);
+  
+    return 1;
+}
+
 void panicHandler(XtExcFrame *frame)
 {
-    int *regs = (int *)frame;
-    int x;
+    int  *regs = (int *)frame;
+    int  x, y;
+    int  *SP = (int *)regs[4];
+    char *PC = (char *)regs[1];
 
     /* avoid to use printf, because printf depend on malloc, 
        malloc may trig another exception */
@@ -427,31 +473,53 @@ void panicHandler(XtExcFrame *frame)
 
     if ( g_double_exc == 1 )
     {
-        puts("exception occur: ");
-        itoa_((uintptr_t)frame, &g_panic_title[26], 16);
-        puts(g_panic_title);
-        
+        puts("!!!!!!!!!! Exception  !!!!!!!!!!\n");
+
+        puts("========== Regs info  ==========\n");
         for (x = 0; x < 21; x++)
         {
-            itoa_(regs[x + 1], &g_panic_info[21*x + 11], 16);
+            int_to_hex(regs[x + 1], &g_panic_info[21*x + 11]);
         }
         puts(g_panic_info);
-        
-#ifdef PANIC_DUMP_STACK
-        int y;
-        int *sp = (int *)regs[4];
-        
-        for ( y = 0 ; y < 16 ; y++ )
+
+        puts("========== Stack info ==========\n");
+        for ( x = 0 ; x < 16 ; x++ )
         {
-            for (x = 0; x < 4; x++)
-            {
-                itoa_(sp[y*4 + x], &g_panic_stack[21*x + 11], 16);
-            }
+            int_to_hex((int)&SP[x*4], &g_panic_stack[8]);
+            int_to_hex(SP[x*4 + 0],   &g_panic_stack[21]);
+            int_to_hex(SP[x*4 + 1],   &g_panic_stack[32]);
+            int_to_hex(SP[x*4 + 2],   &g_panic_stack[43]);
+            int_to_hex(SP[x*4 + 3],   &g_panic_stack[54]);
             puts(g_panic_stack);
         }
-#endif
+
+        puts("========== Call stack ==========\n");
+        int_to_hex((int)PC, &g_panic_call[14]);
+        puts(g_panic_call);
+        if ( 0 == panicCheckPcValid(PC) )
+        {
+            PC = (char *)regs[3];
+            int_to_hex((int)PC, &g_panic_call[14]);
+            puts(g_panic_call);
+        }
+        for ( x = 0 ; x < 32 ; x++ )
+        {
+            if ( 0 == panicFindRetAddr(&SP, &PC) )
+            {
+                break;
+            }
+            if ( PC == (char *)&krhino_task_deathbed )
+            {
+                break;
+            }
+            int_to_hex((int)PC, &g_panic_call[14]);
+            puts(g_panic_call);
+        }
+
+        puts("!!!!!!!!!! dump end   !!!!!!!!!!\n");
+
     }
-    else if  ( g_double_exc == 2 )
+    else if ( g_double_exc == 2 )
     {
         puts("double exception occur!\r\n");
     }
