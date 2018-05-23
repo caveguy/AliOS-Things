@@ -69,7 +69,7 @@ void user_init(void)
     if (ret){
         printf("waring: wifi init fail ret is %d \r\n", ret);
     }
-    aos_task_new("main", app_entry, 0, 6*1024);
+    aos_task_new("main", app_entry, 0, 8.5*1024);
 }
 
 #ifndef CONFIG_ESP_LWIP
