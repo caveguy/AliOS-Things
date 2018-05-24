@@ -703,7 +703,9 @@ int IOT_ALCS_Send_Response(void *handle, iotx_alcs_msg_t *msg, uint8_t token_len
 	
 	STRING_PTR_SANITY_CHECK(msg->ip, FAIL_RETURN);
 	STRING_PTR_SANITY_CHECK(msg->uri,FAIL_RETURN);
-	STRING_PTR_SANITY_CHECK((const char *)token,FAIL_RETURN);
+    if (token_len == 0 || token == NULL) {
+        return FAIL_RETURN;
+    }
 	
 
 	if (strlen(msg->ip) > NETWORK_ADDR_LEN) {

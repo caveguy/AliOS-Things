@@ -350,48 +350,41 @@ static int is_active(sample_context_t* sample_ctx)
 static int post_property_wifi_status_once(sample_context_t* sample_ctx)
 {
     int ret = -1;
-    static int is_post = 0;
+    static char post_idx = 0;
 
-    if (is_active(sample_ctx) && 0 == is_post) {
-        int i = 0;
-        uint8_t bssid[6];
-        char val_buf[20] = {0};
-        
-        char *band = NULL;
-        int channel = 0;
-        int rssi = 0;
-        int snr = 0;
-        int tx_rate = 0;
-        int rx_rate = 0;
-        {
-            hal_wireless_info_t wireless_info;
+    if (is_active(sample_ctx) && post_idx < 5) {
+        hal_wireless_info_t wireless_info = {0};
+        HAL_GetWirelessInfo(&wireless_info);
 
-            HAL_GetWirelessInfo(&wireless_info);
+        if (post_idx == 0) {
+            char i = 0;
+            uint8_t bssid[6] = {0};
+            char val_buf[20] = {0};
+            char *band = NULL;
+
             band = wireless_info.band == 0 ? "2.4G" : "5G";
-            channel = wireless_info.channel;
-            rssi = wireless_info.rssi;
-            snr = wireless_info.snr;
-            tx_rate = wireless_info.tx_rate;
-            rx_rate = wireless_info.rx_rate;
+
+            HAL_Wifi_Get_Ap_Info(NULL, NULL, bssid);
+            for (i = 0; i < 6; i ++)
+                snprintf(val_buf + strlen(val_buf), sizeof(val_buf) - strlen(val_buf), "%02X:", bssid[i]);
+            if(strlen(val_buf) > 0 && val_buf[strlen(val_buf) - 1] == ':') val_buf[strlen(val_buf) - 1] = '\0';
+
+            linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Band", band, NULL);
+            linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_AP_BSSID", val_buf, NULL);
+        } else {
+            int post_array[5] = {0};
+            char *post_key[5] = {"WIFI_Channel", "WiFI_RSSI", "WiFI_SNR", "WIFI_Tx_Rate", "WIFI_Rx_Rate"};
+
+            post_array[0] = wireless_info.channel;
+            post_array[1] = wireless_info.rssi;
+            post_array[2] = wireless_info.snr;
+            post_array[3] = wireless_info.tx_rate;
+            post_array[4] = wireless_info.rx_rate;
+            linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing,
+                              post_key[post_idx], &post_array[post_idx], NULL);
         }
 
-        HAL_Wifi_Get_Ap_Info(NULL, NULL, bssid);
-
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Band", band, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Channel", &channel, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_RSSI", &rssi, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WiFI_SNR", &snr, NULL);
-
-        for (i = 0; i < 6; i ++) {
-            snprintf(val_buf + strlen(val_buf), sizeof(val_buf) - strlen(val_buf), "%02X:", bssid[i]);
-        }
-        if(strlen(val_buf) > 0 && val_buf[strlen(val_buf) - 1] == ':') val_buf[strlen(val_buf) - 1] = '\0';
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_AP_BSSID", val_buf, NULL);
-
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Tx_Rate", &tx_rate, NULL);
-        linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing, "WIFI_Rx_Rate", &rx_rate, NULL);
-
-        is_post = 1;
+        post_idx ++;
         ret = 0;
     }
     return ret;
@@ -411,7 +404,7 @@ void linkkit_action(void *params)
     now += 1;
 
 #ifdef POST_WIFI_STATUS
-    if(now % 10 == 0) {
+    if((now & 0x02) == 0) {
         post_property_wifi_status_once(sample_ctx);
     }
 #endif
@@ -458,7 +451,7 @@ void linkkit_set_post_thread_action(void *params)
     now += 1;
 
 #ifdef POST_WIFI_STATUS
-    if(now % 10 == 0) {
+    if((now & 0x02) == 0) {
         post_property_wifi_status_once(sample_ctx);
     }
 #endif

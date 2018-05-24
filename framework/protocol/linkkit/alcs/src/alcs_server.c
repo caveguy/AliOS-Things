@@ -23,7 +23,10 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
         if (!req_payload_parser((const char *)resMsg->payload, resMsg->payloadlen, &seq, &seqlen, &data, &datalen)) {
             break;
         }
-        auth_list* lst = get_list(ctx);
+
+        device_auth_list* dev_lst = get_device (ctx);
+        auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
+
         if (!lst) {
             break;
         }
@@ -42,6 +45,8 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
         json_array_for_each_entry(accesskeys, keylen, str_pos, entry, entry_len, type) {
             COAP_DEBUG ("entry:%.*s", entry_len, entry);
             svr_key_item *node = NULL, *next = NULL;
+
+            HAL_MutexLock(dev_lst->list_mutex);
             list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
                 COAP_DEBUG ("keyprefix:%s", node->keyInfo.keyprefix);
                 if (strstr(entry, node->keyInfo.keyprefix) == entry) {
@@ -51,9 +56,13 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
                     break;
                 }
             }
+            HAL_MutexUnlock(dev_lst->list_mutex);
+
             if (targetKey) break;
 
             svr_group_item* gnode = NULL, *gnext = NULL;
+
+            HAL_MutexLock(dev_lst->list_mutex);
             list_for_each_entry_safe(gnode, gnext, &lst->lst_svr_group, lst, svr_group_item) {
                 COAP_DEBUG ("keyprefix:%s", gnode->keyInfo.keyprefix);
                 if (strstr(entry, gnode->keyInfo.keyprefix) == entry) {
@@ -63,6 +72,8 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
                     break;
                 }
             }
+            HAL_MutexUnlock(dev_lst->list_mutex);
+
             if (targetKey) break;
         }
         restore_json_str_last_char (accesskeys, keylen, back);
@@ -87,17 +98,18 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
 {
     COAP_DEBUG ("islegal prefix:%.*s, seq:%.*s", prefixlen, keyprefix, seqlen, keyseq);
 
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (lst) {
         COAP_DEBUG ("find devices");
-        HAL_MutexLock(lst->list_mutex);
+        HAL_MutexLock(dev_lst->list_mutex);
 
         if (lst->revocation) {
             int len = strlen(lst->revocation);
             int i;
             for (i = 0; i < len; i += KEYSEQ_LEN) {
                 if (strncmp(keyseq, lst->revocation + i, seqlen) == 0) {
-                    HAL_MutexUnlock(lst->list_mutex);
+                    HAL_MutexUnlock(dev_lst->list_mutex);
                     *res_code = ALCS_AUTH_REVOCATE;
                     COAP_INFO ("accesskey is revocated");
                     return NULL;
@@ -113,7 +125,7 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
                 COAP_DEBUG ("node prefix:%s", node->keyInfo.keyprefix);
                 if (strlen(node->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, node->keyInfo.keyprefix, prefixlen) == 0) {
                     *res_code = ALCS_AUTH_OK;
-                    HAL_MutexUnlock(lst->list_mutex);
+                    HAL_MutexUnlock(dev_lst->list_mutex);
                     return &node->keyInfo;
                 }
             }
@@ -123,7 +135,7 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
                 COAP_DEBUG ("node prefix:%s", gnode->keyInfo.keyprefix);
                 if (strlen(gnode->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, gnode->keyInfo.keyprefix, prefixlen) == 0) {
                     *res_code = ALCS_AUTH_OK;
-                    HAL_MutexUnlock(lst->list_mutex);
+                    HAL_MutexUnlock(dev_lst->list_mutex);
                     return &gnode->keyInfo;
                 }
             }
@@ -131,7 +143,7 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
             *res_code = ALCS_AUTH_UNMATCHPREFIX;
         }
 
-        HAL_MutexUnlock(lst->list_mutex);
+        HAL_MutexUnlock(dev_lst->list_mutex);
     }
 
     return NULL;
@@ -261,7 +273,8 @@ int add_svr_key (CoAPContext *ctx, const char* keyprefix, const char* secret, bo
 {
     COAP_INFO("add_svr_key\n");
 
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst || lst->svr_count >= KEY_MAXCOUNT || strlen(keyprefix) != KEYPREFIX_LEN) {
         return COAP_ERROR_INVALID_LENGTH;
     }
@@ -280,10 +293,10 @@ int add_svr_key (CoAPContext *ctx, const char* keyprefix, const char* secret, bo
     strcpy (item->keyInfo.secret, secret);
     strcpy (item->keyInfo.keyprefix, keyprefix);
 
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
     list_add_tail(&item->lst, &lst->lst_svr);
     ++lst->svr_count;
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
 
     return COAP_SUCCESS;
 }
@@ -297,13 +310,14 @@ int alcs_add_svr_key (CoAPContext *ctx, const char* keyprefix, const char* secre
 
 int alcs_remove_svr_key (CoAPContext *ctx, const char* keyprefix)
 {
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst) {
         return COAP_ERROR_NULL;
     }
 
     svr_key_item *node = NULL, *next = NULL;
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
 
     list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
         if(strcmp(node->keyInfo.keyprefix, keyprefix) == 0){
@@ -313,19 +327,20 @@ int alcs_remove_svr_key (CoAPContext *ctx, const char* keyprefix)
             break;
         }
     }
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
 
     return COAP_SUCCESS;
 }
 
 int alcs_set_revocation (CoAPContext *ctx, const char* seqlist)
 {
-    auth_list* lst = get_list(ctx);
+    device_auth_list* dev_lst = get_device (ctx);
+    auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
     if (!lst) {
         return COAP_ERROR_NULL;
     }
 
-    HAL_MutexLock(lst->list_mutex);
+    HAL_MutexLock(dev_lst->list_mutex);
 
     int len = seqlist? strlen(seqlist) : 0;
     if (lst->revocation) {
@@ -337,7 +352,7 @@ int alcs_set_revocation (CoAPContext *ctx, const char* seqlist)
         lst->revocation = (char*)coap_malloc (len + 1);
         strcpy (lst->revocation, seqlist);
     }
-    HAL_MutexUnlock(lst->list_mutex);
+    HAL_MutexUnlock(dev_lst->list_mutex);
 
     return COAP_SUCCESS;
 }
@@ -398,7 +413,8 @@ void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remo
     COAP_DEBUG("recv_msg_handler, sessionID:%d", (int)sessionId);
 
     struct list_head* sessions = get_svr_session_list(context);
-    session_item* session = get_session_by_checksum(sessions, remote, node->pk_dn);
+    
+    session_item* session = get_session_by_checksum(context, sessions, remote, node->pk_dn);
     if (!session || session->sessionId != sessionId) {
         send_err_rsp (context, remote, COAP_MSG_CODE_401_UNAUTHORIZED, message);
         COAP_ERR ("need auth, path:%s, from:%s", path, remote->addr);
@@ -465,12 +481,17 @@ void alcs_rec_heart_beat(CoAPContext *ctx, const char *path, NetworkAddr *remote
 
     session_item* session = NULL;
     session_item *node = NULL, *next = NULL;
+
+    device_auth_list* dev_lst = get_device (ctx);
+    HAL_MutexLock(dev_lst->list_mutex);
+
     list_for_each_entry_safe(node, next, ctl_head, lst, session_item) {
         if(node->sessionId && is_networkadd_same(&node->addr, remote)) {
             node->heart_time = HAL_UptimeMs();
             session = node;
         }
     }
+    HAL_MutexUnlock(dev_lst->list_mutex);
 
     if (!session) {
         COAP_INFO ("receive stale heart beat");
@@ -517,7 +538,7 @@ int observe_data_encrypt(CoAPContext *ctx, const char* path, NetworkAddr* from, 
     }
 
     struct list_head* sessions = get_svr_session_list(ctx);
-    session_item* session = get_session_by_checksum(sessions, from, node->pk_dn);
+    session_item* session = get_session_by_checksum(ctx, sessions, from, node->pk_dn);
 
     if (session) {
         dest->len = (src->len & 0xfffffff0) + 16;
@@ -541,6 +562,8 @@ void on_svr_auth_timer (CoAPContext* ctx)
     //device_auth_list* dev = get_device (ctx);
     int tick = HAL_UptimeMs();
 
+    device_auth_list* dev_lst = get_device (ctx);
+    HAL_MutexLock(dev_lst->list_mutex);
     session_item *node = NULL, *next = NULL;
     list_for_each_entry_safe(node, next, head, lst, session_item) {
         if(node->sessionId && node->heart_time + default_heart_expire < tick) {
@@ -548,5 +571,7 @@ void on_svr_auth_timer (CoAPContext* ctx)
             remove_session (ctx, node);
         }
     }
+    HAL_MutexUnlock(dev_lst->list_mutex);
+
 }
 #endif
