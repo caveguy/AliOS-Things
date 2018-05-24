@@ -62,8 +62,9 @@ static int _calc_hmac_signature(
             const int hmac_buflen,
             const char *timestamp_str)
 {
+#define HMAC_STRING_MAXLEN  (512)
     char                    signature[64];
-    char                    hmac_source[512];
+    char*                   hmac_source = NULL;
     int                     rc = -1;
     iotx_device_info_pt     dev;
 
@@ -71,9 +72,11 @@ static int _calc_hmac_signature(
     LITE_ASSERT(dev);
 
     memset(signature, 0, sizeof(signature));
-    memset(hmac_source, 0, sizeof(hmac_source));
+    hmac_source = LITE_malloc(HMAC_STRING_MAXLEN);
+    LITE_ASSERT(hmac_source);
+    memset(hmac_source, 0, HMAC_STRING_MAXLEN);
     rc = HAL_Snprintf(hmac_source,
-                      sizeof(hmac_source),
+                      HMAC_STRING_MAXLEN,
                       "clientId%s" "deviceName%s" "productKey%s" "timestamp%s",
                       dev->device_id,
                       dev->device_name,
@@ -94,6 +97,7 @@ static int _calc_hmac_signature(
 #endif
 
     memcpy(hmac_sigbuf, signature, hmac_buflen);
+    LITE_free(hmac_source);
     return 0;
 }
 
@@ -354,7 +358,7 @@ static char *guider_set_auth_req_str(char sign[], char ts[])
     dev = iotx_device_info_get();
     LITE_ASSERT(dev);
 
-    ret = HAL_Malloc(AUTH_STRING_MAXLEN);
+    ret = LITE_malloc(AUTH_STRING_MAXLEN);
     LITE_ASSERT(ret);
     memset(ret, 0, AUTH_STRING_MAXLEN);
 
@@ -384,7 +388,8 @@ static int guider_get_iotId_iotToken(
             char *host,
             uint16_t *pport)
 {
-    char                iotx_payload[1024] = {0};
+#define PAYLOAD_STRING_MAXLEN  (1024)
+    char*               iotx_payload = NULL;
     int                 iotx_port = 443;
     int                 ret = -1;
     iotx_conn_info_pt   usr = iotx_conn_info_get();
@@ -418,8 +423,11 @@ static int guider_get_iotId_iotToken(
             "message":"success"
         }
     */
+    iotx_payload = LITE_malloc(PAYLOAD_STRING_MAXLEN);
+    LITE_ASSERT(iotx_payload);
+    memset(iotx_payload, 0, PAYLOAD_STRING_MAXLEN);
     _http_response(iotx_payload,
-                   sizeof(iotx_payload),
+                   PAYLOAD_STRING_MAXLEN,
                    request_string,
                    guider_addr,
                    iotx_port,
@@ -490,6 +498,10 @@ static int guider_get_iotId_iotToken(
     ret = 0;
 
 do_exit:
+    if (iotx_payload)
+        LITE_free(iotx_payload);
+        pvalue = NULL;
+    }
     if (pvalue) {
         LITE_free(pvalue);
         pvalue = NULL;

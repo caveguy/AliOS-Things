@@ -67,7 +67,9 @@ static const char string_EXT_URI_1[] CM_READ_ONLY = "/ext/%s/%s/%s";
 static const char string_SHA_METHOD[] CM_READ_ONLY = "hmacsha1";
 static const char string_MD5_METHOD[] CM_READ_ONLY = "hmacmd5";
 static const char string_TIMESTAMP[] CM_READ_ONLY = "2524608000000";
-static const char string_AUTH_URL[] CM_READ_ONLY = "https://iot-auth.cn-shanghai.aliyuncs.com/auth/register/device";
+static const char string_AUTH_URL[] CM_READ_ONLY = "https://iot-auth-pre.cn-shanghai.aliyuncs.com/auth/register/device";
+    /*"https://iot-auth.alibaba.net/auth/register/device";*/
+/*"https://iot-auth.cn-shanghai.aliyuncs.com/auth/register/device";*/
 static const char string_AUTH_URL_1[] CM_READ_ONLY = "https://iot-auth.ap-southeast-1.aliyuncs.com/auth/register/device";
 static const char string_AUTH_URL_2[] CM_READ_ONLY = "https://iot-auth-pre.ap-southeast-1.aliyuncs.com/auth/register/device";
 static const char string_AUTH_CONTENT_TYPE[] CM_READ_ONLY = "application/x-www-form-urlencoded";
@@ -88,7 +90,7 @@ static char* genRandomString(int length)
 {
     int flag, i;
     char* str;
-    if ((str = (char*) LITE_malloc(length)) == NULL )
+    if ((str = (char*) CM_malloc(length)) == NULL )
     {
         CM_ERR(cm_log_error_memory);
         return NULL;
@@ -223,7 +225,8 @@ static char *_set_auth_req_str(const char *product_key, const char *device_name,
 
 static int _get_device_secret(const char *product_key, const char *device_name, const char *client_id, const char *guider_addr, const char *request_string)
 {
-    char payload[512] = {0};
+#define PAYLOAD_STRING_MAXLEN  (512)
+    char* payload = NULL;
     int ret = -1;
     int ret_code = 0;
     const char *pvalue;
@@ -237,12 +240,18 @@ static int _get_device_secret(const char *product_key, const char *device_name, 
                 "deviceSecret" : "adsfweafdsf"
         }
     */
-    strncpy(payload,request_string,strlen(request_string));
+    payload = CM_malloc(PAYLOAD_STRING_MAXLEN);
+    if (NULL == payload) {
+        CM_ERR(cm_log_error_memory);
+        return FAIL_RETURN;
+    }
+    memset(payload, 0, PAYLOAD_STRING_MAXLEN);    
+    strncpy(payload, request_string, strlen(request_string));
     _http_response(payload,
                    sizeof(payload),
                    request_string,
                    guider_addr,
-                   443,
+                   80,
                    iotx_ca_get()
                   );
     CM_INFO(cm_log_info_auth_rsp, payload);
@@ -294,6 +303,10 @@ static int _get_device_secret(const char *product_key, const char *device_name, 
     ret = 0;
 
 do_exit:
+    if (payload) {
+        LITE_free(payload);
+        pvalue = NULL;
+    }
     if (pvalue) {
         LITE_free(pvalue);
         pvalue = NULL;
@@ -309,18 +322,25 @@ static int _calc_hmac_signature(
         const int hmac_buflen,
         const char *random)
 {
+#define HMAC_STRING_MAXLEN  (512)
+
     char signature[64];
-    char hmac_source[512];
+    char* hmac_source = NULL;
     int ret = FAIL_RETURN;
     char product_secret[DEVICE_SECRET_LEN + 1] = {0};
 
     memset(signature, 0, sizeof(signature));
-    memset(hmac_source, 0, sizeof(hmac_source));
 
     HAL_GetProductSecret(product_secret);
 
+    hmac_source = CM_malloc(HMAC_STRING_MAXLEN);
+    if (NULL == hmac_source) {
+        CM_ERR(cm_log_error_memory);
+        return FAIL_RETURN;
+    }    
+    memset(hmac_source, 0, HMAC_STRING_MAXLEN);
     ret = HAL_Snprintf(hmac_source,
-                      sizeof(hmac_source),
+                      HMAC_STRING_MAXLEN,
                       string_hmac_format,
                       device_name,
                       product_key,
@@ -340,6 +360,7 @@ static int _calc_hmac_signature(
 
     memset(hmac_sigbuf, 0x0, hmac_buflen);
     memcpy(hmac_sigbuf, signature, hmac_buflen);
+    LITE_free(hmac_source);
     return ret;
 }
 
