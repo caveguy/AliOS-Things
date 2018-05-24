@@ -52,7 +52,7 @@ static alcs_mqtt_status_e __alcs_mqtt_kv_set(const char *key, const void *val, i
 	if (HAL_Kv_Set(key,val,len,sync) != 0)
 		return ALCS_MQTT_STATUS_ERROR;
 	
-	log_info("ALCS KV Set, Key: %s, Val: %s, Len: %d",key,val,len);
+	//log_info("ALCS KV Set, Key: %s, Val: %s, Len: %d",key,val,len);
 	return ALCS_MQTT_STATUS_SUCCESS;
 }
 
@@ -61,7 +61,7 @@ static alcs_mqtt_status_e __alcs_mqtt_kv_get(const char *key, void *buffer, int 
 	if (HAL_Kv_Get(key,buffer,buffer_len) != 0)
 		return ALCS_MQTT_STATUS_ERROR;
 
-	log_info("ALCS KV Get, Key: %s",key);
+	//log_info("ALCS KV Get, Key: %s",key);
 	
 	return ALCS_MQTT_STATUS_SUCCESS;
 }
@@ -71,7 +71,7 @@ static alcs_mqtt_status_e __alcs_mqtt_kv_del(const char *key)
 	if (HAL_Kv_Del(key) != 0)
 		return ALCS_MQTT_STATUS_ERROR;
 
-	log_info("ALCS KV Del, Key: %s",key);
+	//log_info("ALCS KV Del, Key: %s",key);
 	
 	return ALCS_MQTT_STATUS_SUCCESS;
 }
@@ -223,7 +223,7 @@ static void __alcs_mqtt_subscribe_callback(char *topic, int topic_len, void *pay
 					alcs_mqtt_ctx->product_key,alcs_mqtt_ctx->device_name);
 
 	log_info("Receivce Message, Topic: %.*s\n",topic_len,topic);
-	log_info("Receivce Message, Payload: %.*s\n",payload_len,payload);
+	//log_info("Receivce Message, Payload: %.*s\n",payload_len,payload);
 	
 	if ((strlen(topic_compare) == topic_len) && (strncmp(topic_compare,topic,topic_len) == 0))
 	{

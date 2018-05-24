@@ -498,7 +498,7 @@ static int guider_get_iotId_iotToken(
     ret = 0;
 
 do_exit:
-    if (iotx_payload)
+    if (iotx_payload) {
         LITE_free(iotx_payload);
         pvalue = NULL;
     }
