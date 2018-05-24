@@ -164,7 +164,7 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr* from, CoAP
         char* accesskey, *randomkey, *sign;
         int tmplen;
         accesskey = json_get_value_by_name(data, datalen, "accessKey", &tmplen, NULL);
-        COAP_INFO ("accesskey:%.*s", tmplen, accesskey);
+        //COAP_INFO ("accesskey:%.*s", tmplen, accesskey);
 
         if (!accesskey || tmplen != KEYPREFIX_LEN + 1 + 1 + KEYSEQ_LEN) {
             break;
@@ -197,8 +197,8 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr* from, CoAP
         int calc_sign_len = sizeof(buf);
         utils_hmac_sha1_base64 (randomkey, randomkeylen, accessToken, tokenlen, buf, &calc_sign_len);
 
-        COAP_INFO ("calc randomKey:%.*s,token:%.*s,sign:%.*s", randomkeylen, randomkey, tokenlen,
-            accessToken, calc_sign_len, buf);
+        //COAP_INFO ("calc randomKey:%.*s,token:%.*s,sign:%.*s", randomkeylen, randomkey, tokenlen,
+        //    accessToken, calc_sign_len, buf);
 
         sign = json_get_value_by_name(data, datalen, "sign", &tmplen, NULL);
         if (!sign || tmplen != calc_sign_len || strncmp(sign, buf, calc_sign_len)) {
