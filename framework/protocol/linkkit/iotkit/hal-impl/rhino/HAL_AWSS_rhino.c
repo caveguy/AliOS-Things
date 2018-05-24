@@ -242,6 +242,7 @@ void HAL_Awss_Open_Monitor(_IN_ awss_recv_80211_frame_cb_t cb)
     }
 
     g_ieee80211_handler = cb;
+    hal_wifi_suspend_station(module);
     hal_wifi_register_monitor_cb(module, monitor_data_handler);
     hal_wifi_start_wifi_monitor(module);
     HAL_Awss_Switch_Channel(6, 0, NULL);
