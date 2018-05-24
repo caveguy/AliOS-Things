@@ -230,7 +230,7 @@ static void __alcs_mqtt_subscribe_callback(char *topic, int topic_len, void *pay
 		int data_len = 0, prefix_len = 0, secret_len = 0, productKey_len = 0, deviceName_len = 0;
 		char *data = NULL, *prefix = NULL, *secret = NULL, *productKey = NULL, *deviceName = NULL;
 		data = json_get_value_by_name((char *)payload, payload_len, "data", &data_len, NULL);
-		log_info("Data: %.*s\n",data_len,data);
+		//log_info("Data: %.*s\n",data_len,data);
 		
 		if(NULL != data && 0 != data_len){
 			char back1, back2;
@@ -239,7 +239,7 @@ static void __alcs_mqtt_subscribe_callback(char *topic, int topic_len, void *pay
 			productKey = json_get_value_by_name(data, data_len, ALCS_MQTT_JSON_KEY_PRODUCT_KEY, &productKey_len, NULL);
 			deviceName = json_get_value_by_name(data, data_len, ALCS_MQTT_JSON_KEY_DEVICE_NAME, &deviceName_len, NULL);
 
-			log_info("Get Reply, Product Key: %.*s, Device Name: %.*s\n",productKey_len,productKey,deviceName_len,deviceName);
+			//log_info("Get Reply, Product Key: %.*s, Device Name: %.*s\n",productKey_len,productKey,deviceName_len,deviceName);
 		
 			if(NULL != alcs_mqtt_ctx->coap_ctx && prefix && secret) {
 				back1 = prefix[prefix_len];
@@ -470,7 +470,7 @@ alcs_mqtt_status_e alcs_mqtt_blacklist_update(void* ctx)
     if (NULL == context) return -1;
     
     if (ALCS_MQTT_STATUS_SUCCESS == __alcs_mqtt_kv_get(ALCS_MQTT_JSON_KEY_BLACK, blacklist, &blacklist_len)) {        
-        log_info("The blacklist is %.*s", blacklist_len, blacklist);
+        //log_info("The blacklist is %.*s", blacklist_len, blacklist);
         if(blacklist_len) {
             alcs_set_revocation(context, blacklist);
             return ALCS_MQTT_STATUS_SUCCESS;
@@ -493,7 +493,7 @@ alcs_mqtt_status_e alcs_mqtt_prefixkey_update(void* ctx)
    
     if (ALCS_MQTT_STATUS_SUCCESS == __alcs_mqtt_kv_get(ALCS_MQTT_JSON_KEY_PREFIX, prefix, &prefix_len) &&
         ALCS_MQTT_STATUS_SUCCESS == __alcs_mqtt_kv_get(ALCS_MQTT_JSON_KEY_SECRET, secret, &secret_len)) {
-        log_info("The prefix is  %.*s, deviceSecret is %.*s", prefix_len, prefix, secret_len, secret);
+        //log_info("The prefix is  %.*s, deviceSecret is %.*s", prefix_len, prefix, secret_len, secret);
         if(prefix_len && secret_len) {
             alcs_add_svr_key(context, prefix, secret);
             return ALCS_MQTT_STATUS_SUCCESS;
@@ -525,7 +525,7 @@ alcs_mqtt_status_e alcs_prefixkey_get(const char *product_key,const char *device
 	
 	snprintf(msg_pub, msg_len, ALCS_MQTT_THING_ALCS_REQUEST,id);
 
-	log_err("ALCS Prefix Get, Topic: %s, Payload: %s",topic,msg_pub);
+	//log_err("ALCS Prefix Get, Topic: %s, Payload: %s",topic,msg_pub);
     status = __alcs_mqtt_publish(topic,1,msg_pub,strlen(msg_pub));
 
 	LITE_free(msg_pub);
@@ -558,7 +558,7 @@ alcs_mqtt_status_e alcs_mqtt_subdev_prefix_get(const char *product_key,const cha
 	snprintf(msg_pub, msg_len, ALCS_MQTT_THING_ALCS_SUBDEV_REQUEST,id,
 				strlen(product_key),product_key,strlen(device_name),device_name);
 
-	log_err("ALCS Prefix Get, Topic: %s, Payload: %s",topic,msg_pub);
+	//log_err("ALCS Prefix Get, Topic: %s, Payload: %s",topic,msg_pub);
     status = __alcs_mqtt_publish(topic,1,msg_pub,strlen(msg_pub));
 
 	LITE_free(msg_pub);
