@@ -85,27 +85,6 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option)
         HAL_GetProductKey(product_key);
         HAL_GetDeviceName(device_name);
         HAL_GetDeviceID(device_id);
-        
-#ifdef SUPPORT_PRODUCT_SECRET
-        /* product secret */
-        if (IOTX_CM_DEVICE_SECRET_PRODUCT == init_param->secret_type) {
-            HAL_GetDeviceSecret(device_secret);
-            if (strlen(device_secret) == 0) {
-                HAL_GetProductSecret(product_secret);
-                if (strlen(product_secret) == 0) {
-                    CM_ERR(cm_log_error_secret_1);
-                    return FAIL_RETURN;
-                }
-
-                /* auth */
-                if (FAIL_RETURN == iotx_cm_auth(product_key, device_name, device_id)) {
-                    CM_ERR(cm_log_error_auth);
-                    return FAIL_RETURN;
-                }
-            }
-        }
-#endif /* SUPPORT_PRODUCT_SECRET*/
-
         HAL_GetDeviceSecret(device_secret);
         assert(strlen(device_name) && strlen(product_key) && strlen(device_id) && strlen(device_secret));
 

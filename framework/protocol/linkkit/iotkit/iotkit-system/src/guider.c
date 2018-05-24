@@ -490,8 +490,8 @@ static int guider_get_iotId_iotToken(
     pvalue = NULL;
     *pport = atoi(port_str);
 
-    log_debug("%10s: %s", "iotId", iot_id);
-    log_debug("%10s: %s", "iotToken", iot_token);
+    /*log_debug("%10s: %s", "iotId", iot_id);*/
+    /*log_debug("%10s: %s", "iotToken", iot_token);*/
     log_debug("%10s: %s", "Host", host);
     log_debug("%10s: %d", "Port", *pport);
 
