@@ -254,9 +254,7 @@ static int id2_guider_get_iotId_iotToken(
             char *host,
             uint16_t *pport)
 {
-#define PAYLOAD_STRING_MAXLEN  (1024)
-    char*               iotx_payload = NULL;
-    //char                iotx_payload[1024] = {0};
+    char                iotx_payload[1024] = {0};
     int                 iotx_port = 443;
     int                 ret = -1;
     iotx_conn_info_pt   usr = iotx_conn_info_get();
@@ -301,9 +299,6 @@ static int id2_guider_get_iotId_iotToken(
             "message":"success"
         }
     */
-    iotx_payload = LITE_malloc(PAYLOAD_STRING_MAXLEN);
-    LITE_ASSERT(iotx_payload);
-    memset(iotx_payload, 0, PAYLOAD_STRING_MAXLEN);
     _http_response(iotx_payload,
                    sizeof(iotx_payload),
                    request_string,
@@ -459,10 +454,6 @@ static int id2_guider_get_iotId_iotToken(
     ret = 0;
 
 do_exit:
-    if (iotx_payload) {
-        LITE_free(iotx_payload);
-        pvalue = NULL;
-    }
     if (pvalue) {
         LITE_free(pvalue);
         pvalue = NULL;

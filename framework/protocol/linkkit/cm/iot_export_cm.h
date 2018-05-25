@@ -174,19 +174,6 @@ typedef enum IOTX_CM_MESSAGE_TYPE {
 }iotx_cm_message_types_t;
 
 
-/* message confirmation type */
-typedef enum IOTX_CM_DEVICE_SECRET_TYPES {
-    /* product secret */
-    IOTX_CM_DEVICE_SECRET_PRODUCT,
-
-    /* device secret */
-    IOTX_CM_DEVICE_SECRET_DEVICE,
-
-    /* Maximum number of domain */
-    IOTX_CM_DEVICE_SECRET_TYPES_MAX
-}iotx_cm_device_secret_types_t;
-
-
 #ifdef SERVICE_OTA_ENABLED
 /* URI type */
 typedef enum IOTX_CM_OTA_TYPE {
@@ -335,7 +322,6 @@ typedef void (*iotx_cm_register_fp_t)(iotx_cm_send_peer_t* source, iotx_cm_messa
 
 /* The structure of CM param */
 typedef struct {
-    iotx_cm_device_secret_types_t               secret_type;
     iotx_cm_cloud_domain_types_t                domain_type;
     iotx_cm_event_handle_fp_t                   event_func;
     void*                                       user_data;

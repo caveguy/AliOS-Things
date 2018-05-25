@@ -129,7 +129,7 @@ void  nego_cb(CoAPContext *ctx, CoAPReqResult result, void *userdata, NetworkAdd
             if (!accessKey || !keylen) {
                 break;
             }
-            COAP_DEBUG("accesskey:%.*s", keylen, accessKey);
+            //COAP_DEBUG("accesskey:%.*s", keylen, accessKey);
 
             device_auth_list* dev_lst = get_device (ctx);
             auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
@@ -355,7 +355,7 @@ int do_auth (CoAPContext *ctx, NetworkAddr* addr, ctl_key_item* ctl_item, void *
     int sign_len = sizeof(sign);
     utils_hmac_sha1_base64(session->randomKey, strlen(session->randomKey), ctl_item->accessToken,
         strlen(ctl_item->accessToken), sign, &sign_len);
-    COAP_INFO ("calc randomKey:%s,token:%s,sign:%.*s", session->randomKey, ctl_item->accessToken, sign_len, sign);
+    //COAP_INFO ("calc randomKey:%s,token:%s,sign:%.*s", session->randomKey, ctl_item->accessToken, sign_len, sign);
 
     char payloadbuf[512];
     sprintf (payloadbuf, auth_payload_format, ++dev->seq, ctl_item->productKey, ctl_item->deviceName, session->randomKey, sign, ctl_item->accessKey);
