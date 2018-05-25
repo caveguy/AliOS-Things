@@ -14,7 +14,7 @@
 #include "iot_export_cm.h"
 
 #define CM_IMPL_EXTENTED_ROOM_FOR_STRING_MALLOC 1
-static int dm_cm_impl_deinit(void* _self);
+static int dm_cm_impl_deinit(void *_self);
 
 static const char string_cm_abstrct_impl_class_name[] __DM_READ_ONLY__ =  "dm_cm_impl_cls";
 static const char string_down_raw[] __DM_READ_ONLY__ = "down_raw";
@@ -27,34 +27,40 @@ typedef void (*aos_run_call_t)(void *arg);
 extern int aos_post_delayed_action(int ms, aos_run_call_t action, void *arg);
 
 
-static void* dm_cm_impl_ctor(void* _self, va_list* params)
+static void *dm_cm_impl_ctor(void *_self, va_list *params)
 {
-    dm_cm_impl_t* self = _self;
+    dm_cm_impl_t *self = _self;
 
     self->cm_inited = 0;
 
     return self;
 }
 
-static void* dm_cm_impl_dtor(void* _self)
+static void *dm_cm_impl_dtor(void *_self)
 {
-    dm_cm_impl_t* self = _self;
+    dm_cm_impl_t *self = _self;
 
-    if (self->cm_inited) dm_cm_impl_deinit(self);
+    if (self->cm_inited) {
+        dm_cm_impl_deinit(self);
+    }
 
     return self;
 }
 
-static int dm_cm_impl_init(void* _self, const char* _product_key, const char* _device_name, const char* _device_secret,
-                            const char* _device_id, iotx_cm_event_handle_fp_t event_cb, void* pcontext, dm_cloud_domain_type_t domain_type)
+static int dm_cm_impl_init(void *_self, const char *_product_key, const char *_device_name, const char *_device_secret,
+                           const char *_device_id, iotx_cm_event_handle_fp_t event_cb, void *pcontext, dm_cloud_domain_type_t domain_type)
 {
-    dm_cm_impl_t* self = _self;
+    dm_cm_impl_t *self = _self;
     iotx_cm_init_param_t init_param;
     int ret = SUCCESS_RETURN;
 
-    if (!_product_key || !_device_name || !_device_secret || !_device_id || !event_cb || !pcontext) return -1;
+    if (!_product_key || !_device_name || !_device_secret || !_device_id || !event_cb || !pcontext) {
+        return -1;
+    }
 
-    if (self->cm_inited) return ret;
+    if (self->cm_inited) {
+        return ret;
+    }
 
     init_param.event_func = event_cb;
     init_param.user_data = pcontext;
@@ -74,9 +80,9 @@ static int dm_cm_impl_init(void* _self, const char* _product_key, const char* _d
     return ret;
 }
 
-static int dm_cm_impl_deinit(void* _self)
+static int dm_cm_impl_deinit(void *_self)
 {
-    dm_cm_impl_t* self = _self;
+    dm_cm_impl_t *self = _self;
 
     self->cm_inited = 0;
 
@@ -102,7 +108,7 @@ static void dm_cm_register_action(void *params)
 }
 
 
-static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t register_cb, void* context)
+static int dm_cm_impl_regist(void *_self, char *uri, iotx_cm_register_fp_t register_cb, void *context)
 {
     iotx_cm_register_param_t register_param;
     int ret = 0;
@@ -110,18 +116,19 @@ static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t regis
     iotx_cm_register_param_t *para = NULL;
     char *topic = NULL;
     int topic_len = 0;
-    if(!uri || !register_cb || !context) {
+    if (!uri || !register_cb || !context) {
         dm_log_err("invalid param!");
         return FAIL_RETURN;
     }
 
     dm_printf("%s: uri: %s\n", __FUNCTION__, uri);
 
-	memset(&register_param,0,sizeof(iotx_cm_register_param_t));
+    memset(&register_param, 0, sizeof(iotx_cm_register_param_t));
     /* Subscribe the specific topic */
     register_param.URI = uri;
 
-    if (strstr(uri, string_down_raw) || strstr(uri, string_down_raw_reply) || strstr(uri, string_up_raw) || strstr(uri, string_up_raw_reply)) {
+    if (strstr(uri, string_down_raw) || strstr(uri, string_down_raw_reply) || strstr(uri, string_up_raw) ||
+        strstr(uri, string_up_raw_reply)) {
         register_param.message_type = IOTX_CM_MESSAGE_RAW;
     } else if (strstr(uri, string__reply)) {
         register_param.message_type = IOTX_CM_MESSAGE_RESPONSE;
@@ -148,13 +155,15 @@ static int dm_cm_impl_regist(void* _self, char* uri, iotx_cm_register_fp_t regis
     return ret;
 }
 
-static int dm_cm_impl_unregist(void* _self, char* uri)
+static int dm_cm_impl_unregist(void *_self, char *uri)
 {
-    dm_cm_impl_t* self = _self;
+    dm_cm_impl_t *self = _self;
     iotx_cm_unregister_param_t unregister_param;
     int ret = -1;
 
-    if (!uri || !self->cm_inited) return -1;
+    if (!uri || !self->cm_inited) {
+        return -1;
+    }
 
     unregister_param.URI = uri;
 
@@ -170,26 +179,31 @@ static int dm_cm_impl_unregist(void* _self, char* uri)
 }
 
 
-static int dm_cm_impl_send(void* _self, message_info_t** msg)
+static int dm_cm_impl_send(void *_self, message_info_t **msg)
 {
-    message_info_t** message_info = msg;
+    message_info_t **message_info = msg;
     iotx_cm_message_info_t cm_message_info = {0};
     iotx_cm_send_peer_t send_peer;
-    char* device_name;
-    char* product_key;
+    char *device_name;
+    char *product_key;
     int ret;
     int message_type;
 
-    if (!msg) return -1;
+    if (!msg) {
+        return -1;
+    }
 
     cm_message_info.id = (*message_info)->get_id(message_info);
     cm_message_info.code = (*message_info)->get_code(message_info);
     message_type = (*message_info)->get_message_type(message_info);
-    cm_message_info.message_type = message_type == DM_CM_MSG_INFO_MESSAGE_TYPE_REQUEST ? IOTX_CM_MESSAGE_REQUEST : (message_type == DM_CM_MSG_INFO_MESSAGE_TYPE_RESPONSE ? IOTX_CM_MESSAGE_RESPONSE : IOTX_CM_MESSAGE_RAW);
+    cm_message_info.message_type = message_type == DM_CM_MSG_INFO_MESSAGE_TYPE_REQUEST ? IOTX_CM_MESSAGE_REQUEST :
+                                   (message_type == DM_CM_MSG_INFO_MESSAGE_TYPE_RESPONSE ? IOTX_CM_MESSAGE_RESPONSE : IOTX_CM_MESSAGE_RAW);
     cm_message_info.URI = (*message_info)->get_uri(message_info);
     cm_message_info.method = (*message_info)->get_method(message_info);
-    cm_message_info.parameter = cm_message_info.message_type == IOTX_CM_MESSAGE_RAW ? (*message_info)->get_raw_data(message_info) : (*message_info)->get_params_data(message_info);
-    cm_message_info.parameter_length = cm_message_info.message_type == IOTX_CM_MESSAGE_RAW ? (*message_info)->get_raw_data_length(message_info) : strlen(cm_message_info.parameter);
+    cm_message_info.parameter = cm_message_info.message_type == IOTX_CM_MESSAGE_RAW ? (*message_info)->get_raw_data(
+                                    message_info) : (*message_info)->get_params_data(message_info);
+    cm_message_info.parameter_length = cm_message_info.message_type == IOTX_CM_MESSAGE_RAW ?
+                                       (*message_info)->get_raw_data_length(message_info) : strlen(cm_message_info.parameter);
 #ifdef LOCAL_CONN_ENABLE
     cm_message_info.conn_ctx = (*message_info)->get_conn_ctx(message_info);
 #endif
@@ -212,19 +226,19 @@ static int dm_cm_impl_send(void* _self, message_info_t** msg)
     return ret;
 }
 #ifdef LOCAL_CONN_ENABLE
-int dm_cm_impl_add_service(void* _self, char* uri, iotx_cm_register_fp_t register_cb, void* context, int auth)
+int dm_cm_impl_add_service(void *_self, char *uri, iotx_cm_register_fp_t register_cb, void *context, int auth)
 {
     iotx_cm_add_service_param_t add_service_param;
     int ret;
 
-    if(!uri || !register_cb || !context) {
+    if (!uri || !register_cb || !context) {
         dm_log_err("invalid param!");
         return FAIL_RETURN;
     }
 
     dm_printf("%s: uri: %s\n", __FUNCTION__, uri);
 
-	memset(&add_service_param,0,sizeof(iotx_cm_add_service_param_t));
+    memset(&add_service_param, 0, sizeof(iotx_cm_add_service_param_t));
     /* Subscribe the specific topic */
     add_service_param.URI = uri;
     add_service_param.message_type = IOTX_CM_MESSAGE_REQUEST;
@@ -245,7 +259,7 @@ int dm_cm_impl_add_service(void* _self, char* uri, iotx_cm_register_fp_t registe
 #endif
 
 #ifndef CM_SUPPORT_MULTI_THREAD
-static int dm_cm_impl_yield(void* _self, int timeout_ms)
+static int dm_cm_impl_yield(void *_self, int timeout_ms)
 {
     return IOT_CM_Yield(timeout_ms, NULL);
 }
@@ -269,7 +283,7 @@ static const cm_abstract_t _dm_cm_impl_class = {
 #endif /* CM_SUPPORT_MULTI_THREAD */
 };
 
-const void* get_dm_cm_impl_class()
+const void *get_dm_cm_impl_class()
 {
     return &_dm_cm_impl_class;
 }

@@ -179,10 +179,10 @@ int application_start(void)
 {
 #if AOS_ATCMD
     at.set_mode(ASYN);
-    at.init(AT_RECV_PREFIX, AT_RECV_SUCCESS_POSTFIX, 
+    at.init(AT_RECV_PREFIX, AT_RECV_SUCCESS_POSTFIX,
             AT_RECV_FAIL_POSTFIX, AT_SEND_DELIMITER, 1000);
 #endif
-    
+
 #ifdef WITH_SAL
     sal_init();
 #endif

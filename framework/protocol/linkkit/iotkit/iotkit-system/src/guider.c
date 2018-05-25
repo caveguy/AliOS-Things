@@ -20,7 +20,7 @@
 #include "utils_epoch_time.h"
 
 #ifndef CONFIG_GUIDER_AUTH_TIMEOUT
-    #define CONFIG_GUIDER_AUTH_TIMEOUT  (10 * 1000)
+#define CONFIG_GUIDER_AUTH_TIMEOUT  (10 * 1000)
 #endif
 
 const char *secmode_str[] = {
@@ -48,19 +48,20 @@ void guider_set_domain_type(int domain_type)
     g_domain_type = domain_type;
 }
 
-char* guider_get_domain()
+char *guider_get_domain()
 {
-    if (0 == g_domain_type)
+    if (0 == g_domain_type) {
         return GUIDER_DIRECT_DOMAIN;
+    }
 
     return NULL;
 }
 
 
 static int _calc_hmac_signature(
-            char *hmac_sigbuf,
-            const int hmac_buflen,
-            const char *timestamp_str)
+    char *hmac_sigbuf,
+    const int hmac_buflen,
+    const char *timestamp_str)
 {
     char                    signature[64];
     char                    hmac_source[512];
@@ -286,21 +287,21 @@ static void guider_get_url(char *buf, int len)
     HAL_Snprintf(buf, len, "%s", "http://");
 
     if (0 == g_domain_type) {
-    #if defined(ON_PRE)
+#if defined(ON_PRE)
         strcat(buf, "iot-auth-pre.cn-shanghai.aliyuncs.com");
-    #elif defined(ON_DAILY)
+#elif defined(ON_DAILY)
         strcat(buf, "iot-auth.alibaba.net");
-    #else
+#else
         strcat(buf, "iot-auth.cn-shanghai.aliyuncs.com");
-    #endif
+#endif
     } else {
-    #if defined(ON_PRE)
+#if defined(ON_PRE)
         strcat(buf, "iot-auth-pre.ap-southeast-1.aliyuncs.com");
-    #elif defined(ON_DAILY)
+#elif defined(ON_DAILY)
         strcat(buf, "iot-auth.alibaba.net");
-    #else
+#else
         strcat(buf, "iot-auth.ap-southeast-1.aliyuncs.com");
-    #endif
+#endif
     }
 
     strcat(buf, "/auth/devicename");
@@ -377,12 +378,12 @@ static char *guider_set_auth_req_str(char sign[], char ts[])
 }
 
 static int guider_get_iotId_iotToken(
-            const char *guider_addr,
-            const char *request_string,
-            char *iot_id,
-            char *iot_token,
-            char *host,
-            uint16_t *pport)
+    const char *guider_addr,
+    const char *request_string,
+    char *iot_id,
+    char *iot_token,
+    char *host,
+    uint16_t *pport)
 {
     char                iotx_payload[1024] = {0};
     int                 iotx_port = 443;
@@ -512,7 +513,7 @@ int iotx_guider_authenticate(void)
     iotx_conn_info_pt   conn = iotx_conn_info_get();
     char               *req_str = NULL;
     int                 gw = 0;
-	int                 ext = 0;
+    int                 ext = 0;
 
     LITE_ASSERT(dev);
     LITE_ASSERT(conn);
@@ -614,7 +615,7 @@ int iotx_guider_authenticate(void)
                       , secure_mode
                       , timestamp_str
                       , gw
-					  , ext
+                      , ext
                       , partner_id
                       , module_id
                      );
