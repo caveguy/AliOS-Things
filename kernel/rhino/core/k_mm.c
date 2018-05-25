@@ -847,7 +847,7 @@ void *krhino_mm_realloc(void *oldmem, size_t newsize)
 }
 
 #if (K_MM_STATISTIC > 0)
-char g_panic_mm[]  = 
+char g_panic_mm[]  =
     "free = 0x         | used = 0x         | max used = 0x        \r\n";
 extern char *int_to_hex(int num, char *str);
 void krhino_heap_prt(int (*print_func)(const char *fmt, ...))

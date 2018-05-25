@@ -1047,7 +1047,7 @@ void krhino_task_deathbed(void)
 }
 
 #if (RHINO_CONFIG_SYSTEM_STATS > 0)
-char g_panic_task[]  = 
+char g_panic_task[]  =
     "                : stacksize=0x        , freesize=0x        \r\n";
 extern char *int_to_hex(int num, char *str);
 extern int puts(const char *str);
@@ -1059,31 +1059,28 @@ void krhino_task_list_prt(int (*print_func)(const char *fmt, ...))
     int  i;
     const name_t *task_name;
 
-    for (listnode  = g_kobj_list.task_head.next; 
-         listnode != &g_kobj_list.task_head; 
+    for (listnode  = g_kobj_list.task_head.next;
+         listnode != &g_kobj_list.task_head;
          listnode  = listnode->next) {
         task = krhino_list_entry(listnode, ktask_t, task_stats_item);
-        
+
         if (krhino_task_stack_min_free(task, &free_size) != RHINO_SUCCESS) {
             free_size = 0;
         }
         free_size *= sizeof(cpu_stack_t);
-        
+
         task_name = task->task_name == NULL ? "anonym" : task->task_name;
 
-        for ( i = 0 ; i < 16 ; i++ )
-        {
+        for ( i = 0 ; i < 16 ; i++ ) {
             g_panic_task[i] = ' ';
         }
-        for ( i = 0 ; i < 16 ; i++ )
-        {
-            if ( task_name[i] == '\0' )
-            {
+        for ( i = 0 ; i < 16 ; i++ ) {
+            if ( task_name[i] == '\0' ) {
                 break;
             }
             g_panic_task[i] = task_name[i];
         }
-        int_to_hex(task->stack_size*sizeof(cpu_stack_t), &g_panic_task[30]);
+        int_to_hex(task->stack_size * sizeof(cpu_stack_t), &g_panic_task[30]);
         int_to_hex(free_size, &g_panic_task[51]);
 
         print_func(g_panic_task);
