@@ -45,7 +45,7 @@ typedef enum IOTX_CM_CLOUD_DOMAIN_TYPES {
 
     /* Maximum number of domain */
     IOTX_CM_CLOUD_DOMAIN_MAX
-}iotx_cm_cloud_domain_types_t;
+} iotx_cm_cloud_domain_types_t;
 
 
 /* message confirmation type */
@@ -63,7 +63,7 @@ typedef enum IOTX_CM_MESSAGE_ACK_TYPES {
 
     /* Maximum number of domain */
     IOTX_CM_MESSAGE_ACK_MAX
-}iotx_cm_message_ack_types_t;
+} iotx_cm_message_ack_types_t;
 
 /* message auth type */
 typedef enum IOTX_CM_MESSAGE_AUTH_TYPES {
@@ -75,7 +75,7 @@ typedef enum IOTX_CM_MESSAGE_AUTH_TYPES {
 
     /* Maximum number of domain */
     IOTX_CM_MESSAGE_AUTH_MAX
-}iotx_cm_message_auth_types_t;
+} iotx_cm_message_auth_types_t;
 
 
 /* The message payload encode format */
@@ -149,12 +149,12 @@ typedef enum IOTX_CM_EVENT_TYPES {
     /* event_msg is iotx_cm_ota_parameter_t */
     IOTX_CM_EVENT_NEW_VERSION_DETECTED = 30,
 
-        /* event_msg is iotx_cm_ota_parameter_t */
+    /* event_msg is iotx_cm_ota_parameter_t */
     IOTX_CM_EVENT_NEW_DATA_RECEIVED = 40,
 
     /* Maximum number of protocol */
     IOTX_CM_EVENT_MAX
-}iotx_cm_event_types_t;
+} iotx_cm_event_types_t;
 
 
 typedef enum IOTX_CM_MESSAGE_TYPE {
@@ -171,7 +171,7 @@ typedef enum IOTX_CM_MESSAGE_TYPE {
     IOTX_CM_MESSAGE_RESPONSE = 3,
 
     IOTX_CM_MESSAGE_MAX
-}iotx_cm_message_types_t;
+} iotx_cm_message_types_t;
 
 
 #ifdef SERVICE_OTA_ENABLED
@@ -185,7 +185,7 @@ typedef enum IOTX_CM_OTA_TYPE {
 
     /* Maximum */
     IOTX_CM_OTA_TYPE_MAX
-}iotx_cm_ota_types_t;
+} iotx_cm_ota_types_t;
 #endif /* SERVICE_OTA_ENABLED */
 
 
@@ -200,7 +200,7 @@ typedef struct {
 typedef struct {
     /* 0: success, -1:nack */
     int                                      result;
-    char*                                    URI;
+    char                                    *URI;
 } iotx_cm_event_result_t, *iotx_cm_event_result_pt;
 
 
@@ -209,19 +209,19 @@ typedef struct {
 /* The structure of fota result */
 typedef struct {
     uint32_t                                  size_file;            /* size of file */
-    char*                                     purl;                 /* point to URL */
-    char*                                     version;              /* point to string */
+    char                                     *purl;                 /* point to URL */
+    char                                     *version;              /* point to string */
 } iotx_cm_fota_parameter_t;
 
 
 /* The structure of cota result */
 typedef struct {
-    char*                                     configId;             /* config ID */
+    char                                     *configId;             /* config ID */
     uint32_t                                  configSize;           /* config size */
-    char*                                     sign;                 /* sign */
-    char*                                     signMethod;           /* sign method */
-    char*                                     url;                  /* point to URL */
-    char*                                     getType;              /* getType */
+    char                                     *sign;                 /* sign */
+    char                                     *signMethod;           /* sign method */
+    char                                     *url;                  /* point to URL */
+    char                                     *getType;              /* getType */
 } iotx_cm_cota_parameter_t;
 #endif /* SERVICE_OTA_ENABLED */
 
@@ -229,7 +229,7 @@ typedef struct {
 /* The structure of cm event msg */
 typedef struct {
     uint8_t                                   event_id;
-    void*                                     msg;
+    void                                     *msg;
 } iotx_cm_event_msg_t;
 
 
@@ -242,14 +242,14 @@ typedef struct {
      * If is is the IOTX_CM_MESSAGE_REQUEST in register_callback, this id must be non-null. */
     int                                       id;
     iotx_cm_message_ack_types_t               ack_type;
-    char*                                     URI;
+    char                                     *URI;
     unsigned int                              code;   /* [in/out] */
-    char*                                     method;
-    void*                                     parameter;
+    char                                     *method;
+    void                                     *parameter;
     unsigned int                              parameter_length;
-    char*                                     message;
+    char                                     *message;
     iotx_cm_message_types_t                   message_type;   /* response, request or raw */
-    void*                                     conn_ctx;      /* connection context */
+    void                                     *conn_ctx;      /* connection context */
 } iotx_cm_message_info_t;
 
 
@@ -262,8 +262,8 @@ typedef struct {
 
 /* The structure of new data */
 typedef struct {
-    iotx_cm_send_peer_t*                      peer;
-    iotx_cm_message_info_t*                   message_info;
+    iotx_cm_send_peer_t                      *peer;
+    iotx_cm_message_info_t                   *message_info;
 } iotx_cm_new_data_t;
 
 
@@ -277,7 +277,7 @@ typedef struct {
  *
  * @return none
  */
-typedef void (*iotx_cm_event_handle_fp_t)(void* pcontext, iotx_cm_event_msg_t* msg, void* user_data);
+typedef void (*iotx_cm_event_handle_fp_t)(void *pcontext, iotx_cm_event_msg_t *msg, void *user_data);
 
 
 #ifdef SERVICE_OTA_ENABLED
@@ -291,7 +291,7 @@ typedef void (*iotx_cm_event_handle_fp_t)(void* pcontext, iotx_cm_event_msg_t* m
  *
  * @return none
  */
-typedef void (*iotx_cm_fota_handle_fp_t)(void* pcontext, iotx_cm_fota_parameter_t* ota_parameter, void* user_data);
+typedef void (*iotx_cm_fota_handle_fp_t)(void *pcontext, iotx_cm_fota_parameter_t *ota_parameter, void *user_data);
 
 /**
  * @brief It define a datatype of function pointer.
@@ -303,7 +303,7 @@ typedef void (*iotx_cm_fota_handle_fp_t)(void* pcontext, iotx_cm_fota_parameter_
  *
  * @return none
  */
-typedef void (*iotx_cm_cota_handle_fp_t)(void* pcontext, iotx_cm_cota_parameter_t* ota_parameter, void* user_data);
+typedef void (*iotx_cm_cota_handle_fp_t)(void *pcontext, iotx_cm_cota_parameter_t *ota_parameter, void *user_data);
 #endif /* SERVICE_OTA_ENABLED */
 
 
@@ -317,47 +317,47 @@ typedef void (*iotx_cm_cota_handle_fp_t)(void* pcontext, iotx_cm_cota_parameter_
  *
  * @return none
  */
-typedef void (*iotx_cm_register_fp_t)(iotx_cm_send_peer_t* source, iotx_cm_message_info_t* msg, void* user_data);
+typedef void (*iotx_cm_register_fp_t)(iotx_cm_send_peer_t *source, iotx_cm_message_info_t *msg, void *user_data);
 
 
 /* The structure of CM param */
 typedef struct {
     iotx_cm_cloud_domain_types_t                domain_type;
     iotx_cm_event_handle_fp_t                   event_func;
-    void*                                       user_data;
+    void                                       *user_data;
 } iotx_cm_init_param_t;
 
 
 /* The structure of Register param */
 typedef struct {
-    char*                                       URI;
+    char                                       *URI;
     iotx_cm_message_types_t                     message_type;
     iotx_cm_register_fp_t                       register_func;
-    void*                                       user_data;
-    void*                                       mail_box;
+    void                                       *user_data;
+    void                                       *mail_box;
 } iotx_cm_register_param_t;
 
 
 /* The structure of Register param */
 typedef struct {
-    char*                                      URI;
+    char                                      *URI;
 } iotx_cm_unregister_param_t;
 
 
 /* The structure of Register param */
 typedef struct {
-    char*                                      URI;
+    char                                      *URI;
     iotx_cm_message_types_t                    message_type;
     iotx_cm_message_auth_types_t               auth_type;
     iotx_cm_register_fp_t                      register_func;
-    void*                                      user_data;
-    void*                                      mail_box;
+    void                                      *user_data;
+    void                                      *mail_box;
 } iotx_cm_add_service_param_t;
 
 
 /* The structure of Register param */
 typedef struct {
-    char*                                      URI;
+    char                                      *URI;
 } iotx_cm_remove_service_param_t;
 
 
@@ -376,7 +376,7 @@ typedef struct {
      */
     int8_t                                    result;         /* [out] */
     int                                       progress;       /* [out] */
-    void*                                     buffer;         /* [in/out] */
+    void                                     *buffer;         /* [in/out] */
     int                                       buffer_length;  /* [in/out] */
 } iotx_cm_ota_t, *iotx_cm_ota_pt;
 #endif /* SERVICE_OTA_ENABLED */
@@ -392,7 +392,7 @@ typedef struct {
  *
  * @return success or fail.
  */
-int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option);
+int IOT_CM_Init(iotx_cm_init_param_t *init_param, void *option);
 
 
 #ifdef SERVICE_OTA_ENABLED
@@ -405,7 +405,7 @@ int IOT_CM_Init(iotx_cm_init_param_t* init_param, void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_OTA_Start(char* cur_version, void* option);
+int IOT_CM_OTA_Start(char *cur_version, void *option);
 
 
 /**
@@ -419,7 +419,7 @@ int IOT_CM_OTA_Start(char* cur_version, void* option);
 *
 * @return success or fail.
 */
-int IOT_CM_OTA_Set_Callback(iotx_cm_ota_types_t type, void* ota_func, void* user_context, void* option);
+int IOT_CM_OTA_Set_Callback(iotx_cm_ota_types_t type, void *ota_func, void *user_context, void *option);
 
 
 /**
@@ -433,7 +433,7 @@ int IOT_CM_OTA_Set_Callback(iotx_cm_ota_types_t type, void* ota_func, void* user
 *
 * @return success or fail.
 */
-int IOT_CM_OTA_Get_Config(const char* configScope, const char* getType, const char* attributeKeys, void* option);
+int IOT_CM_OTA_Get_Config(const char *configScope, const char *getType, const char *attributeKeys, void *option);
 
 
 /**
@@ -445,7 +445,7 @@ int IOT_CM_OTA_Get_Config(const char* configScope, const char* getType, const ch
 *
 * @return success or fail.
 */
-int IOT_CM_OTA_Request_Image(const char* version, void* option);
+int IOT_CM_OTA_Request_Image(const char *version, void *option);
 #endif /* SERVICE_OTA_ENABLED */
 
 
@@ -461,7 +461,7 @@ int IOT_CM_OTA_Request_Image(const char* version, void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_Register(iotx_cm_register_param_t* pparam, void* option);
+int IOT_CM_Register(iotx_cm_register_param_t *pparam, void *option);
 
 
 /**
@@ -473,7 +473,7 @@ int IOT_CM_Register(iotx_cm_register_param_t* pparam, void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_Unregister(iotx_cm_unregister_param_t* unregister_param, void* option);
+int IOT_CM_Unregister(iotx_cm_unregister_param_t *unregister_param, void *option);
 
 
 /**
@@ -488,7 +488,7 @@ int IOT_CM_Unregister(iotx_cm_unregister_param_t* unregister_param, void* option
  *
  * @return success or fail.
  */
-int IOT_CM_Add_Service(iotx_cm_add_service_param_t* service_param, void* option);
+int IOT_CM_Add_Service(iotx_cm_add_service_param_t *service_param, void *option);
 
 
 /**
@@ -500,7 +500,7 @@ int IOT_CM_Add_Service(iotx_cm_add_service_param_t* service_param, void* option)
  *
  * @return success or fail.
  */
-int IOT_CM_Remove_Service(iotx_cm_remove_service_param_t* service_param, void* option);
+int IOT_CM_Remove_Service(iotx_cm_remove_service_param_t *service_param, void *option);
 
 
 /**
@@ -513,7 +513,7 @@ int IOT_CM_Remove_Service(iotx_cm_remove_service_param_t* service_param, void* o
  *
  * @return success or fail.
  */
-int IOT_CM_Add_Sub_Device(const char* PK, const char* DN, void* option);
+int IOT_CM_Add_Sub_Device(const char *PK, const char *DN, void *option);
 
 
 /**
@@ -526,7 +526,7 @@ int IOT_CM_Add_Sub_Device(const char* PK, const char* DN, void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_Remove_Sub_Device(const char* PK, const char* DN, void* option);
+int IOT_CM_Remove_Sub_Device(const char *PK, const char *DN, void *option);
 
 
 /**
@@ -543,7 +543,7 @@ int IOT_CM_Remove_Sub_Device(const char* PK, const char* DN, void* option);
  * @return success or fail.
  *
  */
-int IOT_CM_Send(iotx_cm_send_peer_t* target, iotx_cm_message_info_t* message_info, void* option);
+int IOT_CM_Send(iotx_cm_send_peer_t *target, iotx_cm_message_info_t *message_info, void *option);
 
 
 #ifndef CM_SUPPORT_MULTI_THREAD
@@ -562,7 +562,7 @@ int IOT_CM_Send(iotx_cm_send_peer_t* target, iotx_cm_message_info_t* message_inf
  * @return success or fail.
  *
  */
-int IOT_CM_Send_Sync(iotx_cm_send_peer_t* send_peer, iotx_cm_message_info_t* message_info, void* option);
+int IOT_CM_Send_Sync(iotx_cm_send_peer_t *send_peer, iotx_cm_message_info_t *message_info, void *option);
 
 
 /**
@@ -577,7 +577,7 @@ int IOT_CM_Send_Sync(iotx_cm_send_peer_t* send_peer, iotx_cm_message_info_t* mes
  *
  * @return success or fail.
  */
-int IOT_CM_Yield(int timeout_ms, void* option);
+int IOT_CM_Yield(int timeout_ms, void *option);
 #endif /* CM_SUPPORT_MULTI_THREAD */
 
 
@@ -588,7 +588,7 @@ int IOT_CM_Yield(int timeout_ms, void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_Deinit(void* option);
+int IOT_CM_Deinit(void *option);
 
 #ifdef SERVICE_OTA_ENABLED
 /**
@@ -599,14 +599,14 @@ int IOT_CM_Deinit(void* option);
  *
  * @return success or fail.
  */
-int IOT_CM_OTA_Yield(iotx_cm_ota_t* cm_ota);
+int IOT_CM_OTA_Yield(iotx_cm_ota_t *cm_ota);
 #endif /* SERVICE_OTA_ENABLED */
 
 
 #ifdef UT_TEST
-int request_inject(int id, char* uri, char* method, void* parameter, int parameter_len);
+int request_inject(int id, char *uri, char *method, void *parameter, int parameter_len);
 
-int response_inject(int id, char* uri, int code, void* data, int data_length);
+int response_inject(int id, char *uri, int code, void *data, int data_length);
 
 #endif /* UT_TEST */
 
