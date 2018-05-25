@@ -105,7 +105,6 @@ int IOT_CM_Init(iotx_cm_init_param_t *init_param, void *option)
         memset(g_cm_ctx, 0x0, sizeof(iotx_cm_conntext_t));
 
         g_cm_ctx->response_func = iotx_cm_response_func;
-        guider_set_domain_type(init_param->domain_type);
 
 #ifdef CM_SUPPORT_MULTI_THREAD
         g_cm_ctx->action_lock = HAL_MutexCreate();
