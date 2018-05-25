@@ -17,7 +17,7 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
     char* targetKey = "";
     int targetLen = 0;
     //int res_code = 200;
-    COAP_DEBUG ("receive data:%.*s", resMsg->payloadlen, resMsg->payload);
+    //COAP_DEBUG ("receive data:%.*s", resMsg->payloadlen, resMsg->payload);
 
     do {
         if (!req_payload_parser((const char *)resMsg->payload, resMsg->payloadlen, &seq, &seqlen, &data, &datalen)) {
@@ -36,7 +36,7 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
         if (!accesskeys || !keylen) {
             break;
         }
-        COAP_DEBUG ("accessKeys:%.*s", keylen, accesskeys);
+        //COAP_DEBUG ("accessKeys:%.*s", keylen, accesskeys);
         char back;
         char *str_pos, *entry;
         int entry_len, type;
@@ -48,9 +48,9 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
 
             HAL_MutexLock(dev_lst->list_mutex);
             list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
-                COAP_DEBUG ("keyprefix:%s", node->keyInfo.keyprefix);
+                //COAP_DEBUG ("keyprefix:%s", node->keyInfo.keyprefix);
                 if (strstr(entry, node->keyInfo.keyprefix) == entry) {
-                    COAP_DEBUG ("target keyprefix:%s", entry);
+                    //COAP_DEBUG ("target keyprefix:%s", entry);
                     targetKey = entry;
                     targetLen = entry_len;
                     break;
@@ -64,9 +64,9 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
 
             HAL_MutexLock(dev_lst->list_mutex);
             list_for_each_entry_safe(gnode, gnext, &lst->lst_svr_group, lst, svr_group_item) {
-                COAP_DEBUG ("keyprefix:%s", gnode->keyInfo.keyprefix);
+                //COAP_DEBUG ("keyprefix:%s", gnode->keyInfo.keyprefix);
                 if (strstr(entry, gnode->keyInfo.keyprefix) == entry) {
-                    COAP_DEBUG ("target keyprefix:%s", entry);
+                    //COAP_DEBUG ("target keyprefix:%s", entry);
                     targetKey = entry;
                     targetLen = entry_len;
                     break;
@@ -96,7 +96,7 @@ void alcs_rec_auth_select (CoAPContext *ctx, const char *paths, NetworkAddr* fro
 
 svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixlen, const char* keyseq, int seqlen, int* res_code)
 {
-    COAP_DEBUG ("islegal prefix:%.*s, seq:%.*s", prefixlen, keyprefix, seqlen, keyseq);
+    //COAP_DEBUG ("islegal prefix:%.*s, seq:%.*s", prefixlen, keyprefix, seqlen, keyseq);
 
     device_auth_list* dev_lst = get_device (ctx);
     auth_list* lst = dev_lst? &dev_lst->lst_auth : NULL;
@@ -122,7 +122,7 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
         } else {
             svr_key_item *node = NULL, *next = NULL;
             list_for_each_entry_safe(node, next, &lst->lst_svr, lst, svr_key_item) {
-                COAP_DEBUG ("node prefix:%s", node->keyInfo.keyprefix);
+                //COAP_DEBUG ("node prefix:%s", node->keyInfo.keyprefix);
                 if (strlen(node->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, node->keyInfo.keyprefix, prefixlen) == 0) {
                     *res_code = ALCS_AUTH_OK;
                     HAL_MutexUnlock(dev_lst->list_mutex);
@@ -132,7 +132,7 @@ svr_key_info* is_legal_key(CoAPContext *ctx, const char* keyprefix, int prefixle
             
             svr_group_item* gnode = NULL, *gnext = NULL;
             list_for_each_entry_safe(gnode, gnext, &lst->lst_svr_group, lst, svr_group_item) {
-                COAP_DEBUG ("node prefix:%s", gnode->keyInfo.keyprefix);
+                //COAP_DEBUG ("node prefix:%s", gnode->keyInfo.keyprefix);
                 if (strlen(gnode->keyInfo.keyprefix) == prefixlen && strncmp (keyprefix, gnode->keyInfo.keyprefix, prefixlen) == 0) {
                     *res_code = ALCS_AUTH_OK;
                     HAL_MutexUnlock(dev_lst->list_mutex);
