@@ -434,11 +434,10 @@ static int panicFindRetAddr_callee(int  **pSP, char **pPC, char *RA)
         /* RA has changed in func, so find stack to get ReturnAddr */
         *pSP = SP + framesize;
         *pPC = (char *) * (SP + framesize - 1);
-    }
-    else {
+    } else {
         /* ReturnAddr is RA */
         *pPC = RA;
-        
+
         /* find "ret.n" */
         for ( j = 0 ; j < i ; j++ ) {
             if ( *(PC - j) == 0x0d && *(PC - j + 1) == 0xf0 ) {
@@ -448,8 +447,7 @@ static int panicFindRetAddr_callee(int  **pSP, char **pPC, char *RA)
         if ( i == j ) {
             /* no ret.n finded, so SP is changed in function */
             *pSP = SP + framesize;
-        }
-        else {
+        } else {
             /* no ret.n finded, so SP is not changed in function */
             *pSP = SP;
         }
@@ -533,7 +531,7 @@ void panicHandler(XtExcFrame *frame)
         ets_printf(g_panic_call);
         if ( 0 == panicCheckPcValid(PC) ) {
             /* invalid pc, set Return Addr as pc */
-            PC = (char *)regs[3];   
+            PC = (char *)regs[3];
             k_int2str((int)PC, &g_panic_call[14]);
             ets_printf(g_panic_call);
         } else {

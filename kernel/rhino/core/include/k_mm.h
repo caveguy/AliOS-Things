@@ -120,7 +120,7 @@ typedef struct {
 #endif
     /* msb (MM_BIT_LEVEL-1) <-> lsb 0, one bit match one freelist */
     uint32_t            free_bitmap;
-    /* freelist[N]: contain free blks at level N, 
+    /* freelist[N]: contain free blks at level N,
        2^(N + MM_MIN_BIT) <= level N buffer size < 2^(1 + N + MM_MIN_BIT) */
     k_mm_list_t        *freelist[MM_BIT_LEVEL];
 } k_mm_head;

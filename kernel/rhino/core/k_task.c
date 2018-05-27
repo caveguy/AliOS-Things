@@ -1087,7 +1087,7 @@ void krhino_task_overview(int (*print_func)(const char *fmt, ...))
         }
 
         /* set state */
-        stat_idx = task->task_state >= sizeof(cpu_stat)/sizeof(char *) ? 0: task->task_state;
+        stat_idx = task->task_state >= sizeof(cpu_stat) / sizeof(char *) ? 0 : task->task_state;
         for ( i = 21 ; i < 29 ; i++ ) {
             s_task_overview[i] = ' ';
         }
@@ -1097,10 +1097,10 @@ void krhino_task_overview(int (*print_func)(const char *fmt, ...))
             }
             s_task_overview[i] = cpu_stat[stat_idx][i - 21];
         }
-        
+
         /* set stack priority */
         k_int2str(task->prio, &s_task_overview[32]);
-        
+
         /* set stack info */
         k_int2str((int)task->task_stack_base, &s_task_overview[43]);
         k_int2str((int)task->stack_size * sizeof(cpu_stack_t), &s_task_overview[54]);
