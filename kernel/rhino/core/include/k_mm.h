@@ -125,17 +125,13 @@ typedef struct {
     k_mm_list_t        *freelist[MM_BIT_LEVEL];
 } k_mm_head;
 
-
 kstat_t krhino_init_mm_head(k_mm_head **ppmmhead, void *addr, size_t len );
 kstat_t krhino_deinit_mm_head(k_mm_head *mmhead);
-
 kstat_t krhino_add_mm_region(k_mm_head *mmhead, void *addr, size_t len);
-
 
 void *k_mm_alloc(k_mm_head *mmhead, size_t size);
 void  k_mm_free(k_mm_head       *mmhead, void *ptr);
 void *k_mm_realloc(k_mm_head *mmhead, void *oldmem, size_t new_size);
-#endif
 
 /**
  * This function is wrapper of mm allocation
@@ -161,6 +157,16 @@ void krhino_mm_free(void *ptr);
 void *krhino_mm_realloc(void *oldmem, size_t newsize);
 
 
+
+/**
+ * This function is wrapper of mm rallocation
+ * @param[in]       oldmem      oldmem address
+ * @param[in]       size        size of the mem to malloc
+ * @return  the operation status, NULL is error, others is realloced memory address
+ */
+void krhino_mm_overview(int (*print_func)(const char *fmt, ...));
+
+#endif
 
 #endif /* K_MM_BESTFIT_H */
 
