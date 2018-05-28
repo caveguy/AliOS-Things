@@ -10,7 +10,7 @@ $(NAME)_TYPE := kernel
 
 $(NAME)_COMPONENTS := platform/arch/arm/armv5
 $(NAME)_COMPONENTS += libc rhino yloop modules.fs.kv alicrypto digest_algorithm
-$(NAME)_COMPONENTS += protocols.net protocols.mesh
+$(NAME)_COMPONENTS += protocols.net
 $(NAME)_COMPONENTS += platform/mcu/moc108/aos/framework_runtime
 $(NAME)_COMPONENTS += platform/mcu/moc108/aos/app_runtime
 $(NAME)_COMPONENTS += prov
@@ -76,7 +76,10 @@ endif
 $(NAME)_INCLUDES += aos
 $(NAME)_SOURCES := aos/aos_main.c
 $(NAME)_SOURCES += aos/soc_impl.c \
-                   aos/trace_impl.c \
-                   hal/mesh_wifi_hal.c
+                   aos/trace_impl.c
+
+#ifneq (,$(filter protocols.mesh,$(COMPONENTS)))
+$(NAME)_SOURCES +=  hal/mesh_wifi_hal.c
+#endif
 
 $(NAME)_PREBUILT_LIBRARY := libmoc108.a

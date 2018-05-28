@@ -1,7 +1,7 @@
 #!/bin/sh
 
-version=1.3.0
-GITHUB_HEAD_SHA=b3200a97204faadac12c484b5a7d968a0b2f9947
+version=1.3.1
+GITHUB_HEAD_SHA=5384ef6d00bab12bd12d2a840a46e1df425bfdea
 
 if [ $# -gt 0 ]; then
     version=$1
@@ -11,6 +11,8 @@ if [ $# -gt 1 ]; then
     GITHUB_HEAD_SHA=$2
 fi
 
+echo "version:${version}"
+echo "HEAD:${GITHUB_HEAD_SHA}"
 aosdir=${HOME}/githubsync/aos
 githubdir=${HOME}/githubsync/AliOS
 branch=aos${version}
@@ -84,7 +86,7 @@ rm -rf ${githubdir}/script
 rm -rf ${githubdir}/platform/mcu/linux/csp/wifi
 rm -rf ${githubdir}/platform/mcu/esp32/esptool_py
 rm -rf ${githubdir}/platform/mcu/esp8266/esptool_py
-rm -rf ${githubdir}/platform/arch/linux/swap.*
+#rm -rf ${githubdir}/platform/arch/linux/swap.*
 rm -rf ${githubdir}/example/mqttest
 rm -rf ${githubdir}/bootloader
 
@@ -94,12 +96,11 @@ rm -rf ${githubdir}/test/testcase/kernel/protocols
 #tools folder
 rm -rf ${githubdir}/tools/*
 cp -rf ${aosdir}/tools/at_adapter ${githubdir}/tools/
-cp -rf ${aosdir}/tools/ci ${githubdir}/tools/
 cp -rf ${aosdir}/tools/cli ${githubdir}/tools/
 cp -rf ${aosdir}/tools/Doxyfile ${githubdir}/tools/
 cp -rf ${aosdir}/tools/doxygen.sh ${githubdir}/tools/
-mkdir -p ${githubdir}/tools/prebuild
-cp -rf ${branch_specific_files}/prebuild.sh ${githubdir}/tools/prebuild/
+mkdir -p ${githubdir}/tools/ci
+cp -rf ${aosdir}/tools/ci/pvbuild.sh ${githubdir}/tools/ci/
 
 #testbed
 #cp -rf ${aosdir}/tools/testbed ${githubdir}/tools/
@@ -191,9 +192,9 @@ rm -rf ${githubdir}/example/alinkapp
 rm -rf ${githubdir}/build/scons_enabled.*
 
 #branch specofic files
-cp ${branch_specific_files}/k_config_linuxhost.h ${githubdir}/board/linuxhost/k_config.h
-cp ${branch_specific_files}/linux.mk ${githubdir}/platform/arch/linux/
-cp ${branch_specific_files}/autobuild.sh ${githubdir}/build/
+#cp ${branch_specific_files}/k_config_linuxhost.h ${githubdir}/board/linuxhost/k_config.h
+#cp ${branch_specific_files}/linux.mk ${githubdir}/platform/arch/linux/
+#cp ${branch_specific_files}/autobuild.sh ${githubdir}/build/
 cp -f ${branch_specific_files}/linuxhost.mk ${githubdir}/board/linuxhost/linuxhost.mk
 cp -f ${branch_specific_files}/yts_main.c ${githubdir}/example/yts/main.c
 cp -f ${branch_specific_files}/yts.mk ${githubdir}/example/yts/yts.mk
