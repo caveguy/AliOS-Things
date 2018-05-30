@@ -381,7 +381,7 @@ static int post_property_wifi_status_once(sample_context_t* sample_ctx)
             post_array[3] = wireless_info.tx_rate;
             post_array[4] = wireless_info.rx_rate;
             linkkit_set_value(linkkit_method_set_property_value, sample_ctx->thing,
-                              post_key[post_idx], &post_array[post_idx], NULL);
+                              post_key[post_idx - 1], &post_array[post_idx - 1], NULL);
         }
 
         post_idx ++;

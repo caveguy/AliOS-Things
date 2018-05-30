@@ -98,7 +98,7 @@ static void cloud_service_event(input_event_t *event, void *priv_data) {
 static void start_netmgr(void *p)
 {
     netmgr_start(true);
-    //aos_task_exit(0);
+    aos_task_exit(0);
 }
 
 void do_awss_active()
