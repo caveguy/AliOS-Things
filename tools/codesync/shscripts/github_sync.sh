@@ -341,8 +341,20 @@ if [ $? -ne 0 ]; then
 fi
 cd ${aosdir}/out/${target}/libraries/
 xtensa-lx106-elf-strip --strip-debug libywss.a
-mkdir -p ${githubdir}/framework/ywss4linkkit/lib/xtensa
-cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/xtensa/libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/xtensa/esp8266
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/xtensa/esp8266/libywss.a
+
+cd ${aosdir}
+target=linkkitapp@esp32devkitc
+aos make -e ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+xtensa-esp32-elf-strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/xtensa/esp32
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/xtensa/esp32/libywss.a
 
 cd ${aosdir}
 target=linkkitapp@linuxhost
@@ -367,6 +379,18 @@ cd ${aosdir}/out/${target}/libraries/
 arm-none-eabi-strip --strip-debug libywss.a
 mkdir -p ${githubdir}/framework/ywss4linkkit/lib/cortex-m4
 cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/cortex-m4/libywss.a
+
+cd ${aosdir}
+target=linkkitapp@developerkit
+aos make ${target} > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "error: build ${target} failed"
+    exit 1
+fi
+cd ${aosdir}/out/${target}/libraries/
+arm-none-eabi-strip --strip-debug libywss.a
+mkdir -p ${githubdir}/framework/ywss4linkkit/lib/cortex-m4/vfp
+cp libywss.a ${githubdir}/framework/ywss4linkkit/lib/cortex-m4/vfp/libywss.a
 
 cd ${githubdir}
 grep -rl "AOS-R-[0-9]\.[0-9]\.[0-9]" | xargs sed -i "s|AOS-R-[0-9].[0-9].[0-9]|AOS-R-${version}|g"
