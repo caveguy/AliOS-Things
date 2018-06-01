@@ -576,11 +576,130 @@ int HAL_Firmware_Persistence_Write(_IN_ char *buffer, _IN_ uint32_t length);
  */
 int HAL_Firmware_Persistence_Stop(void);
 
+
+/**
+ * @brief write value to flash according to key.
+ *
+ * @param[in] key: @n A pointer to key of KV couple.
+ * @param[in] val: @n A pointer to val of KV couple.
+ * @param[in] len: @n The length, in bytes, of the buffer pointed to by the val parameter.
+ * @param[in] sync: @n Sync or Async.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note flash sections used by KV shoud be seperate from system flash.
+ */
 int HAL_Kv_Set(const char *key, const void *val, int len, int sync);
-int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len);
+
+
+/**
+ * @brief read value from flash according to key.
+ *
+ * @param[in] key: @n A pointer to key of KV couple.
+ * @param[in] val: @n A pointer to val of KV couple.
+ * @param[in] len: @n The length, in bytes, of the buffer pointed to by the val parameter.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ */
+int HAL_Kv_Get(const char *key, void *buffer, int *len);
+
+
+/**
+ * @brief delete key and value from flash according to key.
+ *
+ * @param[in] key: @n A pointer to key of KV couple.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ */
 int HAL_Kv_Del(const char *key);
 
 
+/**
+ * @brief erase KV flash section
+ *
+ * @param[in] key: @n A pointer to key of KV couple.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note flash sections used by KV shoud be seperate from system flash.
+ */
+int HAL_Erase_All_Kv();
+
+
+/**
+ * @brief register fd to system, system should poll theses fds
+          when fd is available to read, trigger user with callback.
+ *
+ * @param[in] fd: @n A socket fd.
+ * @param[in] callback: @n trigger callback when rd is available to read.
+ * @param[in] user_data: @n user context, passed by callback.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Register_Rx_Avail(int fd, int (*)(void *), void *user_data);
+
+
+/**
+ * @brief unregister fd from system
+ *
+ * @param[in] fd: @n A socket fd.
+ * @param[in] callback: @n trigger callback when rd is available to read, callback(user_data).
+ * @param[in] user_data: @n user context, passed by callback.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Unregister_Rx_Avail(int fd, int (*)(void *));
+
+
+/**
+ * @brief post task to run after ms.
+ *
+ * @param[in] ms: @n time with unit of ms.
+ * @param[in] task: @n the task to run.
+ * @param[in] user_data: @n user context, passed by task.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note task should not be blocked.
+ */
+int HAL_Sys_Post_Task(int ms, int (*)(void *), void *user_data);
+
+
+/**
+ * @brief cancel task from system.
+ *
+ * @param[in] ms: @n time with unit of ms.
+ * @param[in] task: @n the task to run, task(user_data).
+ * @param[in] user_data: @n user context, passed by task.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Cancel_Task(int ms, int (*)(void *), void *user_data);
+
+
+/**
+ * @brief register callback to monitor event.
+ *
+ * @param[in] event: @n event id.
+ * @param[in] callback: @n trigger callback when event occurs, callback(msg, user_data).
+ * @param[in] user_data: @n user context, passed by callback.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Register_Event(int event, int (*)(void*, void*), void *user_data);
+
+
+/**
+ * @brief post event to triger callback which monitor the event.
+ *
+ * @param[in] event: @n event id.
+ * @param[in] msg: @n message passed by callback.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Post_Event(int event, void *msg);
 
 /** @} */ //end of platform_firmware_upgrade
 
