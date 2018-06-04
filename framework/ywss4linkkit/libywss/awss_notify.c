@@ -234,7 +234,7 @@ int awss_notify_dev_info(int type, int count)
     return awss_notify_resp[type];
 }
 
-#define AWSS_NOTIFY_CNT_MAX    (50)
+#define AWSS_NOTIFY_CNT_MAX    (30)
 
 int awss_connectap_notify_stop()
 {
