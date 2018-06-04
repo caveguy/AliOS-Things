@@ -31,7 +31,7 @@ int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
 {
     int len = sizeof(PARTNER_ID);
     strncpy(pid_str, PARTNER_ID, len);
-    return len;
+    return len - 1;
 }
 
 
@@ -45,7 +45,7 @@ int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
 {
     int len = sizeof(MODULE_ID);
     strncpy(mid_str, MODULE_ID, len);
-    return len;
+    return len - 1;
 }
 
 /**
@@ -58,7 +58,7 @@ int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
 {
     int len = sizeof(PRODUCT_KEY);
     strncpy(product_key, PRODUCT_KEY, len);
-    return len;
+    return len - 1;
 }
 
 /**
@@ -71,7 +71,7 @@ int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
 {
     int len = sizeof(DEVICE_NAME);
     strncpy(device_name, DEVICE_NAME, len);
-    return len;
+    return len - 1;
 }
 
 /**
@@ -89,11 +89,12 @@ int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
     if (0 != aos_kv_get("linkkit", device_secret, &len)) {
         return -1;
     }
+    return len;
 #else
     len = sizeof(DEVICE_SECRET);
     strncpy(device_secret, DEVICE_SECRET, len);
+    return len - 1;
 #endif
-    return len;
 }
 
 /**
@@ -127,7 +128,7 @@ int HAL_GetProductSecret(_OU_ char product_secret[DEVICE_SECRET_MAXLEN])
 {
     int len = sizeof(PRODUCT_SECRET);
     strncpy(product_secret, PRODUCT_SECRET, len);
-    return len;
+    return len - 1;
 }
 
 /**
@@ -140,7 +141,7 @@ int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
 {
     int len = sizeof(DEVICE_ID);
     strncpy(device_id, DEVICE_ID, len);
-    return len;
+    return len - 1;
 }
 
 /**
@@ -153,7 +154,7 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
 {
     int len = sizeof(FW_VERSION);
     strncpy(version, FW_VERSION, len);
-    return len;
+    return len - 1;
 }
 
 #define HAL_CID_LEN (64 + 1)
