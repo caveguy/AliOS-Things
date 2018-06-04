@@ -59,7 +59,8 @@ extern "C" {
 #define CODE_UDATA_SERVICE_IOCTL           10
 #define CODE_UDATA_REPORT_PUBLISH          11
 
-
+/* linkkit event */
+#define  EV_LINKKIT                         0x0005
 #endif
 
 typedef struct {
