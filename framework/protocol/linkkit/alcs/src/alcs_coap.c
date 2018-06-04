@@ -15,7 +15,7 @@ typedef struct {
     struct list_head   lst;
 } resource_cb_item;
 
-struct list_head resource_cb_head;
+LIST_HEAD(resource_cb_head);
 
 static uint32_t tokenSeed = 0;
 uint32_t getToken ()
