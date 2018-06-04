@@ -648,7 +648,7 @@ int HAL_Sys_Register_Rx_Avail(int fd, void (*)(int fd, void *), void *user_data)
  * @see None.
  * @note None.
  */
-int HAL_Sys_Unregister_Rx_Avail(int fd, void (*)(void *));
+int HAL_Sys_Unregister_Rx_Avail(int fd, void (*)(int fd, void *));
 
 
 /**
