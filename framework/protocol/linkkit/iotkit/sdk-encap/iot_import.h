@@ -635,7 +635,7 @@ int HAL_Erase_All_Kv();
  * @see None.
  * @note None.
  */
-int HAL_Sys_Register_Rx_Avail(int fd, int (*)(void *), void *user_data);
+int HAL_Sys_Register_Rx_Avail(int fd, void (*)(int fd, void *), void *user_data);
 
 
 /**
@@ -648,7 +648,7 @@ int HAL_Sys_Register_Rx_Avail(int fd, int (*)(void *), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Unregister_Rx_Avail(int fd, int (*)(void *));
+int HAL_Sys_Unregister_Rx_Avail(int fd, void (*)(void *));
 
 
 /**
@@ -661,7 +661,7 @@ int HAL_Sys_Unregister_Rx_Avail(int fd, int (*)(void *));
  * @see None.
  * @note task should not be blocked.
  */
-int HAL_Sys_Post_Task(int ms, int (*)(void *), void *user_data);
+int HAL_Sys_Post_Task(int ms, void (*)(void *), void *user_data);
 
 
 /**
@@ -674,7 +674,7 @@ int HAL_Sys_Post_Task(int ms, int (*)(void *), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Cancel_Task(int ms, int (*)(void *), void *user_data);
+int HAL_Sys_Cancel_Task(int ms, void (*)(void *), void *user_data);
 
 
 /**
@@ -687,7 +687,19 @@ int HAL_Sys_Cancel_Task(int ms, int (*)(void *), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Register_Event(int event, int (*)(void*, void*), void *user_data);
+int HAL_Sys_Register_Event(int event, void (*)(void*, void*), void *user_data);
+
+
+/**
+ * @brief unregister callback from system.
+ *
+ * @param[in] event: @n event id.
+ * @param[in] callback: @n trigger callback when event occurs, callback(msg, user_data).
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @note None.
+ */
+int HAL_Sys_Unregister_Event(int event, void (*)(void*, void*));
 
 
 /**
