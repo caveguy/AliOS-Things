@@ -299,24 +299,45 @@ int HAL_Config_Read(char *buffer, int length) {
     return aos_kv_get("alink", buffer, &length);
 }
 
+#define LINKKIT_KV_START  "linkkit_%s"
+
 int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 {
-	return aos_kv_set(key,val,len,sync);
+    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    char *temp = aos_malloc(real_len);
+    if(!temp) {
+        return -1;
+    }
+    snprintf(temp,real_len,LINKKIT_KV_START,key);
+	return aos_kv_set(temp,val,real_len,sync);
 }
 
 int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 {
-	return aos_kv_get(key,buffer,buffer_len);
+    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    char *temp = aos_malloc(real_len);
+    if(!temp) {
+        return -1;
+    }
+    snprintf(temp,real_len,LINKKIT_KV_START,key);
+    LOG("key=%s",temp);
+	return aos_kv_get(temp,buffer,buffer_len);
 }
 
 int HAL_Kv_Del(const char *key)
 {
-	return aos_kv_del(key);
+    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    char *temp = aos_malloc(real_len);
+    if(!temp) {
+        return -1;
+    }
+    snprintf(temp,real_len,LINKKIT_KV_START,key);
+	return aos_kv_del(temp);
 }
 
 int HAL_Erase_All_Kv()
 {
-    
+    return 0;
 }
 typedef void (*async_fd_cb)(int,void *);
 typedef void (*async_task_cb)(void *);
@@ -367,7 +388,7 @@ int HAL_Sys_Post_Task(int ms, async_task_cb action, void *user_data)
     if(ms == 0) {
         return aos_schedule_call(action, user_data);     
     }
-    aos_call_t cb = (aos_call_t)action;
+
     schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
     if(pdata == NULL) {
         LOG("malloc failed");
@@ -389,9 +410,9 @@ int HAL_Sys_Cancel_Task(int ms, async_task_cb action, void *user_data)
 {
     int ret = 0;
 
-    // if(ms == 0) {
-    //     return;  
-    // }
+    if(ms == 0) {
+        return 0;  
+    }
 
     schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
     if(pdata == NULL) {
@@ -401,7 +422,7 @@ int HAL_Sys_Cancel_Task(int ms, async_task_cb action, void *user_data)
     pdata->data = user_data;
     pdata->cb = (aos_call_t)action;
     ret = aos_schedule_call(schedule_call_cancel, pdata); 
-    if(ret != 0){
+    if(ret < 0){
         aos_free(pdata);
     }
     return ret;     
@@ -431,7 +452,7 @@ static void linkkit_event_func(input_event_t *event, void *private_data)
         dlist_for_each_entry(&async_events, tmp, async_event_t, next) {
 
             if(event->code == tmp->event) {
-                tmp->cb(event->value,private_data);
+                tmp->cb((void *)event->value,private_data);
                 return;
             }
         }
