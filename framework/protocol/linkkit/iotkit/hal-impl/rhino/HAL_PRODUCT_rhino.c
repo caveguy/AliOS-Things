@@ -29,7 +29,7 @@
  */
 int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
 {
-    int len = sizeof(PARTNER_ID);
+    int len = strlen(PARTNER_ID);
     strncpy(pid_str, PARTNER_ID, len);
     return len - 1;
 }
@@ -43,7 +43,7 @@ int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
  */
 int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
 {
-    int len = sizeof(MODULE_ID);
+    int len = strlen(MODULE_ID);
     strncpy(mid_str, MODULE_ID, len);
     return len - 1;
 }
@@ -56,7 +56,7 @@ int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
  */
 int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
 {
-    int len = sizeof(PRODUCT_KEY);
+    int len = strlen(PRODUCT_KEY);
     strncpy(product_key, PRODUCT_KEY, len);
     return len - 1;
 }
@@ -69,7 +69,7 @@ int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
  */
 int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
 {
-    int len = sizeof(DEVICE_NAME);
+    int len = strlen(DEVICE_NAME);
     strncpy(device_name, DEVICE_NAME, len);
     return len - 1;
 }
@@ -91,7 +91,7 @@ int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
     }
     return len;
 #else
-    len = sizeof(DEVICE_SECRET);
+    len = strlen(DEVICE_SECRET);
     strncpy(device_secret, DEVICE_SECRET, len);
     return len - 1;
 #endif
@@ -126,7 +126,7 @@ int HAL_SetDeviceSecret(const char device_secret[DEVICE_SECRET_MAXLEN])
  */
 int HAL_GetProductSecret(_OU_ char product_secret[DEVICE_SECRET_MAXLEN])
 {
-    int len = sizeof(PRODUCT_SECRET);
+    int len = strlen(PRODUCT_SECRET);
     strncpy(product_secret, PRODUCT_SECRET, len);
     return len - 1;
 }
@@ -139,7 +139,7 @@ int HAL_GetProductSecret(_OU_ char product_secret[DEVICE_SECRET_MAXLEN])
  */
 int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
 {
-    int len = sizeof(DEVICE_ID);
+    int len = strlen(DEVICE_ID);
     strncpy(device_id, DEVICE_ID, len);
     return len - 1;
 }
@@ -152,7 +152,7 @@ int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
  */
 int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
 {
-    int len = sizeof(FW_VERSION);
+    int len = strlen(FW_VERSION);
     strncpy(version, FW_VERSION, len);
     return len - 1;
 }
@@ -166,7 +166,7 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
  */
 char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
 {
-    int len = sizeof(CHIP_ID);
+    int len = strlen(CHIP_ID);
     strncpy(cid_str, CHIP_ID, len);
     return NULL;
 }
