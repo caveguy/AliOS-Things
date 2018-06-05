@@ -56,7 +56,7 @@ static int ssl_fd = -1;
 
 int get_ssl_fd()
 {
-   return ssl_fd;
+    return ssl_fd;
 }
 
 static unsigned int _avRandom()
@@ -313,7 +313,7 @@ static int _TLSConnectNetwork(TLSDataParams_t *pTlsData, const char *addr, const
     SSL_LOG("Connecting to /%s/%s...", addr, port);
 #if defined(_PLATFORM_IS_LINUX_)
     if (0 != (ret = mbedtls_net_connect_timeout(&(pTlsData->fd), addr, port, MBEDTLS_NET_PROTO_TCP,
-                    SEND_TIMEOUT_SECONDS))) {
+                                                SEND_TIMEOUT_SECONDS))) {
         SSL_LOG(" failed ! net_connect returned -0x%04x", -ret);
         return ret;
     }
@@ -430,12 +430,12 @@ static int _network_ssl_read(TLSDataParams_t *pTlsData, char *buffer, int len, i
             } else {
                 //mbedtls_strerror(ret, err_str, sizeof(err_str));
                 SSL_LOG("ssl recv error: code = %d, err_str = '%s'", ret, err_str);
-       #ifdef CSP_LINUXHOST
+#ifdef CSP_LINUXHOST
                 if (MBEDTLS_ERR_SSL_WANT_READ == ret && errno == EINTR) {
                     aos_msleep(200);
                     continue;
                 }
-       #endif
+#endif
                 net_status = -1;
                 return -1; /* Connection error */
             }
@@ -492,8 +492,8 @@ int32_t HAL_SSL_GetFd(uintptr_t handle)
 {
     int32_t fd = -1;
     if ((uintptr_t)NULL == handle) {
-           SSL_LOG("handle is NULL");
-           return fd;
+        SSL_LOG("handle is NULL");
+        return fd;
     }
     fd = ((TLSDataParams_t *)handle)->fd.fd;
     return fd;
@@ -512,7 +512,7 @@ int32_t HAL_SSL_Write(_IN_ uintptr_t handle, _IN_ const char *buf, _IN_ int len,
 
 int32_t HAL_SSL_Destroy(uintptr_t handle)
 {
-    void *              ptr;
+    void               *ptr;
 
     if ((uintptr_t)NULL == handle) {
         SSL_LOG("handle is NULL");

@@ -189,7 +189,7 @@ struct HAL_Ht40_Ctrl {
  * @param[in] rssi @n rssi of packet
  */
 typedef int (*awss_recv_80211_frame_cb_t)(char *buf, int length,
-        enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi);
+                                          enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi);
 
 /**
  * @brief   设置Wi-Fi网卡工作在监听(Monitor)模式, 并在收到802.11帧的时候调用被传入的回调函数
@@ -213,9 +213,9 @@ void HAL_Awss_Close_Monitor(void);
  *              may ignore it.
  */
 void HAL_Awss_Switch_Channel(
-            _IN_ char primary_channel,
-            _IN_OPT_ char secondary_channel,
-            _IN_OPT_ uint8_t bssid[ETH_ALEN]);
+    _IN_ char primary_channel,
+    _IN_OPT_ char secondary_channel,
+    _IN_OPT_ uint8_t bssid[ETH_ALEN]);
 
 /* auth type */
 enum AWSS_AUTH_TYPE {
@@ -261,13 +261,13 @@ enum AWSS_ENC_TYPE {
  *      If the STA connects the old AP, HAL should disconnect from the old AP firstly.
  */
 int HAL_Awss_Connect_Ap(
-            _IN_ uint32_t connection_timeout_ms,
-            _IN_ char ssid[HAL_MAX_SSID_LEN],
-            _IN_ char passwd[HAL_MAX_PASSWD_LEN],
-            _IN_OPT_ enum AWSS_AUTH_TYPE auth,
-            _IN_OPT_ enum AWSS_ENC_TYPE encry,
-            _IN_OPT_ uint8_t bssid[ETH_ALEN],
-            _IN_OPT_ uint8_t channel);
+    _IN_ uint32_t connection_timeout_ms,
+    _IN_ char ssid[HAL_MAX_SSID_LEN],
+    _IN_ char passwd[HAL_MAX_PASSWD_LEN],
+    _IN_OPT_ enum AWSS_AUTH_TYPE auth,
+    _IN_OPT_ enum AWSS_ENC_TYPE encry,
+    _IN_OPT_ uint8_t bssid[ETH_ALEN],
+    _IN_OPT_ uint8_t channel);
 
 /**
  * @brief check system network is ready(get ip address) or not.
@@ -326,7 +326,7 @@ int HAL_Wifi_Send_80211_Raw_Frame(_IN_ enum HAL_Awss_Frame_Type type,
  * @note None.
  */
 typedef void (*awss_wifi_mgmt_frame_cb_t)(_IN_ uint8_t *buffer, _IN_ int len,
-        _IN_ signed char rssi_dbm, _IN_ int buffer_type);
+                                          _IN_ signed char rssi_dbm, _IN_ int buffer_type);
 
 /**
  * @brief   在站点(Station)模式下使能或禁用对管理帧的过滤
@@ -347,9 +347,9 @@ typedef void (*awss_wifi_mgmt_frame_cb_t)(_IN_ uint8_t *buffer, _IN_ int len,
  * @note awss use this API to filter specific mgnt frame in wifi station mode
  */
 int HAL_Wifi_Enable_Mgmt_Frame_Filter(
-            _IN_ uint32_t filter_mask,
-            _IN_OPT_ uint8_t vendor_oui[3],
-            _IN_ awss_wifi_mgmt_frame_cb_t callback);
+    _IN_ uint32_t filter_mask,
+    _IN_OPT_ uint8_t vendor_oui[3],
+    _IN_ awss_wifi_mgmt_frame_cb_t callback);
 
 typedef struct {
     enum AWSS_AUTH_TYPE auth;
@@ -375,12 +375,12 @@ typedef struct {
  * @note None.
  */
 typedef int (*awss_wifi_scan_result_cb_t)(
-            const char ssid[HAL_MAX_SSID_LEN],
-            const uint8_t bssid[ETH_ALEN],
-            enum AWSS_AUTH_TYPE auth,
-            enum AWSS_ENC_TYPE encry,
-            uint8_t channel, signed char rssi,
-            int is_last_ap);
+    const char ssid[HAL_MAX_SSID_LEN],
+    const uint8_t bssid[ETH_ALEN],
+    enum AWSS_AUTH_TYPE auth,
+    enum AWSS_ENC_TYPE encry,
+    uint8_t channel, signed char rssi,
+    int is_last_ap);
 
 /**
  * @brief   启动一次Wi-Fi的空中扫描(Scan)
@@ -416,9 +416,9 @@ int HAL_Wifi_Scan(awss_wifi_scan_result_cb_t cb);
  * @note None.
  */
 int HAL_Wifi_Get_Ap_Info(
-            _OU_ char ssid[HAL_MAX_SSID_LEN],
-            _OU_ char passwd[HAL_MAX_PASSWD_LEN],
-            _OU_ uint8_t bssid[ETH_ALEN]);
+    _OU_ char ssid[HAL_MAX_SSID_LEN],
+    _OU_ char passwd[HAL_MAX_PASSWD_LEN],
+    _OU_ uint8_t bssid[ETH_ALEN]);
 
 typedef enum {
     HAL_AES_ENCRYPTION = 0,
@@ -440,9 +440,9 @@ typedef void *p_HAL_Aes128_t;
  * @note None.
  */
 p_HAL_Aes128_t HAL_Aes128_Init(
-            _IN_ const uint8_t *key,
-            _IN_ const uint8_t *iv,
-            _IN_ AES_DIR_t dir);
+    _IN_ const uint8_t *key,
+    _IN_ const uint8_t *iv,
+    _IN_ AES_DIR_t dir);
 
 /**
  * @brief   销毁AES加密的结构体
@@ -474,10 +474,10 @@ int HAL_Aes128_Destroy(_IN_ p_HAL_Aes128_t aes);
  * @note None.
  */
 int HAL_Aes128_Cbc_Encrypt(
-            _IN_ p_HAL_Aes128_t aes,
-            _IN_ const void *src,
-            _IN_ size_t blockNum,
-            _OU_ void *dst);
+    _IN_ p_HAL_Aes128_t aes,
+    _IN_ const void *src,
+    _IN_ size_t blockNum,
+    _OU_ void *dst);
 
 /**
  * @brief   以`AES-CBC-128`方式, 根据`HAL_Aes128_Init()`时传入的密钥解密指定的密文
@@ -495,10 +495,10 @@ int HAL_Aes128_Cbc_Encrypt(
  * @note None.
  */
 int HAL_Aes128_Cbc_Decrypt(
-            _IN_ p_HAL_Aes128_t aes,
-            _IN_ const void *src,
-            _IN_ size_t blockNum,
-            _OU_ void *dst);
+    _IN_ p_HAL_Aes128_t aes,
+    _IN_ const void *src,
+    _IN_ size_t blockNum,
+    _OU_ void *dst);
 
 /**
  * @brief   以`AES-CFB-128`方式, 根据`HAL_Aes128_Init()`时传入的密钥加密指定的明文
@@ -517,10 +517,10 @@ int HAL_Aes128_Cbc_Decrypt(
  */
 
 int HAL_Aes128_Cfb_Encrypt(
-            _IN_ p_HAL_Aes128_t aes,
-            _IN_ const void *src,
-            _IN_ size_t length,
-            _OU_ void *dst);
+    _IN_ p_HAL_Aes128_t aes,
+    _IN_ const void *src,
+    _IN_ size_t length,
+    _OU_ void *dst);
 
 /**
  * @brief   以`AES-CFB-128`方式, 根据`HAL_Aes128_Init()`时传入的密钥解密指定的密文
@@ -538,10 +538,10 @@ int HAL_Aes128_Cfb_Encrypt(
  * @note None.
  */
 int HAL_Aes128_Cfb_Decrypt(
-            _IN_ p_HAL_Aes128_t aes,
-            _IN_ const void *src,
-            _IN_ size_t length,
-            _OU_ void *dst);
+    _IN_ p_HAL_Aes128_t aes,
+    _IN_ const void *src,
+    _IN_ size_t length,
+    _OU_ void *dst);
 
 /**
  * @brief   获取`smartconfig`服务的安全等级
