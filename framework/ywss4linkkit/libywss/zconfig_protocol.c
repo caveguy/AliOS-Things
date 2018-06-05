@@ -117,13 +117,7 @@ static inline int sn_compare(u16 a, u16 b)
     */
     u16 res = sn_minus(a, b);
 
-    if (!res)
-        return 0;    /* equal */
-
-    if (res < 1000)
-        return 1;
-    else
-        return -1;
+    return res < 1000 ? res : -1;
 }
 
 /*
@@ -763,11 +757,6 @@ static inline int package_cmp(u8 *package, u8 *src, u8 *dst, u8 tods, u16 len)
 {
     struct package *pkg = (struct package *)package;
 
-//    if (memcmp(pkg->src, src, ETH_ALEN)
-//        || memcmp(pkg->dst, dst, ETH_ALEN)
-//        || (pkg->len != len))
-//        return 1;
-
     if (pkg->len != len)
         return 1;
     return 0;
@@ -777,8 +766,6 @@ static inline void package_save(u8 *package, u8 *src, u8 *dst, u8 tods, u16 len)
 {
     struct package *pkg = (struct package *)package;
 
-//    memcpy(pkg->src, src, ETH_ALEN);
-//    memcpy(pkg->dst, dst, ETH_ALEN);
     pkg->len = len;
 }
 
@@ -1223,19 +1210,6 @@ u8 zconfig_callback_over(u8 *ssid, u8 *passwd, u8 *bssid)
     return 0;
 }
 
-//p2p channel should be 1, 6, 11
-static inline int __fix_channel(u8 channel)
-{
-    if (channel <= 3)
-        return 1;
-    else if (channel <= 8)
-        return 6;
-    else if (channel <= 13)
-        return 11;
-    else
-        return INVALID_CHANNEL;
-}
-
 static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
 {
     /* state change callback */
@@ -1244,7 +1218,7 @@ static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
         break;
     case STATE_CHN_LOCKED_BY_P2P:
         //locked state used by action/wps frame
-        zconfig_callback_channel_locked(__fix_channel(channel));
+        zconfig_callback_channel_locked(channel);
         break;
     case STATE_CHN_LOCKED_BY_BR:
         //locked state used by br frame
@@ -1256,7 +1230,7 @@ static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
          * skiped the chn lock state, so better to call channel lock here
          */
         if (!is_channel_locked())
-            zconfig_callback_channel_locked(__fix_channel(channel));
+            zconfig_callback_channel_locked(channel);
         zconfig_callback_over(zc_ssid, zc_passwd, zc_bssid);
         break;
     default:
@@ -1345,11 +1319,11 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
     u8 score = 0, timeout = 0, equal = 0;
 
     u16 pos = 0, index = 0;
-
+#if 0
     awss_debug("len=%d, %c, sn=%d, enc=%d, chn=%d, src=%02x%02x%02x%02x%02x%02x\r\n",
                len, flag_tods(tods), sn, encry_type, channel,
                src[0], src[1], src[2], src[3], src[4], src[5]);
-
+#endif
     /*
      * STATE_CHN_LOCKED_BY_P2P is set by v2 wps/action frame, which means
      * APP is sending v2, but if v2 is fail, APP will rollback to v1,
@@ -1399,7 +1373,7 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
         if (ret == 0) {
             os_printf("drop: %3x == %3x\r\n", sn, zc_prev_sn);//log level, too many retry pkg
             goto drop;
-        } else if ((sn_compare(sn, zc_prev_sn) < 0) && (!timeout)) {//if timeout, goto pos_unsync
+        } else if (ret < 0 && !timeout) {//if timeout, goto pos_unsync
             os_printf("drop: %3x < %3x\r\n", sn, zc_prev_sn);//TODO: better not drop
             goto update_sn;//FIXME: update sn???
         }
