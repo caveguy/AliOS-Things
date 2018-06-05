@@ -303,17 +303,21 @@ int HAL_Config_Read(char *buffer, int length) {
 
 int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 {
+    int ret;
     int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
     char *temp = aos_malloc(real_len);
     if(!temp) {
         return -1;
     }
     snprintf(temp,real_len,LINKKIT_KV_START,key);
-	return aos_kv_set(temp,val,real_len,sync);
+    ret = aos_kv_set(temp,val,real_len,sync);
+    aos_free(temp);
+    return ret;
 }
 
 int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 {
+    int ret;
     int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
     char *temp = aos_malloc(real_len);
     if(!temp) {
@@ -321,18 +325,23 @@ int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
     }
     snprintf(temp,real_len,LINKKIT_KV_START,key);
     LOG("key=%s",temp);
-	return aos_kv_get(temp,buffer,buffer_len);
+    ret = aos_kv_get(temp,buffer,buffer_len);
+    aos_free(temp);
+    return ret;
 }
 
 int HAL_Kv_Del(const char *key)
 {
+    int ret = 0;
     int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
     char *temp = aos_malloc(real_len);
     if(!temp) {
         return -1;
     }
     snprintf(temp,real_len,LINKKIT_KV_START,key);
-	return aos_kv_del(temp);
+    ret= aos_kv_del(temp);
+    aos_free(temp);
+    return ret;
 }
 
 int HAL_Erase_All_Kv()
