@@ -337,7 +337,7 @@ int HAL_Kv_Del(const char *key)
 
 int HAL_Erase_All_Kv()
 {
-    return 0;
+    return aos_kv_del_by_prefix("linkkit_");
 }
 typedef void (*async_fd_cb)(int,void *);
 typedef void (*async_task_cb)(void *);
