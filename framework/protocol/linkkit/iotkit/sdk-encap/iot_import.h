@@ -91,11 +91,11 @@ typedef struct _hal_os_thread {
  * @note None.
  */
 int HAL_ThreadCreate(
-            _OU_ void **thread_handle,
-            _IN_ void *(*work_routine)(void *),
-            _IN_ void *arg,
-            _IN_ hal_os_thread_param_t *hal_os_thread_param,
-            _OU_ int *stack_used);
+    _OU_ void **thread_handle,
+    _IN_ void *(*work_routine)(void *),
+    _IN_ void *arg,
+    _IN_ hal_os_thread_param_t *hal_os_thread_param,
+    _OU_ int *stack_used);
 
 /**
  * @brief   设置指定的线程为`Detach`状态
@@ -348,10 +348,10 @@ int32_t HAL_TCP_Read(_IN_ uintptr_t fd, _OU_ char *buf, _OU_ uint32_t len, _IN_ 
  * @retval  > 0 : 建立TCP+SSL连接成功, 返回值是该连接的句柄
  */
 uintptr_t HAL_SSL_Establish(
-            _IN_ const char *host,
-            _IN_ uint16_t port,
-            _IN_ const char *ca_crt,
-            _IN_ size_t ca_crt_len);
+    _IN_ const char *host,
+    _IN_ uint16_t port,
+    _IN_ const char *ca_crt,
+    _IN_ size_t ca_crt_len);
 
 /**
  * @brief   断开指定的TCP+SSL连接, 并销毁句柄, 回收资源
@@ -674,8 +674,7 @@ int HAL_Sys_Post_Task(int ms, void (*)(void *), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Cancel_Task(int ms, void (*)(void *), void *user_data);
-
+int HAL_Sys_Cancel_Task(void (*)(void *), void *user_data);
 
 /**
  * @brief register callback to monitor event.
@@ -687,7 +686,7 @@ int HAL_Sys_Cancel_Task(int ms, void (*)(void *), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Register_Event(int event, void (*)(void*, void*), void *user_data);
+int HAL_Sys_Register_Event(int event, void (*)(void *, void *), void *user_data);
 
 
 /**
@@ -699,7 +698,7 @@ int HAL_Sys_Register_Event(int event, void (*)(void*, void*), void *user_data);
  * @see None.
  * @note None.
  */
-int HAL_Sys_Unregister_Event(int event, void (*)(void*, void*));
+int HAL_Sys_Unregister_Event(int event, void (*)(void *, void *));
 
 
 /**

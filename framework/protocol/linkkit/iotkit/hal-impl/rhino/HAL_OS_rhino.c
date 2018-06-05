@@ -36,20 +36,23 @@ void *HAL_MutexCreate(void)
 
 void HAL_MutexDestroy(_IN_ void *mutex)
 {
-    if (NULL != mutex)
+    if (NULL != mutex) {
         aos_mutex_free((aos_mutex_t *)&mutex);
+    }
 }
 
 void HAL_MutexLock(_IN_ void *mutex)
 {
-    if (NULL != mutex)
+    if (NULL != mutex) {
         aos_mutex_lock((aos_mutex_t *)&mutex, AOS_WAIT_FOREVER);
+    }
 }
 
 void HAL_MutexUnlock(_IN_ void *mutex)
 {
-    if (NULL != mutex)
+    if (NULL != mutex) {
         aos_mutex_unlock((aos_mutex_t *)&mutex);
+    }
 }
 
 void *HAL_Malloc(_IN_ uint32_t size)
@@ -192,7 +195,7 @@ static void task_wrapper(void *arg)
 
     task->routine(task->arg);
 
-    if(task) {
+    if (task) {
         aos_free(task);
         task = NULL;
     }
@@ -201,21 +204,21 @@ static void task_wrapper(void *arg)
 #define DEFAULT_THREAD_NAME "AosThread"
 #define DEFAULT_THREAD_SIZE 4096
 int HAL_ThreadCreate(
-            _OU_ void **thread_handle,
-            _IN_ void *(*work_routine)(void *),
-            _IN_ void *arg,
-            _IN_ hal_os_thread_param_t *hal_os_thread_param,
-        _OU_ int *stack_used)
+    _OU_ void **thread_handle,
+    _IN_ void *(*work_routine)(void *),
+    _IN_ void *arg,
+    _IN_ hal_os_thread_param_t *hal_os_thread_param,
+    _OU_ int *stack_used)
 {
     int ret = -1;
     *stack_used = 0;
     char *tname;
     size_t ssiz;
-    int detach_state=0;
+    int detach_state = 0;
 
     if (hal_os_thread_param) {
         detach_state = hal_os_thread_param->detach_state;
-    } 
+    }
     if (!hal_os_thread_param || !hal_os_thread_param->name) {
         tname = DEFAULT_THREAD_NAME;
     } else {
@@ -230,8 +233,9 @@ int HAL_ThreadCreate(
 
 
     task_context_t *task = aos_malloc(sizeof(task_context_t));
-    if (!task)
+    if (!task) {
         return -1;
+    }
     memset(task, 0, sizeof(task_context_t));
 
     task->arg = arg;
@@ -239,8 +243,8 @@ int HAL_ThreadCreate(
     task->detached = detach_state;
 
     ret = aos_task_new_ext(&task->task,
-            tname, task_wrapper, task,
-            ssiz, DEFAULT_THREAD_PRI);
+                           tname, task_wrapper, task,
+                           ssiz, DEFAULT_THREAD_PRI);
 
     *thread_handle = (void *)task;
 
@@ -255,7 +259,7 @@ void HAL_ThreadDetach(_IN_ void *thread_handle)
 
 void HAL_ThreadDelete(_IN_ void *thread_handle)
 {
-    if(thread_handle) {
+    if (thread_handle) {
         aos_free(thread_handle);
         thread_handle = NULL;
     }
@@ -283,7 +287,8 @@ int HAL_Firmware_Persistence_Stop(void)
 
 
 
-int HAL_Config_Write(const char *buffer, int length) {
+int HAL_Config_Write(const char *buffer, int length)
+{
     if (!buffer || length <= 0) {
         return -1;
     }
@@ -291,7 +296,8 @@ int HAL_Config_Write(const char *buffer, int length) {
     return aos_kv_set("alink", buffer, length, 1);
 }
 
-int HAL_Config_Read(char *buffer, int length) {
+int HAL_Config_Read(char *buffer, int length)
+{
     if (!buffer || length <= 0) {
         return -1;
     }
@@ -304,13 +310,13 @@ int HAL_Config_Read(char *buffer, int length) {
 int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 {
     int ret;
-    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
     char *temp = aos_malloc(real_len);
-    if(!temp) {
+    if (!temp) {
         return -1;
     }
-    snprintf(temp,real_len,LINKKIT_KV_START,key);
-    ret = aos_kv_set(temp,val,real_len,sync);
+    snprintf(temp, real_len, LINKKIT_KV_START, key);
+    ret = aos_kv_set(temp, val, real_len, sync);
     aos_free(temp);
     return ret;
 }
@@ -318,14 +324,14 @@ int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 {
     int ret;
-    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
     char *temp = aos_malloc(real_len);
-    if(!temp) {
+    if (!temp) {
         return -1;
     }
-    snprintf(temp,real_len,LINKKIT_KV_START,key);
-    LOG("key=%s",temp);
-    ret = aos_kv_get(temp,buffer,buffer_len);
+    snprintf(temp, real_len, LINKKIT_KV_START, key);
+    LOG("key=%s", temp);
+    ret = aos_kv_get(temp, buffer, buffer_len);
     aos_free(temp);
     return ret;
 }
@@ -333,13 +339,13 @@ int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 int HAL_Kv_Del(const char *key)
 {
     int ret = 0;
-    int real_len=strlen(key)+strlen(LINKKIT_KV_START)+1;
+    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
     char *temp = aos_malloc(real_len);
-    if(!temp) {
+    if (!temp) {
         return -1;
     }
-    snprintf(temp,real_len,LINKKIT_KV_START,key);
-    ret= aos_kv_del(temp);
+    snprintf(temp, real_len, LINKKIT_KV_START, key);
+    ret = aos_kv_del(temp);
     aos_free(temp);
     return ret;
 }
@@ -348,45 +354,50 @@ int HAL_Erase_All_Kv()
 {
     return aos_kv_del_by_prefix("linkkit_");
 }
-typedef void (*async_fd_cb)(int,void *);
+typedef void (*async_fd_cb)(int, void *);
 typedef void (*async_task_cb)(void *);
-typedef void (*async_event_cb)(void *,void *);
+typedef void (*async_event_cb)(void *, void *);
 
-int HAL_Sys_Register_Rx_Avail(int fd,async_fd_cb  action, void *user_data)
+int HAL_Sys_Register_Rx_Avail(int fd, async_fd_cb  action, void *user_data)
 {
-    return aos_poll_read_fd(fd,action,user_data);
+    return aos_poll_read_fd(fd, action, user_data);
 }
 int HAL_Sys_Unregister_Rx_Avail(int fd, async_fd_cb action)
 {
-    aos_cancel_poll_read_fd(fd,action,NULL);
+    aos_cancel_poll_read_fd(fd, action, NULL);
     return 0;
 }
 
-typedef struct{
+typedef struct {
     uint32_t ms;
     aos_call_t cb;
     void *data;
-}schedule_data_t;
+} schedule_data_t;
 
 static void schedule_call(void *p)
 {
-    if(p == NULL){
+    if (p == NULL) {
         return;
     }
 
-    schedule_data_t *pdata=p;
+    schedule_data_t *pdata = p;
     aos_post_delayed_action(pdata->ms, pdata->cb, pdata->data);
     aos_free(pdata);
 }
 
 static void schedule_call_cancel(void *p)
 {
-    if(p == NULL){
+    if (p == NULL) {
         return;
     }
 
-    schedule_data_t *pdata=p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data);
+    schedule_data_t *pdata = p;
+
+    if (pdata->data != NULL) {
+        aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data);
+    } else {
+        aos_cancel_delayed_action_loose(pdata->ms, pdata->cb);
+    }
     aos_free(pdata);
 }
 
@@ -394,64 +405,62 @@ int HAL_Sys_Post_Task(int ms, async_task_cb action, void *user_data)
 {
     int ret = 0;
 
-    if(ms == 0) {
-        return aos_schedule_call(action, user_data);     
+    if (ms == 0) {
+        return aos_schedule_call(action, user_data);
     }
 
     schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
-    if(pdata == NULL) {
-        LOG("malloc failed");
+    if (pdata == NULL) {
         return -1;
     }
 
     pdata->ms = ms;
-    pdata->data = user_data;
     pdata->cb = (aos_call_t)action;
-    ret = aos_schedule_call(schedule_call, pdata); 
-    if(ret < 0){
+    pdata->data = user_data;
+
+    ret = aos_schedule_call(schedule_call, pdata);
+    if (ret < 0) {
         aos_free(pdata);
     }
 
     return ret;
-    
+
 }
-int HAL_Sys_Cancel_Task(int ms, async_task_cb action, void *user_data)
+int HAL_Sys_Cancel_Task(async_task_cb action, void *user_data)
 {
     int ret = 0;
 
-    if(ms == 0) {
-        return 0;  
-    }
-
     schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
-    if(pdata == NULL) {
+    if (pdata == NULL) {
         return -1;
     }
-    pdata->ms = ms;
-    pdata->data = user_data;
+    pdata->ms = -1;
     pdata->cb = (aos_call_t)action;
-    ret = aos_schedule_call(schedule_call_cancel, pdata); 
-    if(ret < 0){
+    pdata->data = user_data;
+
+    ret = aos_schedule_call(schedule_call_cancel, pdata);
+
+    if (ret < 0) {
         aos_free(pdata);
     }
-    return ret;     
+    return ret;
 }
 
-typedef struct{
+typedef struct {
     dlist_t next;
     int event;
     async_event_cb cb;
-}async_event_t;
+} async_event_t;
 
 dlist_t  async_events;
 
 /* Event callback */
 static void linkkit_event_func(input_event_t *event, void *private_data)
 {
-    if(event == NULL) {
+    if (event == NULL) {
         return;
     }
-    if(event->type != EV_LINKKIT) {
+    if (event->type != EV_LINKKIT) {
         return;
     }
 
@@ -460,34 +469,33 @@ static void linkkit_event_func(input_event_t *event, void *private_data)
 
         dlist_for_each_entry(&async_events, tmp, async_event_t, next) {
 
-            if(event->code == tmp->event) {
-                tmp->cb((void *)event->value,private_data);
+            if (event->code == tmp->event) {
+                tmp->cb((void *)event->value, private_data);
                 return;
             }
         }
     }
-    
+
 }
 
 int HAL_Sys_Register_Event(int event, async_event_cb cb, void *user_data)
 {
     int ret = 0;
-    static  int is_events_init=0;
+    static  int is_events_init = 0;
     if (!is_events_init) {
         dlist_init(&async_events);
     }
     async_event_t *node;
     dlist_t *tmp = NULL;
 
-        dlist_for_each_entry_safe(&async_events, tmp, node, async_event_t, next){
-            if (event == node->event) {  //already register
-                return 0;
-            }
+    dlist_for_each_entry_safe(&async_events, tmp, node, async_event_t, next) {
+        if (event == node->event) {  //already register
+            return 0;
         }
-
+    }
 
     async_event_t *data = aos_malloc(sizeof(async_event_t));
-    if(data == NULL) {
+    if (data == NULL) {
         return -1;
     }
 
@@ -495,10 +503,10 @@ int HAL_Sys_Register_Event(int event, async_event_cb cb, void *user_data)
     data->cb = cb;
 
     dlist_add_tail(&data->next, &node->next);
-   if (!is_events_init) {
-        is_events_init=1;
-        ret = aos_register_event_filter(EV_LINKKIT,linkkit_event_func,user_data);
-   }
+    if (!is_events_init) {
+        is_events_init = 1;
+        ret = aos_register_event_filter(EV_LINKKIT, linkkit_event_func, user_data);
+    }
     return ret;
 }
 
@@ -509,7 +517,7 @@ int HAL_Sys_UnRegister_Event(int event, async_event_cb cb)
 
         dlist_for_each_entry(&async_events, tmp, async_event_t, next) {
 
-            if(event == tmp->event) {
+            if (event == tmp->event) {
                 dlist_del(&tmp->next);
                 aos_free(tmp);
                 return 0;
