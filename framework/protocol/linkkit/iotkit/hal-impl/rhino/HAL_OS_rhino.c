@@ -314,3 +314,182 @@ int HAL_Kv_Del(const char *key)
 	return aos_kv_del(key);
 }
 
+int HAL_Erase_All_Kv()
+{
+    
+}
+typedef void (*async_fd_cb)(int,void *);
+typedef void (*async_task_cb)(void *);
+typedef void (*async_event_cb)(void *,void *);
+
+int HAL_Sys_Register_Rx_Avail(int fd,async_fd_cb  action, void *user_data)
+{
+    return aos_poll_read_fd(fd,action,user_data);
+}
+int HAL_Sys_Unregister_Rx_Avail(int fd, async_fd_cb action)
+{
+    aos_cancel_poll_read_fd(fd,action,NULL);
+    return 0;
+}
+
+typedef struct{
+    uint32_t ms;
+    aos_call_t cb;
+    void *data;
+}schedule_data_t;
+
+static void schedule_call(void *p)
+{
+    if(p == NULL){
+        return;
+    }
+
+    schedule_data_t *pdata=p;
+    aos_post_delayed_action(pdata->ms, pdata->cb, pdata->data);
+    aos_free(pdata);
+}
+
+static void schedule_call_cancel(void *p)
+{
+    if(p == NULL){
+        return;
+    }
+
+    schedule_data_t *pdata=p;
+    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data);
+    aos_free(pdata);
+}
+
+int HAL_Sys_Post_Task(int ms, async_task_cb action, void *user_data)
+{
+    int ret = 0;
+
+    if(ms == 0) {
+        return aos_schedule_call(action, user_data);     
+    }
+    aos_call_t cb = (aos_call_t)action;
+    schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
+    if(pdata == NULL) {
+        LOG("malloc failed");
+        return -1;
+    }
+
+    pdata->ms = ms;
+    pdata->data = user_data;
+    pdata->cb = (aos_call_t)action;
+    ret = aos_schedule_call(schedule_call, pdata); 
+    if(ret < 0){
+        aos_free(pdata);
+    }
+
+    return ret;
+    
+}
+int HAL_Sys_Cancel_Task(int ms, async_task_cb action, void *user_data)
+{
+    int ret = 0;
+
+    // if(ms == 0) {
+    //     return;  
+    // }
+
+    schedule_data_t *pdata = aos_malloc(sizeof(schedule_data_t));
+    if(pdata == NULL) {
+        return -1;
+    }
+    pdata->ms = ms;
+    pdata->data = user_data;
+    pdata->cb = (aos_call_t)action;
+    ret = aos_schedule_call(schedule_call_cancel, pdata); 
+    if(ret != 0){
+        aos_free(pdata);
+    }
+    return ret;     
+}
+
+typedef struct{
+    dlist_t next;
+    int event;
+    async_event_cb cb;
+}async_event_t;
+
+dlist_t  async_events;
+
+/* Event callback */
+static void linkkit_event_func(input_event_t *event, void *private_data)
+{
+    if(event == NULL) {
+        return;
+    }
+    if(event->type != EV_LINKKIT) {
+        return;
+    }
+
+    if (!dlist_empty(&async_events)) {
+        async_event_t *tmp;
+
+        dlist_for_each_entry(&async_events, tmp, async_event_t, next) {
+
+            if(event->code == tmp->event) {
+                tmp->cb(event->value,private_data);
+                return;
+            }
+        }
+    }
+    
+}
+
+int HAL_Sys_Register_Event(int event, async_event_cb cb, void *user_data)
+{
+    int ret = 0;
+    static  int is_events_init=0;
+    if (!is_events_init) {
+        dlist_init(&async_events);
+    }
+    async_event_t *node;
+    dlist_t *tmp = NULL;
+
+        dlist_for_each_entry_safe(&async_events, tmp, node, async_event_t, next){
+            if (event == node->event) {  //already register
+                return 0;
+            }
+        }
+
+
+    async_event_t *data = aos_malloc(sizeof(async_event_t));
+    if(data == NULL) {
+        return -1;
+    }
+
+    data->event = event;
+    data->cb = cb;
+
+    dlist_add_tail(&data->next, &node->next);
+   if (!is_events_init) {
+        is_events_init=1;
+        ret = aos_register_event_filter(EV_LINKKIT,linkkit_event_func,user_data);
+   }
+    return ret;
+}
+
+int HAL_Sys_UnRegister_Event(int event, async_event_cb cb)
+{
+    if (!dlist_empty(&async_events)) {
+        async_event_t *tmp;
+
+        dlist_for_each_entry(&async_events, tmp, async_event_t, next) {
+
+            if(event == tmp->event) {
+                dlist_del(&tmp->next);
+                aos_free(tmp);
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+int HAL_Sys_Post_Event(int event, void *msg)
+{
+    return aos_post_event(EV_LINKKIT, event, (unsigned long)msg);
+}
