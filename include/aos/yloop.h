@@ -156,7 +156,13 @@ int aos_post_delayed_action(int ms, aos_call_t action, void *arg);
  */
 void aos_cancel_delayed_action(int ms, aos_call_t action, void *arg);
 
-
+/**
+ * Cancel a delayed action to be executed in main loop.
+ *
+ * @param[in]  ms      milliseconds to wait, -1 means don't care.
+ * @param[in]  action  action to be executed.
+ */
+void aos_cancel_delayed_action_loose(int ms, aos_call_t action);
 /**
  * Schedule a callback in next event loop.
  * Unlike aos_post_delayed_action,
