@@ -81,10 +81,43 @@ static int CoAPServerPath_2_option(char *uri, CoAPMessage *message)
 }
 
 
+#ifdef COAP_SERV_ASYN_SUPPORT
+
+void CoAPServer_retransmit(void *data)
+{
+    CoAPContext *context = (CoAPContext *)data;
+
+    if(NULL == context){
+        return;
+    }
+    CoAPMessage_retransmit(context);
+    HAL_Sys_Cancel_Task(COAP_RECV_WAIT_TIME_MS, CoAPServer_retransmit, data);
+    HAL_Sys_Post_Task(COAP_RECV_WAIT_TIME_MS, CoAPServer_retransmit, data);
+}
+
+int CoAPServer_recv(void *data)
+{
+    CoAPContext *context  = NULL;
+
+    if(NULL == data){
+        return -1;
+    }
+    context  = (CoAPContext *)data;
+    CoAPMessage_process(context, 1);
+
+    return 0;
+}
+
+#endif
+
 CoAPContext *CoAPServer_init()
 {
+#ifdef COAP_SERV_ASYN_SUPPORT
+    intptr_t  fd = -1;
+#endif
     CoAPInitParam param;
 
+    memset(&param, 0x00, sizeof(CoAPInitParam));
     if (NULL == g_context) {
         param.appdata = NULL;
         param.group = "224.0.1.187";
@@ -95,21 +128,37 @@ CoAPContext *CoAPServer_init()
         param.send_maxcount = 16;
         param.waittime = 2000;
 
-#ifdef COAP_USE_PLATFORM_LOG
-        LITE_openlog("CoAP");
-        LITE_set_loglevel(5);
-#endif
-
+        /* Mutil-thread support */
 #ifdef COAP_SERV_MULTITHREAD
         g_semphore  = HAL_SemaphoreCreate();
-        if (NULL == g_semphore) {
+        if(NULL == g_semphore){
             COAP_ERR("Semaphore Create failed");
             return NULL;
         }
 #endif
 
         g_context = CoAPContext_create(&param);
-    } else {
+        if(NULL == g_context){
+            COAP_ERR("CoAP Context Create failed");
+#ifdef COAP_SERV_MULTITHREAD
+            HAL_SemaphoreDestroy(g_semphore);
+            g_semphore = NULL;
+#endif
+            return NULL;
+        }
+
+#ifdef COAP_SERV_MULTITHREAD
+        g_coap_running = 1;
+        HAL_ThreadCreate(&g_coap_thread, CoAPServer_yield, (void *)g_context, NULL, &stack_used);
+#endif
+
+#ifdef COAP_SERV_ASYN_SUPPORT
+        fd = CoAPContextFd_get(g_context);
+        HAL_Sys_Register_Rx_Avail(fd, CoAPServer_recv, (void *)g_context);
+        HAL_Sys_Post_Task(COAP_RECV_WAIT_TIME_MS, CoAPServer_retransmit, data);
+#endif
+    }
+    else {
         COAP_INFO("The CoAP Server already init");
     }
 
@@ -125,13 +174,13 @@ void CoAPServer_add_timer (void (*on_timer)(void *))
 
 void *CoAPServer_yield(void *param)
 {
-#ifndef COAP_WITH_YLOOP
+#ifndef COAP_SERV_ASYN_SUPPORT
     CoAPContext *context = (CoAPContext *)param;
     COAP_DEBUG("Enter to CoAP daemon task");
     while (g_coap_running) {
-        CoAPMessage_cycle(g_context);
+        CoAPMessage_cycle(context);
         if (coapserver_timer) {
-            coapserver_timer(g_context);
+            coapserver_timer(context);
         }
     }
 #ifdef COAP_SERV_MULTITHREAD
@@ -141,14 +190,16 @@ void *CoAPServer_yield(void *param)
     HAL_ThreadDelete(NULL);
     g_coap_thread = NULL;
 #endif
-#endif//COAP_WITH_YLOOP
+#endif
     return NULL;
 }
 
 void CoAPServer_deinit0(CoAPContext *context)
 {
-    /* fixed the hard fault for 3080/3165 here */
-#if 0
+#ifdef COAP_SERV_ASYN_SUPPORT
+    intptr_t  fd = -1;
+#endif
+
     if (context != g_context) {
         COAP_INFO("Invalid CoAP Server context");
         return;
@@ -165,17 +216,24 @@ void CoAPServer_deinit0(CoAPContext *context)
         g_semphore = NULL;
     }
 #endif
+
+#ifdef COAP_SERV_ASYN_SUPPORT
+    fd = CoAPContextFd_get(g_context);
+    HAL_Sys_Unregister_Rx_Avail(fd, CoAPServer_recv);
+    HAL_Sys_Cancel_Task(COAP_RECV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)context);
+    HAL_Sys_Cancel_Task(0, CoAPServer_deinit0, (void *)context);
+#endif
+
     if (NULL != context) {
         CoAPContext_free(context);
         g_context = NULL;
     }
-#endif
 }
 
 void CoAPServer_deinit(CoAPContext *context)
 {
-#ifdef COAP_WITH_YLOOP
-    aos_schedule_call(CoAPServer_deinit0, context);
+#ifdef COAP_SERV_ASYN_SUPPORT
+    HAL_Sys_Post_Task(0, CoAPServer_deinit0, context);
 #else
     CoAPServer_deinit0(context);
     HAL_SleepMs(1000);
@@ -247,24 +305,14 @@ int CoAPServerResp_send(CoAPContext *context, NetworkAddr *remote, unsigned char
 
 void CoAPServer_loop(CoAPContext *context)
 {
-#ifndef COAP_WITH_YLOOP
-#ifdef COAP_SERV_MULTITHREAD
-    int stack_used;
-#endif
-
-    if (g_context != context  || 1 == g_coap_running) {
+    if(g_context != context  || 1 == g_coap_running){
         COAP_INFO("The CoAP Server is already running");
         return;
     }
-    hal_os_thread_param_t p = {0};
-    p.name = "CoAPServer_loop";
-    p.stack_size = 2048;
+
+#ifndef COAP_SERV_MULTITHREAD
     g_coap_running = 1;
-#ifdef COAP_SERV_MULTITHREAD
-    HAL_ThreadCreate(&g_coap_thread, CoAPServer_yield, (void *)context, &p, &stack_used);
-#else
     CoAPServer_yield((void *)context);
 #endif
-#endif//COAP_WITH_YLOOP
-}
 
+}

@@ -32,6 +32,16 @@ extern "C" {
 #define COAP_MSG_MAX_PATH_LEN     128
 #define COAP_MSG_MAX_PDU_LEN      1280
 
+#define COAP_DEFAULT_PORT           5683 /* CoAP default UDP port */
+#define COAPS_DEFAULT_PORT          5684 /* CoAP default UDP port for secure transmission */
+#define COAP_DEFAULT_SENDLIST_MAXCOUNT  8
+#define COAP_DEFAULT_RES_MAXCOUNT       32
+#define COAP_DEFAULT_OBS_MAXCOUNT       8
+
+#define COAP_DEFAULT_SCHEME         "coap" /* the default scheme for CoAP URIs */
+#define COAP_DEFAULT_HOST_LEN       128
+#define COAP_DEFAULT_WAIT_TIME_MS   200
+
 
 /*CoAP Content Type*/
 #define COAP_CT_TEXT_PLAIN                 0   /* text/plain (UTF-8) */
@@ -211,8 +221,13 @@ typedef struct
 
 
 CoAPContext *CoAPContext_create(CoAPInitParam *param);
+
 void CoAPContext_free(CoAPContext *context);
+
 void *CoAPContextAppdata_get(CoAPContext *context);
+
+intptr_t CoAPContextFd_get(CoAPContext *context);
+
 
 /* CoAP message options APIs*/
 extern int CoAPStrOption_add(CoAPMessage *message, unsigned short optnum,
@@ -257,6 +272,8 @@ extern int CoAPMessage_init(CoAPMessage *message);
 extern int CoAPMessage_destory(CoAPMessage *message);
 
 extern int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *message);
+
+extern int CoAPMessage_retransmit(CoAPContext *context);
 
 extern int CoAPMessage_cycle(CoAPContext *context);
 

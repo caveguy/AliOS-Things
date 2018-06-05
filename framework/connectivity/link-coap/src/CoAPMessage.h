@@ -85,6 +85,8 @@ int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *mes
 
 int CoAPMessage_recv(CoAPContext *context, unsigned int timeout, int readcount);
 
+int CoAPMessage_retransmit(CoAPContext *context);
+
 int CoAPMessage_cycle(CoAPContext *context);
 
 int CoAPMessage_cancel(CoAPContext *context, CoAPMessage *message);

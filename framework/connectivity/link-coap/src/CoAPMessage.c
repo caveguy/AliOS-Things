@@ -60,11 +60,6 @@
 #define COAP_ACK_RANDOM_FACTOR  1
 #define COAP_MAX_TRANSMISSION_SPAN   10
 
-#ifdef COAP_WITH_YLOOP
-extern int coap_inited;
-void  CoAPMessage_write_with_timeout(void *context);
-#endif
-
 int CoAPStrOption_add(CoAPMessage *message, unsigned short optnum, unsigned char *data, unsigned short datalen)
 {
     unsigned char *ptr = NULL;
@@ -499,9 +494,6 @@ int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *mes
     }
 
     CoAPMessage_dump(remote, message);
-#ifdef COAP_WITH_YLOOP
-    aos_schedule_call(CoAPMessage_write_with_timeout,context);
-#endif 
     return COAP_SUCCESS;
 }
 
@@ -509,6 +501,11 @@ int CoAPMessage_cancel(CoAPContext * context, CoAPMessage *message)
 {
     CoAPSendNode *node = NULL, *next = NULL;
     CoAPIntContext *ctx =  (CoAPIntContext *)context;
+
+	if(NULL == context || NULL == message){
+		return COAP_ERROR_NULL;
+	}
+
 
     HAL_MutexLock(ctx->sendlist.list_mutex);
     list_for_each_entry_safe(node, next, &ctx->sendlist.list, sendlist, CoAPSendNode) {
@@ -786,6 +783,10 @@ int CoAPMessage_process(CoAPContext *context, unsigned int timeout)
     NetworkAddr remote;
     CoAPIntContext *ctx =  (CoAPIntContext *)context;
 
+	if(NULL == context){
+		return COAP_ERROR_NULL;
+	}
+
     while (1) {
         memset(ctx->recvbuf, 0x00, COAP_MSG_MAX_PDU_LEN);
         len = CoAPNetwork_read(ctx->p_network,
@@ -801,14 +802,15 @@ int CoAPMessage_process(CoAPContext *context, unsigned int timeout)
     }
 }
 
-int CoAPMessage_write(CoAPContext *context)
+int CoAPMessage_retransmit(CoAPContext *context)
 {
     unsigned int ret = 0;
-    if(context == NULL) {
-        return COAP_ERROR_INVALID_PARAM;
-    }
     CoAPIntContext *ctx =  (CoAPIntContext *)context;
     CoAPSendNode *node = NULL, *next = NULL;
+
+    if(NULL == context) {
+        return COAP_ERROR_INVALID_PARAM;
+    }
     HAL_MutexLock(ctx->sendlist.list_mutex);
     list_for_each_entry_safe(node, next, &ctx->sendlist.list, sendlist, CoAPSendNode) {
         if (NULL != node) {
@@ -866,28 +868,17 @@ int CoAPMessage_write(CoAPContext *context)
     return COAP_SUCCESS;
 }
 
-#ifdef COAP_WITH_YLOOP
-void  CoAPMessage_write_with_timeout(void *context)
-{
-    if(context==NULL || coap_inited==0){
-        return;
-    }
-    CoAPIntContext *p_ctx = (CoAPIntContext *)context;
-    CoAPMessage_write(p_ctx);
-    aos_cancel_delayed_action(p_ctx->waittime, CoAPMessage_write_with_timeout, context);
-    aos_post_delayed_action(p_ctx->waittime, CoAPMessage_write_with_timeout, context);
-
-}
-#endif 
 int CoAPMessage_cycle(CoAPContext *context)
 {
     unsigned int ret = 0;
-#ifdef COAP_WITH_YLOOP
     CoAPIntContext *ctx =  (CoAPIntContext *)context;
 
+    if(NULL == context){
+		return COAP_ERROR_NULL;
+	}
+
     CoAPMessage_process(ctx, ctx->waittime);
-    ret=CoAPMessage_write(ctx);
-#endif
-    return ret;    
+    ret = CoAPMessage_retransmit(ctx);
+    return ret;
 }
 
