@@ -400,10 +400,10 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
 
         if (zc_ssid[0] == '\0' || zc_ssid_auto_complete_disable) {
             strncpy((char *)zc_ssid, (const char *)tmp, ZC_MAX_SSID_LEN);
-            os_printf("SSID: [%s]\r\n", zc_ssid);
+            os_printf("SSID0: [%s]\r\n", zc_ssid);
         } else {
             if (!strncmp((const char *)tmp, (char *)zc_ssid, ZC_MAX_SSID_LEN)) {
-                os_printf("SSID: [%s]\r\n", zc_ssid);
+                os_printf("SSID1: [%s]\r\n", zc_ssid);
             } else {
                 if (zc_ssid_is_gbk)
                     os_printf("gbk SSID: [%s]\r\n", zc_ssid);
@@ -415,8 +415,12 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         do {  // amend SSID automatically
             struct ap_info *ap = NULL;
             ap = zconfig_get_apinfo(zc_bssid);
-            if (ap == NULL || ap->ssid[0] == '\0')
+            if (ap == NULL || ap->ssid[0] == '\0' ||
+                strncmp(ap->ssid, zc_adha_ssid, ZC_MAX_SSID_LEN) == 0 ||
+                strncmp(ap->ssid, zc_default_ssid, ZC_MAX_SSID_LEN) == 0) {
+                memset(zc_bssid, 0, sizeof(zc_bssid));
                 break;
+            }
             strncpy((char *)zc_ssid, (const char *)ap->ssid, ZC_MAX_SSID_LEN);
         } while (0);
     } else {
