@@ -353,7 +353,7 @@ rescanning:
      * in case of inconsistent with aws_cur_chn
      */
     awss_debug("final channel %d\r\n", aws_locked_chn);
-    os_awss_switch_channel(aws_locked_chn, 0, aws_locked_bssid);
+    //os_awss_switch_channel(aws_locked_chn, 0, aws_locked_bssid);
 
     while (aws_state != AWS_SUCCESS) {
         /* 80211 frame handled by callback */

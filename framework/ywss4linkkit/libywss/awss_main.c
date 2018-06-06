@@ -75,26 +75,14 @@ int __awss_start(void)
 #endif
 
     char awss_notify_needed = 1;
-    uint32_t connect_timestamp = os_get_time_ms();
-    int try_cnt = 0;
     do {
-        if (awss_stop_connecting){
+        if (awss_stop_connecting)
             break;
-        }
-        if (strcmp(ssid, DEFAULT_SSID) == 0 || strcmp(ssid, ADHA_SSID) == 0) {
-            if ((0 != os_awss_get_connect_default_ssid_timeout_interval_ms()) &&
-                (time_elapsed_ms_since(connect_timestamp) > os_awss_get_connect_default_ssid_timeout_interval_ms())) {
-                break;
-            }
+        if (strcmp(ssid, DEFAULT_SSID) == 0 || strcmp(ssid, ADHA_SSID) == 0)
             awss_notify_needed = 0;
-        }
 
         ret = os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, ssid, passwd,
                                  auth, encry, bssid, channel);
-        if (try_cnt ++ > 9999) {
-            break;
-        }
-
         if (!ret) {
             awss_debug("awss connect ssid:%s success", ssid);
 
@@ -107,22 +95,11 @@ int __awss_start(void)
                 awss_devinfo_notify_stop();
                 produce_random(aes_random, sizeof(aes_random));
             }
-            goto end;
         } else {
             log_warn("awss connect ssid:%s passwd:%s fail", ssid, passwd);
-            if (strcmp(ssid, ADHA_SSID) == 0)
-                break;
         }
+    } while (0);
 
-        if (1 == try_cnt) {
-            strncpy(ssid, DEFAULT_SSID, sizeof(ssid) - 1);
-            strncpy(passwd, DEFAULT_PASSWD, sizeof(passwd) - 1);
-            memset(bssid, 0, sizeof(bssid));
-            awss_notify_needed = 0;
-        }
-    } while (1);
-
-end:
     awss_finished = 1;
     /* never reach here */
     return 0;
