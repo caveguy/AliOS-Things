@@ -309,7 +309,7 @@ static inline int zconfig_recv_completed(u8 tods)
 #endif
 
 skip_ssid_auto_complete:
-    awss_debug("expect len = %d, max len = %d\r\n", len, zc_max_pos);
+    //awss_debug("expect len = %d, max len = %d\r\n", len, zc_max_pos);
     if (zc_max_pos < len) return 0;  // receive all the packets
 
     for (i = 1; i <= len; i ++) {  // check score for all the packets
@@ -1206,6 +1206,8 @@ u8 zconfig_callback_over(u8 *ssid, u8 *passwd, u8 *bssid)
     zconfig_got_ssid_passwd_callback(ssid, passwd, bssid, auth, encry, channel);
 
     zconfig_finished = 1;
+
+    os_awss_close_monitor();
 
     return 0;
 }
