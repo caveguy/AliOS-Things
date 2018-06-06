@@ -13,10 +13,10 @@
 
 
 
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "light_alen_02"
-#define DEVICE_SECRET           "gCV7RxK6yM7bLsA2vBjy2v6kL7WjY9n2"
+#define PRODUCT_KEY             "b1iuHMGJYGI"
+#define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
+#define DEVICE_NAME             "aaaaaassssssddddddffffffgggggghh"
+#define DEVICE_SECRET           "tmu5qP1GfwBobNd9TxeQ0G8OutVnyrZu"
 
 /**
  * @brief   获取设备的`Partner ID`, 仅用于紧密合作伙伴
