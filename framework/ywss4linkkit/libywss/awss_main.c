@@ -58,7 +58,6 @@ int __awss_start(void)
     os_printf("awss version: %s", zconfig_lib_version());
     awss_stop_connecting = 0;
     awss_finished = 0;
-#ifndef SIMULATE_NETMGR
     /* these params is useless, keep it for compatible reason */
     aws_start(NULL, NULL, NULL, NULL);
 
@@ -68,11 +67,6 @@ int __awss_start(void)
 	    log_warn("awss timeout!");
 
     aws_destroy();
-#else
-    os_msleep(5);
-    memcpy(ssid, NETMGR_SSID, sizeof(NETMGR_SSID));
-    memcpy(passwd, NETMGR_PW, sizeof(NETMGR_PW));
-#endif
 
     char awss_notify_needed = 1;
     do {

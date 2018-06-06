@@ -144,7 +144,6 @@ int awss_start()
 
                 if (switch_ap_done || awss_stopped)
                     break;
-                netmgr_clear_ap_config();
                 __awss_start();
             }
             if (switch_ap_done || awss_stopped)
