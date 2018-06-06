@@ -29,8 +29,7 @@
 #include "iot_export.h"
 #include "iot_export_mqtt.h"
 #include "linkkit_app.h"
-//#include "awss.h"
-//#include "awss_cmp.h"
+#include "linkkit_export.h"
 #ifdef AOS_ATCMD
 #include <atparser.h>
 #endif
@@ -41,7 +40,6 @@
 static char linkkit_started = 0;
 static char awss_running = 0;
 
-void reboot_system(void *parms);
 void start_linkkitapp(void *parms);
 static void wifi_service_event(input_event_t *event, void *priv_data)
 {
@@ -74,11 +72,6 @@ void start_linkkitapp(void *parms)
     linkkit_app();
 }
 
-void reboot_system(void *parms)
-{
-    LOG("reboot system");
-    aos_reboot();
-}
 
 static void cloud_service_event(input_event_t *event, void *priv_data)
 {
@@ -97,8 +90,84 @@ static void cloud_service_event(input_event_t *event, void *priv_data)
     }
 }
 
+/*
+ * Note:
+ * the linkkit_event_monitor must not block and should run to complete fast
+ * if user wants to do complex operation with much time,
+ * user should post one task to do this, not implement complex operation in linkkit_event_monitor
+ */
+static void linkkit_event_monitor(int event)
+{
+    switch (event) {
+    case LINKKIT_AWSS_START:                // AWSS start without enbale, just supports device discover
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_ENABLE:               // AWSS enable
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_LOCK_CHAN:            // AWSS lock channel(Got AWSS sync packet)
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_PASSWD_ERR:           // AWSS decrypt passwd error
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_ADHA:         // AWSS try to connnect adha (device discover, router solution)
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_ADHA_FAIL:    // AWSS fails to connect adha
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_AHA:          // AWSS try to connect aha (AP solution)
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_AHA_FAIL:     // AWSS fails to connect aha
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_SETUP_NOTIFY:         // AWSS sends out device setup information (AP and router solution)
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_ROUTER:       // AWSS try to connect destination router
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_CONNECT_ROUTER_FAIL:  // AWSS fails to connect destination router.
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_GOT_IP:               // AWSS connects destination successfully and got ip address
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_SUC_NOTIFY:           // AWSS sends out success notify (AWSS sucess)
+        // operate led to indicate user
+        break;
+    case LINKKIT_AWSS_BIND_NOTIFY:          // AWSS sends out bind notify information to support bind between user and device
+        // operate led to indicate user
+        break;
+    case LINKKIT_CONN_CLOUD:                // Device try to connect cloud
+        // operate led to indicate user
+        break;
+    case LINKKIT_CONN_CLOUD_FAIL_35:        // Device fails to connect cloud with error code of 0x0035 (DNS failure)
+        // operate led to indicate user
+        break;
+    case LINKKIT_CONN_CLOUD_FAIL_44:        // Device fails to connect cloud with error code of 0x0044 (TCP failure)
+        // operate led to indicate user
+        break;
+    case LINKKIT_CONN_CLOUD_FAIL_TIMEOUT:   // Device fails to connect cloud with timeout
+        // operate led to indicate user
+        break;
+    case LINKKIT_CONN_CLOUD_SUC:            // Device connects cloud successfully
+        // operate led to indicate user
+        break;
+    case LINKKIT_RESET:                     // Linkkit reset success (just got reset response from cloud without any other operation)
+        netmgr_clear_ap_config();
+        HAL_Sys_reboot();
+        break;
+    default:
+        break;
+    }
+}
+
 static void start_netmgr(void *p)
 {
+    linkkit_regist_event_monitor_cb(linkkit_event_monitor);
     netmgr_start(true);
     aos_task_exit(0);
 }
@@ -114,12 +183,7 @@ extern int awss_report_reset();
 
 static void do_awss_reset()
 {
-    if (linkkit_started) {
-        aos_task_new("reset", awss_report_reset, NULL, 2048);
-    }
-    netmgr_clear_ap_config();
-    LOG("SSID cleared. Please reboot the system.\n");
-    aos_post_delayed_action(2000, reboot_system, NULL);
+    aos_task_new("reset", awss_report_reset, NULL, 2048);
 }
 
 void linkkit_key_process(input_event_t *eventinfo, void *priv_data)

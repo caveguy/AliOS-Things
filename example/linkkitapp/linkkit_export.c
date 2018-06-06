@@ -39,6 +39,7 @@ typedef struct _dm_msg {
 
 static linkkit_ops_t* g_linkkit_ops = NULL;
 static lite_queue_t* g_message_queue = NULL;
+static void* g_event_monitor = NULL;
 static void* user_ctx = NULL;
 
 #ifdef SUBDEV_ENABLE
@@ -420,6 +421,18 @@ static int linkkit_start_routine(handle_dm_callback_fp_t callback_fp, int get_ts
     HAL_ThreadDetach(thread_process_dispatch);
 #endif /* CM_SUPPORT_MULTI_THREAD */
     return ret;
+}
+
+int linkkit_regist_event_monitor_cb(void (*monitor_cb)(int event))
+{
+    g_event_monitor = monitor_cb;
+    extern int awss_regist_event_monitor_cb(void (*)(int event));
+    awss_regist_event_monitor_cb(monitor_cb);
+}
+
+void *linkkit_get_event_monitor_cb()
+{
+    return g_event_monitor;
 }
 
 int linkkit_start(int max_buffered_msg, int get_tsl_from_cloud, linkkit_loglevel_t log_level, linkkit_ops_t* ops, linkkit_cloud_domain_type_t domain_type, void* user_context)

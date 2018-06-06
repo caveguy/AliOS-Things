@@ -37,7 +37,6 @@
 #include "os.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
-#include "work_queue.h"
 #include "zconfig_utils.h"
 #include "zconfig_lib.h"
 #include "zconfig_protocol.h"
@@ -55,18 +54,8 @@ static char g_req_msg_id[MSG_REQ_ID_LEN];
 static platform_netaddr_t g_wifimgr_req_sa;
 
 static void wifimgr_scan_request();
-static struct work_struct scan_work = {
-    .func = (work_func_t) &wifimgr_scan_request,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "scan",
-};
 
 static void wifimgr_scan_tx_wifilist();
-static struct work_struct scan_tx_wifilist_work = {
-    .func = (work_func_t)&wifimgr_scan_tx_wifilist,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "scan",
-};
 
 static char wifi_scan_runninng = 0;
 static void *g_scan_mutex;
@@ -192,7 +181,7 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         list_add(&list->entry, &g_scan_list);
         HAL_MutexUnlock(g_scan_mutex);
 
-        if (last_ap) queue_work(&scan_tx_wifilist_work);
+        if (last_ap) HAL_Sys_Post_Task(0, wifimgr_scan_tx_wifilist, NULL);
         awss_debug("sending message to app: %s\n", msg_aplist);
     }
 
@@ -219,7 +208,7 @@ int wifimgr_process_get_wifilist_request(void *ctx, void *resource, void *remote
         return -1;
     }
 
-    queue_work(&scan_work);
+    HAL_Sys_Post_Task(0, wifimgr_scan_request, NULL);
 
     id = json_get_value_by_name(msg, len, "id", &id_len, 0);
     memset(g_req_msg_id, 0, sizeof(g_req_msg_id));

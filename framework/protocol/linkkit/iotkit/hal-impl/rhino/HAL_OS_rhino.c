@@ -330,7 +330,6 @@ int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
         return -1;
     }
     snprintf(temp, real_len, LINKKIT_KV_START, key);
-    LOG("key=%s", temp);
     ret = aos_kv_get(temp, buffer, buffer_len);
     aos_free(temp);
     return ret;

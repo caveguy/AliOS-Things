@@ -27,7 +27,6 @@
 #include "os.h"
 #include <stddef.h>
 #include <string.h>
-#include "work_queue.h"
 #include "awss_main.h"
 #include "aws_lib.h"
 #include "zconfig_utils.h"
@@ -1185,11 +1184,6 @@ static void awss_press_timeout()
 }
 
 #define AWSS_PRESS_TIMEOUT_MS  (60000)
-static struct work_struct awss_press = {
-    .func = (work_func_t)&awss_press_timeout,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "press",
-};
 
 int awss_config_press()
 {
@@ -1198,10 +1192,10 @@ int awss_config_press()
     g_user_press = 1;
     os_printf("press\r\n");
 
-    cancel_work(&awss_press);
+    HAL_Sys_Cancel_Task(awss_press_timeout, NULL);
     if (timeout < AWSS_PRESS_TIMEOUT_MS)
         timeout = AWSS_PRESS_TIMEOUT_MS;
-    queue_delayed_work(&awss_press, timeout);
+    HAL_Sys_Post_Task(timeout, awss_press_timeout, NULL);
 
     return 0;
 }

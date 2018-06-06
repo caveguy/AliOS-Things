@@ -27,7 +27,6 @@
 #include "awss.h"
 #include "awss_main.h"
 #include "zconfig_utils.h"
-#include "work_queue.h"
 #include "enrollee.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
@@ -38,27 +37,19 @@ extern "C"
 #endif
 
 extern int switch_ap_done;
-static uint8_t awss_stopped = 0;
 static uint8_t adha_switch = 0;
-void adha_monitor(void)
+static uint8_t awss_stopped = 0;
+static void *g_awss_monitor_cb = NULL;
+
+static void adha_monitor(void)
 {
     adha_switch = 1;
 }
 
 #define ADHA_WORK_CYCLE      (5 * 1000)
-static struct work_struct adha_work = {
-    .func = (work_func_t) &adha_monitor,
-    .prio = DEFAULT_WORK_PRIO,
-    .name = "adha",
-};
 
 static void aha_monitor(void);
 #define AHA_MONITOR_TIMEOUT_MS  (1 * 60 * 1000)
-static struct work_struct aha_work = {
-    .func = (work_func_t) &aha_monitor,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "aha",
-};
 static volatile char aha_timeout;
 
 static void aha_monitor(void)
@@ -73,7 +64,7 @@ int aha_is_timeout()
 
 int awss_cancel_aha_monitor()
 {
-    cancel_work(&aha_work);
+    HAL_Sys_Cancel_Task(aha_monitor, NULL);
     aha_timeout = 0;
     return 0;
 }
@@ -87,12 +78,11 @@ static void awss_open_aha_monitor()
         return;
     }
     aha_timeout = 0;
-    queue_delayed_work(&aha_work, AHA_MONITOR_TIMEOUT_MS);
+    HAL_Sys_Post_Task(AHA_MONITOR_TIMEOUT_MS, aha_monitor, NULL);
 }
 
 int awss_report_cloud()
 {
-    work_queue_init();
     awss_cmp_online_init();
     awss_report_token();
     awss_cmp_local_init();
@@ -101,22 +91,31 @@ int awss_report_cloud()
 #ifndef AWSS_DISABLE_REGISTRAR
     awss_registrar_init();
 #endif
+    awss_check_reset();
     return 0;
 }
 
 int awss_success_notify()
 {
-    work_queue_init();
     awss_cmp_local_init();
     awss_suc_notify_stop();
     awss_suc_notify();
     return 0;
 }
 
+int awss_regist_event_monitor_cb(void (*monitor_cb)(int event))
+{
+    g_awss_monitor_cb = monitor_cb;
+}
+
+void *awss_get_event_monitor_cb()
+{
+    return g_awss_monitor_cb;
+}
+
 int awss_start()
 {
     char ssid[PLATFORM_MAX_SSID_LEN + 1] = {0};
-    work_queue_init();
     produce_random(aes_random, sizeof(aes_random));
 
     awss_stopped = 0;
@@ -135,7 +134,7 @@ int awss_start()
                 awss_cmp_local_init();
 
                 adha_switch = 0;
-                queue_delayed_work(&adha_work, ADHA_WORK_CYCLE);
+                HAL_Sys_Post_Task(ADHA_WORK_CYCLE, adha_monitor, NULL);
                 while (!adha_switch) {
                     os_msleep(200);
                 }
@@ -195,8 +194,8 @@ int awss_start()
 
 int awss_stop()
 {
-    cancel_work(&adha_work);
-    cancel_work(&aha_work);
+    HAL_Sys_Cancel_Task(adha_monitor, NULL);
+    HAL_Sys_Cancel_Task(aha_monitor, NULL);
     __awss_stop();
     awss_cmp_local_deinit();
     awss_stopped = 1;

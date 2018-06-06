@@ -26,7 +26,6 @@
  */
 #include <stdlib.h>
 #include "json_parser.h"
-#include "work_queue.h"
 #include "enrollee.h"
 #include "utils.h"
 #include "awss_main.h"
@@ -60,19 +59,8 @@ static int enrollee_enable_somebody_checkin(char *key, char *dev_name, int timeo
 static int awss_enrollee_get_dev_info(char *payload, int payload_len, char *product_key,
                                       char *dev_name, char *cipher, int *timeout);
 
-static struct work_struct enrollee_report_work = {
-    .func = (work_func_t) &enrollee_report,
-    .prio = DEFAULT_WORK_PRIO,      /* smaller digit means higher priority */
-    .name = "report",
-};
-
 /* registrar send pkt interval in ms */
 #define REGISTRAR_TIMEOUT               (60)
-static struct work_struct enrollee_checkin_work = {
-    .func = (work_func_t) &enrollee_checkin,
-    .prio = DEFAULT_WORK_PRIO,      /* smaller digit means higher priority */
-    .name = "checkin",
-};
 
 static struct enrollee_info enrollee_info[MAX_ENROLLEE_NUM] = {0};
 static char registrar_inited = 0;
@@ -99,8 +87,8 @@ void awss_registrar_exit(void)
 
     registrar_inited = 0;
 
-    cancel_work(&enrollee_report_work);
-    cancel_work(&enrollee_checkin_work);
+    HAL_Sys_Cancel_Task(enrollee_report, NULL);
+    HAL_Sys_Cancel_Task(enrollee_checkin, NULL);
 }
 
 int online_connectap_monitor(void *ctx, void *resource, void *remote, void *request)
@@ -236,7 +224,7 @@ static int enrollee_enable_somebody_cipher(char *key, char *dev_name, char *ciph
                        ENR_CHECKIN_CIPHER);
             enrollee_info[i].state = ENR_CHECKIN_CIPHER;
 
-            queue_work(&enrollee_checkin_work);
+            HAL_Sys_Post_Task(0, enrollee_checkin, NULL);
             return 1;/* match */
         }
     }
@@ -272,7 +260,7 @@ static int enrollee_enable_somebody_checkin(char *key, char *dev_name, int timeo
             enrollee_info[i].checkin_timeout = timeout <= 0 ? REGISTRAR_TIMEOUT : timeout;
             enrollee_info[i].checkin_timestamp = os_get_time_ms();
 
-            queue_work(&enrollee_checkin_work);
+            HAL_Sys_Post_Task(0, enrollee_checkin, NULL);
             return 1;/* match */
         }
     }
@@ -420,7 +408,7 @@ ongoing:
         registrar_raw_frame_destroy();
     }
 
-    queue_delayed_work(&enrollee_checkin_work, os_awss_get_channelscan_interval_ms() * 15 / 16);
+    HAL_Sys_Post_Task(os_awss_get_channelscan_interval_ms() * 15 / 16, enrollee_checkin, NULL);
 
     return 1;
 }
@@ -443,7 +431,7 @@ int awss_report_set_interval(char *key, char *dev_name, int interval)
             0 == memcmp(key, enrollee_info[i].pk, enrollee_info[i].pk_len)) {
 
             enrollee_info[i].interval = interval <= 0 ? REGISTRAR_TIMEOUT : interval;
-            queue_work(&enrollee_checkin_work);
+            HAL_Sys_Post_Task(0, enrollee_checkin, NULL);
             return 0;/* match */
         }
     }
@@ -750,7 +738,7 @@ int enrollee_put(struct enrollee_info *in)
                 0 == memcmp(in->pk, enrollee_info[i].pk, enrollee_info[i].pk_len)) {
                 if (enrollee_info[i].state == ENR_FOUND &&
                     time_elapsed_ms_since(enrollee_info[i].report_timestamp) > enrollee_info[i].interval * 1000) {
-                    queue_work(&enrollee_report_work);
+                    HAL_Sys_Post_Task(0, enrollee_report, NULL);
                 }
                 if (enrollee_info[i].state != ENR_IN_QUEUE)  // already reported
                     return 1;
@@ -777,7 +765,7 @@ int enrollee_put(struct enrollee_info *in)
     awss_debug("new enrollee[%d] dev_name:%s time:%x",
              empty_slot, in->dev_name, os_get_time_ms());
 
-    queue_work(&enrollee_report_work);
+    HAL_Sys_Post_Task(0, enrollee_report, NULL);
 
     return 0;
 }

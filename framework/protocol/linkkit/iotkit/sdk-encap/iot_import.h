@@ -676,6 +676,7 @@ int HAL_Sys_Post_Task(int ms, void (*)(void *), void *user_data);
  */
 int HAL_Sys_Cancel_Task(void (*)(void *), void *user_data);
 
+
 /**
  * @brief register callback to monitor event.
  *
@@ -711,6 +712,7 @@ int HAL_Sys_Unregister_Event(int event, void (*)(void *, void *));
  * @note None.
  */
 int HAL_Sys_Post_Event(int event, void *msg);
+
 
 /** @} */ //end of platform_firmware_upgrade
 

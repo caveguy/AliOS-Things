@@ -74,6 +74,8 @@ extern "C" {
 #define AWSS_JSON_CODE                  "code"
 #define AWSS_JSON_ID                    "id"
 
+#define AWSS_KV_RST                     "awss.rst"
+
 #if(AWSS_CMP_DEBUG==1)
     #define awss_cmp_debug(fmt, args...) log_debug(fmt, ##args)
 #else
@@ -111,6 +113,7 @@ int awss_cmp_online_init();
 int awss_cmp_online_deinit();
 int awss_report_token();
 int awss_report_reset();
+int awss_check_reset();
 
 int awss_cmp_coap_loop(void *param);
 int awss_cmp_coap_register_cb(char *topic, void *cb);

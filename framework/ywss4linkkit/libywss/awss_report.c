@@ -24,8 +24,9 @@
  * INCLUDING THE WARRANTIES OF MERCHANTIBILITY, FITNESS FOR A PARTICULAR
  * PURPOSE, TITLE, AND NONINFRINGEMENT.
  */
-#include "awss_main.h"
 #include "log.h"
+#include "awss.h"
+#include "awss_main.h"
 #include "zconfig_utils.h"
 #include "json_parser.h"
 #include "work_queue.h"
@@ -40,12 +41,12 @@ extern "C"
 
 #define AWSS_REPORT_LEN_MAX       (256)
 #define MATCH_MONITOR_TIMEOUT_MS  (30 * 1000)
+#define RECHECK_TIMEOUT_MS        (5 * 1000)
 #define MATCH_REPORT_CNT_MAX      (2)
 
 volatile char awss_report_token_suc = 0;
 volatile char awss_report_token_cnt = 0;
 static char awss_report_reset_suc = 0;
-static char awss_report_reset_cnt = 0;
 static char awss_report_id = 0;
 static char switchap_ssid[OS_MAX_SSID_LEN + 1] = {0};
 static char switchap_passwd[OS_MAX_PASSWD_LEN] = {0};
@@ -56,41 +57,31 @@ static int awss_report_reset_to_cloud();
 static int awss_switch_ap_online();
 static int awss_reboot_system();
 
-static struct work_struct match_work = {
-    .func = (work_func_t)&awss_report_token_to_cloud,
-    .prio = DEFAULT_WORK_PRIO,
-    .name = "match",
-};
-
-static struct work_struct reset_work = {
-    .func = (work_func_t)&awss_report_reset_to_cloud,
-    .prio = DEFAULT_WORK_PRIO,
-    .name = "reset",
-};
-
-static struct work_struct switchap_work = {
-    .func = (work_func_t)&awss_switch_ap_online,
-    .prio = DEFAULT_WORK_PRIO,
-    .name = "switchap",
-};
-
-static struct work_struct reboot_work = {
-    .func = (work_func_t)&awss_reboot_system,
-    .prio = DEFAULT_WORK_PRIO,
-    .name = "reboot",
-};
-
 int awss_report_token_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
 {
-    awss_report_token_suc = 1;
     awss_debug("%s\r\n", __func__);
+
+    awss_report_token_suc = 1;
+    HAL_Sys_Cancel_Task(awss_report_token_to_cloud, NULL);
+
     return 0;
 }
 
 int awss_report_reset_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
 {
-    awss_report_reset_suc = 1;
+    char rst = 0;
+
     awss_debug("%s\r\n", __func__);
+
+    awss_report_reset_suc = 1;
+    HAL_Kv_Set(AWSS_KV_RST, &rst, sizeof(rst), 0);
+    HAL_Sys_Cancel_Task(awss_report_reset_to_cloud, NULL);
+
+    void *cb = awss_get_event_monitor_cb();
+    if (cb != NULL) {
+        ((void (*)(int))cb)(AWSS_RESET);
+    }
+
     return 0;
 }
 
@@ -108,7 +99,6 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
     char *packet = NULL, *awss_info = NULL, *elem = NULL;
     int packet_len = SWITCHAP_RSP_LEN, awss_info_len = 0;
 
-    awss_debug("%s\r\n", __func__);
     if (payload == NULL || payload_len == 0)
         goto ONLINE_SWITCHAP_FAIL;
 
@@ -195,8 +185,8 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
         if (strncmp(ssid, switchap_ssid, sizeof(ssid)) ||
             memcmp(bssid, switchap_bssid, sizeof(bssid)) ||
             strncmp(passwd, switchap_passwd, sizeof(passwd))) {
-            cancel_work(&switchap_work);
-            queue_delayed_work(&switchap_work, timeout);
+            HAL_Sys_Cancel_Task(awss_switch_ap_online, NULL);
+            HAL_Sys_Post_Task(timeout, awss_switch_ap_online, NULL);
         }
     }
 
@@ -217,7 +207,7 @@ static int awss_report_token_to_cloud()
     if (awss_report_token_suc || awss_report_token_cnt ++ > MATCH_REPORT_CNT_MAX)
         return 0;
 
-    queue_delayed_work(&match_work, MATCH_MONITOR_TIMEOUT_MS);
+    HAL_Sys_Post_Task(MATCH_MONITOR_TIMEOUT_MS, awss_report_token_to_cloud, NULL);
 
     int packet_len = AWSS_REPORT_LEN_MAX;
 
@@ -249,7 +239,6 @@ static int awss_report_token_to_cloud()
 
     int ret = awss_cmp_mqtt_send(topic, packet, packet_len);
     os_free(packet);
-    awss_debug("report token result:%d\r\n", ret);
 
     return ret;
 }
@@ -261,7 +250,7 @@ static int awss_switch_ap_online()
     memset(switchap_ssid, 0, sizeof(switchap_ssid));
     memset(switchap_bssid, 0, sizeof(switchap_bssid));
     memset(switchap_passwd, 0, sizeof(switchap_passwd));
-    queue_delayed_work(&reboot_work, 1000);
+    HAL_Sys_Post_Task(1000, awss_reboot_system, NULL);
 
     return 0;
 }
@@ -274,17 +263,23 @@ static int awss_reboot_system()
 
 static int awss_report_reset_to_cloud()
 {
-    if (awss_report_reset_suc || awss_report_reset_cnt ++ >= MATCH_REPORT_CNT_MAX)
+    if (awss_report_reset_suc)
         return 0;
 
     char topic[TOPIC_LEN_MAX] = {0};
 
     int ret = 0;
     int packet_len = AWSS_REPORT_LEN_MAX;
+
+    HAL_Sys_Cancel_Task(awss_report_reset_to_cloud, NULL);
+    if (awss_report_token_suc) {
+        HAL_Sys_Post_Task(MATCH_MONITOR_TIMEOUT_MS, awss_report_reset_to_cloud, NULL);
+    } else {  // AWSS is not finished, it's no need to report reset
+        HAL_Sys_Post_Task(RECHECK_TIMEOUT_MS, awss_report_reset_to_cloud, NULL);
+        return 0;
+    }
+
     char *packet = os_zalloc(packet_len + 1);
-
-    queue_delayed_work(&reset_work, MATCH_MONITOR_TIMEOUT_MS);
-
     if (packet == NULL)
         return -1;
     
@@ -299,7 +294,6 @@ static int awss_report_reset_to_cloud()
     awss_build_topic(TOPIC_RESET_REPORT, topic, TOPIC_LEN_MAX);
     ret = awss_cmp_mqtt_send(topic, packet, packet_len);
     os_free(packet);
-    awss_debug("report reset result:%d\r\n", ret);
 
     return ret;
 }
@@ -314,24 +308,28 @@ int awss_report_token()
 
 int awss_report_reset()
 {
-    int ret = 0;
-    awss_report_reset_cnt = 0;
+    char rst = 0x01;
+
     awss_report_reset_suc = 0;
 
-    ret = awss_report_reset_to_cloud();
-    if (ret != 0)
-        return ret;
+    HAL_Kv_Set(AWSS_KV_RST, &rst, sizeof(rst), 0);
 
-    while (1) {
-        if (awss_report_reset_suc)
-            break;
-        if (awss_report_reset_cnt >= MATCH_REPORT_CNT_MAX)
-            return -1;
-        os_msleep(100);
-    }
-    cancel_work(&reset_work);
+    return awss_report_reset_to_cloud();
+}
 
-    return 0;
+int awss_check_reset()
+{
+    int len = 1;
+    char rst = 0;
+
+    HAL_Kv_Get(AWSS_KV_RST, &rst, &len);
+
+    if (rst != 0x01)  // reset flag is not set
+        return 0;
+
+    awss_report_reset_suc = 0;
+
+    return awss_report_reset_to_cloud();
 }
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */

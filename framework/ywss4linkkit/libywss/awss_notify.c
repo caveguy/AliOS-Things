@@ -36,7 +36,6 @@
 #include "json_parser.h"
 #include "awss_cmp.h"
 #include "awss_wifimgr.h"
-#include "work_queue.h"
 #include "awss_main.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
@@ -76,30 +75,6 @@ static const struct notify_map_t notify_map[] = {
     {AWSS_NOTIFY_DEV_TOKEN, METHOD_DEV_INFO_NOTIFY,       TOPIC_NOTIFY,                awss_connectap_notify_resp},
     {AWSS_NOTIFY_DEV_RAND,  METHOD_AWSS_DEV_INFO_NOTIFY,  TOPIC_AWSS_NOTIFY,           awss_devinfo_notify_resp},
     {AWSS_NOTIFY_SUC,       METHOD_AWSS_CONNECTAP_NOTIFY, TOPIC_AWSS_CONNECTAP_NOTIFY, awss_suc_notify_resp}
-};
-
-static struct work_struct awss_connectap_notify_work = {
-    .func = (work_func_t) &awss_connectap_notify,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "connectap",
-};
-
-static struct work_struct awss_devinfo_notify_work = {
-    .func = (work_func_t) &awss_devinfo_notify,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "devinfo",
-};
-
-static struct work_struct awss_suc_notify_work = {
-    .func = (work_func_t) &awss_suc_notify,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "success",
-};
-
-static struct work_struct awss_get_devinfo_work = {
-    .func = (work_func_t) &awss_process_get_devinfo,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "get",
 };
 
 /*
@@ -238,7 +213,7 @@ int awss_notify_dev_info(int type, int count)
 
 int awss_connectap_notify_stop()
 {
-    cancel_work(&awss_connectap_notify_work);
+    HAL_Sys_Cancel_Task(awss_connectap_notify, NULL);
     return 0;
 }
 
@@ -247,7 +222,7 @@ static void *coap_session_ctx = NULL;
 static int awss_process_get_devinfo()
 {
     if (awss_report_token_suc == 0) {
-        queue_delayed_work(&awss_get_devinfo_work, AWSS_CHECK_RESP_TIME);
+        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_process_get_devinfo, NULL);
         return 0;
     }
 
@@ -337,7 +312,7 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
     produce_random(aes_random, sizeof(aes_random));
     awss_report_token();
 
-    queue_delayed_work(&awss_get_devinfo_work, AWSS_CHECK_RESP_TIME);
+    HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_process_get_devinfo, NULL);
 
     return 0;
 }
@@ -361,7 +336,7 @@ int awss_connectap_notify()
      * wait for token is sent to cloud and rx reply from cloud
      */
     if (awss_report_token_suc == 0) {
-        queue_delayed_work(&awss_connectap_notify_work, AWSS_CHECK_RESP_TIME);
+        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_connectap_notify, NULL);
         return 0;
     }
 
@@ -385,7 +360,7 @@ int awss_connectap_notify()
         connectap_interval += 100;
         if (connectap_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] == 0) {
-            queue_delayed_work(&awss_connectap_notify_work, connectap_interval);
+            HAL_Sys_Post_Task(connectap_interval, awss_connectap_notify, NULL);
             return 0;
         }
     } while (0);
@@ -398,13 +373,13 @@ int awss_connectap_notify()
 
 int awss_devinfo_notify_stop()
 {
-    cancel_work(&awss_devinfo_notify_work);
+    HAL_Sys_Cancel_Task(awss_devinfo_notify, NULL);
     return 0;
 }
 
 int awss_suc_notify_stop()
 {
-    cancel_work(&awss_suc_notify_work);
+    HAL_Sys_Cancel_Task(awss_suc_notify, NULL);
     return 0;
 }
 
@@ -424,7 +399,7 @@ int awss_suc_notify()
         suc_interval += 100;
         if (suc_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_SUC] == 0) {
-            queue_delayed_work(&awss_suc_notify_work, suc_interval);
+            HAL_Sys_Post_Task(suc_interval, awss_suc_notify, NULL);
             return 0;
         }
     } while (0);
@@ -450,7 +425,7 @@ int awss_devinfo_notify()
         devinfo_interval += 100;
         if (devinfo_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_DEV_RAND] == 0) {
-            queue_delayed_work(&awss_devinfo_notify_work, devinfo_interval);
+            HAL_Sys_Post_Task(devinfo_interval, awss_devinfo_notify, NULL);
             return 0;
         }
     } while (0);
