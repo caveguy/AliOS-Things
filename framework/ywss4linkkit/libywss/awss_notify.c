@@ -213,7 +213,7 @@ int awss_notify_dev_info(int type, int count)
 
 int awss_connectap_notify_stop()
 {
-    HAL_Sys_Cancel_Task(awss_connectap_notify, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))awss_connectap_notify, NULL);
     return 0;
 }
 
@@ -222,7 +222,7 @@ static void *coap_session_ctx = NULL;
 static int awss_process_get_devinfo()
 {
     if (awss_report_token_suc == 0) {
-        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_process_get_devinfo, NULL);
+        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, (void (*)(void *))awss_process_get_devinfo, NULL);
         return 0;
     }
 
@@ -312,7 +312,7 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
     produce_random(aes_random, sizeof(aes_random));
     awss_report_token();
 
-    HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_process_get_devinfo, NULL);
+    HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, (void (*)(void *))awss_process_get_devinfo, NULL);
 
     return 0;
 }
@@ -336,7 +336,7 @@ int awss_connectap_notify()
      * wait for token is sent to cloud and rx reply from cloud
      */
     if (awss_report_token_suc == 0) {
-        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, awss_connectap_notify, NULL);
+        HAL_Sys_Post_Task(AWSS_CHECK_RESP_TIME, (void (*)(void *))awss_connectap_notify, NULL);
         return 0;
     }
 
@@ -360,7 +360,7 @@ int awss_connectap_notify()
         connectap_interval += 100;
         if (connectap_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] == 0) {
-            HAL_Sys_Post_Task(connectap_interval, awss_connectap_notify, NULL);
+            HAL_Sys_Post_Task(connectap_interval, (void (*)(void *))awss_connectap_notify, NULL);
             return 0;
         }
     } while (0);
@@ -373,13 +373,13 @@ int awss_connectap_notify()
 
 int awss_devinfo_notify_stop()
 {
-    HAL_Sys_Cancel_Task(awss_devinfo_notify, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))awss_devinfo_notify, NULL);
     return 0;
 }
 
 int awss_suc_notify_stop()
 {
-    HAL_Sys_Cancel_Task(awss_suc_notify, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))awss_suc_notify, NULL);
     return 0;
 }
 
@@ -399,7 +399,7 @@ int awss_suc_notify()
         suc_interval += 100;
         if (suc_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_SUC] == 0) {
-            HAL_Sys_Post_Task(suc_interval, awss_suc_notify, NULL);
+            HAL_Sys_Post_Task(suc_interval, (void (*)(void *))awss_suc_notify, NULL);
             return 0;
         }
     } while (0);
@@ -425,7 +425,7 @@ int awss_devinfo_notify()
         devinfo_interval += 100;
         if (devinfo_cnt ++ < AWSS_NOTIFY_CNT_MAX &&
             awss_notify_resp[AWSS_NOTIFY_DEV_RAND] == 0) {
-            HAL_Sys_Post_Task(devinfo_interval, awss_devinfo_notify, NULL);
+            HAL_Sys_Post_Task(devinfo_interval, (void (*)(void *))awss_devinfo_notify, NULL);
             return 0;
         }
     } while (0);
