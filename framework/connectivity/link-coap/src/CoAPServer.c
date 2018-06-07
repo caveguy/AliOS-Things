@@ -99,7 +99,7 @@ void CoAPServer_retransmit(void *data)
         return;
     }
     CoAPMessage_retransmit(context);
-    HAL_Sys_Cancel_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, data);
+    HAL_Sys_Cancel_Task(CoAPServer_retransmit, data);
     HAL_Sys_Post_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, data);
 }
 
@@ -250,8 +250,8 @@ void CoAPServer_deinit0(CoAPContext *context)
 #ifdef COAP_SERV_ASYN_SUPPORT
     fd = CoAPContextFd_get(g_context);
     HAL_Sys_Unregister_Rx_Avail(fd, CoAPServer_recv);
-    HAL_Sys_Cancel_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)context);
-    HAL_Sys_Cancel_Task(0, CoAPServer_deinit0, (void *)context);
+    HAL_Sys_Cancel_Task(CoAPServer_retransmit, (void *)context);
+    HAL_Sys_Cancel_Task(CoAPServer_deinit0, (void *)context);
 #endif
 
     HAL_MutexDestroy(g_coap_serv_mutex);

@@ -21,7 +21,7 @@ static iotx_alcs_adapter_t g_alcs_adapter;
 extern void on_client_auth_timer(CoAPContext *);
 extern void on_svr_auth_timer(CoAPContext *);
 
-#if  defined(COAP_WITH_YLOOP)
+#if  defined(COAP_SERV_ASYN_SUPPORT)
 static void alcs_repeat_action(void *handle);
 #endif
 static void alcs_heartbeat(void *handle);
@@ -362,8 +362,9 @@ int iotx_alcs_adapter_init(iotx_alcs_adapter_t *adapter, iotx_alcs_param_t *para
         log_err("ALCS MQTT Init Failed");
         return FAIL_RETURN;
     }
-#if  defined(COAP_WITH_YLOOP) /*&& defined(CM_SUPPORT_MULTI_THREAD)*/
-    aos_schedule_call(alcs_repeat_action, (void *)adapter);
+#if  defined(COAP_SERV_ASYN_SUPPORT) /*&& defined(CM_SUPPORT_MULTI_THREAD)*/
+    HAL_Sys_Post_Task(0, alcs_repeat_action, (void *)adapter);
+
 #endif
 
     return SUCCESS_RETURN;
@@ -549,14 +550,14 @@ int IOT_ALCS_Destroy(void **phandle)
     return SUCCESS_RETURN;
 }
 
-#if  defined(COAP_WITH_YLOOP)
+#if  defined(COAP_SERV_ASYN_SUPPORT)
 static void alcs_repeat_action(void *handle)
 {
     if (handle == NULL) {
         return;
     }
     alcs_heartbeat(handle);
-    aos_post_delayed_action(1000, alcs_repeat_action, handle);
+    HAL_Sys_Post_Task(1000, alcs_repeat_action, handle);
 }
 #endif
 
@@ -579,7 +580,7 @@ int IOT_ALCS_Yield(void *handle)
 
     POINTER_SANITY_CHECK(adapter, NULL_VALUE_ERROR);
     POINTER_SANITY_CHECK(adapter->coap_ctx, NULL_VALUE_ERROR);
-#ifndef COAP_WITH_YLOOP
+#ifndef COAP_SERV_ASYN_SUPPORT
     res = (CoAPMessage_cycle(adapter->coap_ctx) != COAP_SUCCESS) ? (FAIL_RETURN) : (SUCCESS_RETURN);
 #endif
     alcs_heartbeat(handle);
