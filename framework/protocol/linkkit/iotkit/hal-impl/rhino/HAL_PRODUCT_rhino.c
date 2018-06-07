@@ -3,14 +3,6 @@
 #include "iot_import.h"
 #include "iot_import_product.h"
 #include "iot_import_awss.h"
-//#define PID_STR_MAXLEN              (64)
-//#define MID_STR_MAXLEN              (64)
-//#define PRODUCT_KEY_MAXLEN          (20)
-//#define DEVICE_NAME_MAXLEN          (32)
-//#define DEVICE_ID_MAXLEN            (64)
-//#define DEVICE_SECRET_MAXLEN        (64)
-//#define PRODUCT_SECRET_MAXLEN       (64)
-//#define FIRMWARE_VERSION_MAXLEN     (32)
 
 /* <TODO> */
 #define PARTNER_ID "AliOSThings"
@@ -29,9 +21,8 @@
  */
 int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
 {
-    int len = strlen(PARTNER_ID);
-    strncpy(pid_str, PARTNER_ID, len);
-    return len;
+    strncpy(pid_str, PARTNER_ID, PID_STR_MAXLEN-1);
+    return strlen(pid_str);
 }
 
 
@@ -43,9 +34,8 @@ int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
  */
 int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
 {
-    int len = strlen(MODULE_ID);
-    strncpy(mid_str, MODULE_ID, len);
-    return len;
+    strncpy(mid_str, MODULE_ID, MID_STR_MAXLEN-1);
+    return strlen(mid_str);
 }
 
 /**
@@ -56,9 +46,8 @@ int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
  */
 int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
 {
-    int len = strlen(PRODUCT_KEY);
-    strncpy(product_key, PRODUCT_KEY, len);
-    return len;
+    strncpy(product_key, PRODUCT_KEY, PRODUCT_KEY_MAXLEN-1);
+    return strlen(product_key);
 }
 
 /**
@@ -69,9 +58,8 @@ int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
  */
 int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
 {
-    int len = strlen(DEVICE_NAME);
-    strncpy(device_name, DEVICE_NAME, len);
-    return len;
+    strncpy(device_name, DEVICE_NAME, DEVICE_NAME_MAXLEN-1);
+    return strlen(device_name);
 }
 
 /**
@@ -82,18 +70,16 @@ int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
  */
 int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
 {
-    int len = 0;
 
 #ifdef SUPPORT_PRODUCT_SECRET
-    len = DEVICE_SECRET_MAXLEN - 1;
+    int len = DEVICE_SECRET_MAXLEN - 1;
     if (0 != aos_kv_get("linkkit", device_secret, &len)) {
         return -1;
     }
     return len;
 #else
-    len = strlen(DEVICE_SECRET);
-    strncpy(device_secret, DEVICE_SECRET, len);
-    return len;
+    strncpy(device_secret, DEVICE_SECRET, DEVICE_SECRET_MAXLEN-1);
+    return strlen(device_secret);
 #endif
 }
 
@@ -124,11 +110,10 @@ int HAL_SetDeviceSecret(const char device_secret[DEVICE_SECRET_MAXLEN])
  * @param   product_secret : 用来存放ProductSecret字符串的数组
  * @return  写到product_secret[]数组中的字符长度, 单位是字节(Byte)
  */
-int HAL_GetProductSecret(_OU_ char product_secret[DEVICE_SECRET_MAXLEN])
+int HAL_GetProductSecret(_OU_ char product_secret[PRODUCT_SECRET_MAXLEN])
 {
-    int len = strlen(PRODUCT_SECRET);
-    strncpy(product_secret, PRODUCT_SECRET, len);
-    return len;
+    strncpy(product_secret, PRODUCT_SECRET, PRODUCT_SECRET_MAXLEN-1);
+    return strlen(product_secret);
 }
 
 /**
@@ -139,9 +124,8 @@ int HAL_GetProductSecret(_OU_ char product_secret[DEVICE_SECRET_MAXLEN])
  */
 int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
 {
-    int len = strlen(DEVICE_ID);
-    strncpy(device_id, DEVICE_ID, len);
-    return len;
+    strncpy(device_id, DEVICE_ID, DEVICE_ID_MAXLEN-1);
+    return strlen(device_id);
 }
 
 /**
@@ -152,9 +136,8 @@ int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
  */
 int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
 {
-    int len = strlen(FW_VERSION);
-    strncpy(version, FW_VERSION, len);
-    return len;
+    strncpy(version, FW_VERSION, FIRMWARE_VERSION_MAXLEN-1);
+    return strlen(version);
 }
 
 #define HAL_CID_LEN (64 + 1)
@@ -162,13 +145,12 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
  * @brief   获取唯一的芯片ID字符串
  *
  * @param   cid_str : 存放芯片ID字符串的缓冲区数组
- * @return  指向缓冲区数组的起始地址
+ * @return  写到cid_str[]数组中的字符长度, 单位是字节(Byte)
  */
-char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
+int HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
 {
-    int len = strlen(CHIP_ID);
-    strncpy(cid_str, CHIP_ID, len);
-    return NULL;
+    strncpy(cid_str, CHIP_ID, HAL_CID_LEN-1);
+    return strlen(cid_str);
 }
 
 static hal_wireless_info_t hal_wireless_info = {
