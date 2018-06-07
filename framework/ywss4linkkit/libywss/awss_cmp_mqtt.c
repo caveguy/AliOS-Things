@@ -30,6 +30,7 @@
 #include "mqtt_instance.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
+#include "ntp.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -65,7 +66,8 @@ const struct awss_cmp_couple awss_online_couple[] = {
 #endif
     {TOPIC_MATCH_REPORT_REPLY, awss_report_token_reply},
     {TOPIC_RESET_REPORT_REPLY, awss_report_reset_reply},
-    {TOPIC_SWITCHAP,           awss_online_switchap}
+    {TOPIC_SWITCHAP,           awss_online_switchap},
+    {TOPIC_NTP_REPLY,          linkkit_ntp_time_reply}
 };
 
 int awss_cmp_online_init()

@@ -519,6 +519,15 @@ void linkkit_set_tsl_action(void *params)
     }
 }
 
+void ntp_time_reply(const char *offset_time)
+{
+    LINKKIT_PRINTF("ntp time:%s\n", offset_time);
+}
+
+void linkkit_ntp_time_test(void *param)
+{
+    linkkit_ntp_time_request(ntp_time_reply);
+}
 
 int linkkit_main()
 {
@@ -533,6 +542,7 @@ int linkkit_main()
 
     aos_post_delayed_action(5000, linkkit_set_tsl_action, NULL);
     aos_post_delayed_action(6000, linkkit_action, sample_ctx);
+    aos_post_delayed_action(16000, linkkit_ntp_time_test, NULL);
 
     //int stack_used = 0;
     //aos_task_new("Thread2",linkkit_set_post_thread,NULL,1024);

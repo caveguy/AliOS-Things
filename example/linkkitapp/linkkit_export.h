@@ -380,6 +380,15 @@ extern int linkkit_regist_event_monitor_cb(void (*monitor_cb)(int event));
  */
 extern void *linkkit_get_event_monitor_cb();
 
+/**
+ * @brief get time from cloud using ntp protocol.
+ *
+ * @param callback, when device get reply from cloud, it will call callback to trigger user.
+ *
+ * @return 0 when success, -1 when fail.
+ */
+extern int linkkit_ntp_time_request(void (*)(const char *ntp_offset_time_ms));
+
 #ifndef CM_SUPPORT_MULTI_THREAD
 /**
  * @brief this function used to yield when want to receive or send data.
