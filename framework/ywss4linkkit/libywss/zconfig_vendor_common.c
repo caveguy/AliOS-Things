@@ -365,11 +365,11 @@ timeout_scanning:
     awss_debug("aws timeout scanning!\r\n");
 timeout_recving:
     awss_debug("aws timeout recving!\r\n");
-    HAL_Sys_Cancel_Task(rescan_monitor, NULL);
-    HAL_Sys_Post_Task(RESCAN_MONITOR_TIMEOUT_MS, rescan_monitor, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))rescan_monitor, NULL);
+    HAL_Sys_Post_Task(RESCAN_MONITOR_TIMEOUT_MS, (void(*)(void *))rescan_monitor, NULL);
     while (rescan_available == 0) {
         if (zconfig_get_press_status()) {
-            HAL_Sys_Cancel_Task(rescan_monitor, NULL);
+            HAL_Sys_Cancel_Task((void (*)(void *))rescan_monitor, NULL);
             break;
         }
         os_msleep(200);
@@ -413,7 +413,7 @@ static void rescan_monitor()
 static void clr_aplist_monitor()
 {
     clr_aplist = 1;
-    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, clr_aplist_monitor, NULL);
+    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, (void (*)(void *))clr_aplist_monitor, NULL);
 }
 
 int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi)
@@ -461,8 +461,8 @@ void aws_start(char *pk, char *dn, char *ds, char *ps)
 
     zconfig_init();
 
-    HAL_Sys_Cancel_Task(clr_aplist_monitor, NULL);
-    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, clr_aplist_monitor, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))clr_aplist_monitor, NULL);
+    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, (void (*)(void *))clr_aplist_monitor, NULL);
 
     os_awss_open_monitor(aws_80211_frame_handler);
 

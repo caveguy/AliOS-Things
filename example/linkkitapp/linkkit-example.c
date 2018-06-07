@@ -187,7 +187,7 @@ static void linkkit_reset(void *p)
 extern int awss_report_reset();
 static void do_awss_reset()
 {
-    aos_task_new("reset", awss_report_reset, NULL, 2048);
+    aos_task_new("reset", (void (*)(void *))awss_report_reset, NULL, 2048);
     aos_post_delayed_action(5000, linkkit_reset, NULL);
 }
 

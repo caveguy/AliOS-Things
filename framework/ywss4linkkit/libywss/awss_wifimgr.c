@@ -181,7 +181,7 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         list_add(&list->entry, &g_scan_list);
         HAL_MutexUnlock(g_scan_mutex);
 
-        if (last_ap) HAL_Sys_Post_Task(0, wifimgr_scan_tx_wifilist, NULL);
+        if (last_ap) HAL_Sys_Post_Task(0, (void (*)(void *))wifimgr_scan_tx_wifilist, NULL);
         awss_debug("sending message to app: %s\n", msg_aplist);
     }
 
@@ -208,7 +208,7 @@ int wifimgr_process_get_wifilist_request(void *ctx, void *resource, void *remote
         return -1;
     }
 
-    HAL_Sys_Post_Task(0, wifimgr_scan_request, NULL);
+    HAL_Sys_Post_Task(0, (void (*)(void *))wifimgr_scan_request, NULL);
 
     id = json_get_value_by_name(msg, len, "id", &id_len, 0);
     memset(g_req_msg_id, 0, sizeof(g_req_msg_id));

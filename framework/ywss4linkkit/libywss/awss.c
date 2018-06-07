@@ -64,7 +64,7 @@ int aha_is_timeout()
 
 int awss_cancel_aha_monitor()
 {
-    HAL_Sys_Cancel_Task(aha_monitor, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))aha_monitor, NULL);
     aha_timeout = 0;
     return 0;
 }
@@ -78,7 +78,7 @@ static void awss_open_aha_monitor()
         return;
     }
     aha_timeout = 0;
-    HAL_Sys_Post_Task(AHA_MONITOR_TIMEOUT_MS, aha_monitor, NULL);
+    HAL_Sys_Post_Task(AHA_MONITOR_TIMEOUT_MS, (void (*)(void *))aha_monitor, NULL);
 }
 
 int awss_report_cloud()
@@ -135,7 +135,7 @@ int awss_start()
                     awss_cmp_local_init();
 
                     adha_switch = 0;
-                    HAL_Sys_Post_Task(ADHA_WORK_CYCLE, adha_monitor, NULL);
+                    HAL_Sys_Post_Task(ADHA_WORK_CYCLE, (void (*)(void *))adha_monitor, NULL);
                     while (!adha_switch)
                         os_msleep(200);
                     adha_switch = 0;
@@ -187,8 +187,8 @@ int awss_start()
 
 int awss_stop()
 {
-    HAL_Sys_Cancel_Task(adha_monitor, NULL);
-    HAL_Sys_Cancel_Task(aha_monitor, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))adha_monitor, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))aha_monitor, NULL);
     __awss_stop();
     awss_cmp_local_deinit();
     awss_stopped = 1;

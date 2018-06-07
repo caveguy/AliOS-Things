@@ -1192,10 +1192,10 @@ int awss_config_press()
     g_user_press = 1;
     os_printf("press\r\n");
 
-    HAL_Sys_Cancel_Task(awss_press_timeout, NULL);
+    HAL_Sys_Cancel_Task((void (*)(void *))awss_press_timeout, NULL);
     if (timeout < AWSS_PRESS_TIMEOUT_MS)
         timeout = AWSS_PRESS_TIMEOUT_MS;
-    HAL_Sys_Post_Task(timeout, awss_press_timeout, NULL);
+    HAL_Sys_Post_Task(timeout, (void (*)(void *))awss_press_timeout, NULL);
 
     return 0;
 }
