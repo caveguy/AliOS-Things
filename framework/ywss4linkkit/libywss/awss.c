@@ -84,6 +84,7 @@ static void awss_open_aha_monitor()
 int awss_report_cloud()
 {
     awss_cmp_online_init();
+    awss_check_reset();
     awss_report_token();
     awss_cmp_local_init();
     awss_connectap_notify_stop();
@@ -91,7 +92,7 @@ int awss_report_cloud()
 #ifndef AWSS_DISABLE_REGISTRAR
     awss_registrar_init();
 #endif
-    awss_check_reset();
+
     return 0;
 }
 

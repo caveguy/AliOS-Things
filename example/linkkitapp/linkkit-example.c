@@ -157,8 +157,7 @@ static void linkkit_event_monitor(int event)
         // operate led to indicate user
         break;
     case LINKKIT_RESET:                     // Linkkit reset success (just got reset response from cloud without any other operation)
-        netmgr_clear_ap_config();
-        HAL_Sys_reboot();
+        // operate led to indicate user
         break;
     default:
         break;
@@ -179,11 +178,17 @@ void do_awss_active()
     awss_config_press();
 }
 
-extern int awss_report_reset();
+static void linkkit_reset(void *p)
+{
+    netmgr_clear_ap_config();
+    HAL_Sys_reboot();
+}
 
+extern int awss_report_reset();
 static void do_awss_reset()
 {
     aos_task_new("reset", awss_report_reset, NULL, 2048);
+    aos_post_delayed_action(5000, linkkit_reset, NULL);
 }
 
 void linkkit_key_process(input_event_t *eventinfo, void *priv_data)
