@@ -27,7 +27,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "work_queue.h"
 #include "aws_lib.h"
 #include "zconfig_lib.h"
 #include "zconfig_utils.h"
@@ -90,18 +89,7 @@ static void rescan_monitor();
 static void clr_aplist_monitor();
 
 #define RESCAN_MONITOR_TIMEOUT_MS     (5 * 60 * 1000)
-static struct work_struct rescan_monitor_work = {
-    .func = (work_func_t)&rescan_monitor,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "rescan",
-};
-
-#define CLR_APLIST_MONITOR_TIMEOUT_MS  (24 * 60 *60 * 1000)
-static struct work_struct clr_aplist_monitor_work = {
-    .func = (work_func_t)&clr_aplist_monitor,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "clr aplist",
-};
+#define CLR_APLIST_MONITOR_TIMEOUT_MS (24 * 60 *60 * 1000)
 static uint8_t rescan_available = 0;
 static uint8_t clr_aplist = 0;
 
@@ -377,11 +365,11 @@ timeout_scanning:
     awss_debug("aws timeout scanning!\r\n");
 timeout_recving:
     awss_debug("aws timeout recving!\r\n");
-    cancel_work(&rescan_monitor_work);
-    queue_delayed_work(&rescan_monitor_work, RESCAN_MONITOR_TIMEOUT_MS);
+    HAL_Sys_Cancel_Task(rescan_monitor, NULL);
+    HAL_Sys_Post_Task(RESCAN_MONITOR_TIMEOUT_MS, rescan_monitor, NULL);
     while (rescan_available == 0) {
         if (zconfig_get_press_status()) {
-            cancel_work(&rescan_monitor_work);
+            HAL_Sys_Cancel_Task(rescan_monitor, NULL);
             break;
         }
         os_msleep(200);
@@ -425,7 +413,7 @@ static void rescan_monitor()
 static void clr_aplist_monitor()
 {
     clr_aplist = 1;
-    queue_delayed_work(&clr_aplist_monitor_work, CLR_APLIST_MONITOR_TIMEOUT_MS);
+    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, clr_aplist_monitor, NULL);
 }
 
 int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi)
@@ -473,8 +461,8 @@ void aws_start(char *pk, char *dn, char *ds, char *ps)
 
     zconfig_init();
 
-    cancel_work(&clr_aplist_monitor_work);
-    queue_delayed_work(&clr_aplist_monitor_work, CLR_APLIST_MONITOR_TIMEOUT_MS);
+    HAL_Sys_Cancel_Task(clr_aplist_monitor, NULL);
+    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, clr_aplist_monitor, NULL);
 
     os_awss_open_monitor(aws_80211_frame_handler);
 

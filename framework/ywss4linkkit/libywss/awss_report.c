@@ -29,7 +29,6 @@
 #include "awss_main.h"
 #include "zconfig_utils.h"
 #include "json_parser.h"
-#include "work_queue.h"
 #include "awss_cmp.h"
 #include "passwd.h"
 #include "utils.h"
