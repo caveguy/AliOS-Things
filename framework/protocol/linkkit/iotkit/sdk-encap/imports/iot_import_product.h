@@ -6,6 +6,7 @@
 #define PID_STR_MAXLEN              (64 + 1)
 #define MID_STR_MAXLEN              (64 + 1)
 #define PRODUCT_KEY_MAXLEN          (20 + 1)
+#define PRODUCT_SECRET_MAXLEN       (64 + 1)
 #define DEVICE_NAME_MAXLEN          (32 + 1)
 #define DEVICE_ID_MAXLEN            (64 + 1)
 #define DEVICE_SECRET_MAXLEN        (64 + 1)
@@ -79,9 +80,9 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN]);
  * @brief   获取唯一的芯片ID字符串
  *
  * @param   cid_str : 存放芯片ID字符串的缓冲区数组
- * @return  指向缓冲区数组的起始地址
+ * @return  写到cid_str[]数组中的字符长度, 单位是字节(Byte)
  */
-char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN]);
+int HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN]);
 
 typedef struct _hal_wireless_info_t {
     char mac[6];            /* parent'mac, such as Ap's bssid. */
