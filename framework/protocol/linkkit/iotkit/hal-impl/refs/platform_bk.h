@@ -909,7 +909,7 @@ uint32_t platform_wifi_get_ip(char ip_str[PLATFORM_IP_LEN], const char *ifname);
  * @see None.
  * @note None.
  */
-char *platform_get_chipid(char cid_str[PLATFORM_CID_LEN]);
+int platform_get_chipid(char cid_str[PLATFORM_CID_LEN]);
 
 
 /**

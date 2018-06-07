@@ -706,7 +706,7 @@ static inline int os_wifi_low_power(int timeout_ms) {
  * @see None.
  * @note None.
  */
-	static inline char *os_get_chipid(char cid_str[OS_CID_LEN]) {
+	static inline int os_get_chipid(char cid_str[OS_CID_LEN]) {
 		return platform_get_chipid(cid_str);
 	}
 
