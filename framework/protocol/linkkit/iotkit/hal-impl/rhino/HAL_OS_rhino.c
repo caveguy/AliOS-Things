@@ -530,3 +530,93 @@ int HAL_Post_Event(int event, void *msg)
 {
     return aos_post_event(EV_LINKKIT, event, (unsigned long)msg);
 }
+
+
+typedef struct {
+    char *name;
+    int ms;
+    aos_call_t cb;
+    void *data;
+} schedule_timer_t;
+
+
+static void schedule_timer(void *p)
+{
+    if (p == NULL) {
+        return;
+    }
+
+    schedule_timer_t *pdata = p;
+    aos_post_delayed_action(pdata->ms, pdata->cb, pdata->data);
+}
+
+static void schedule_timer_cancel(void *p)
+{
+    if (p == NULL) {
+        return;
+    }
+
+    schedule_timer_t *pdata =p;
+    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+}
+
+
+#define USE_YLOOP
+void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
+{
+#ifdef USE_YLOOP
+    schedule_timer_t  *timer = (schedule_timer_t *)aos_malloc(sizeof(schedule_timer_t));
+    if(timer == NULL) {
+        return NULL;
+    }
+    
+    timer->name = name;
+    timer->cb = func;
+    timer->data = user_data;
+    
+    return timer;
+#else
+    return NULL;
+#endif
+}
+
+int HAL_Timer_Start(void *t, int ms)
+{
+#ifdef USE_YLOOP
+    int ret;
+    if(t == NULL) {
+        return -1;
+    }
+    schedule_timer_t *timer = t;
+    timer->ms = ms;
+    return aos_schedule_call(schedule_timer, t);
+#else
+    return 0;
+#endif
+}
+
+int HAL_Timer_Stop(void *t)
+{
+#ifdef USE_YLOOP
+    int ret;
+    if(t == NULL) {
+        return -1;
+    }
+
+    return aos_schedule_call(schedule_timer_cancel, t);
+#else
+    return 0;
+#endif
+}
+int HAL_Timer_Delete(void *timer)
+{
+#ifdef USE_YLOOP
+    if(timer == NULL) {
+        return -1;
+    }
+
+    aos_free(timer);
+#else
+     return 0;
+#endif
+}
