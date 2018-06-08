@@ -24,22 +24,15 @@
  * INCLUDING THE WARRANTIES OF MERCHANTIBILITY, FITNESS FOR A PARTICULAR
  * PURPOSE, TITLE, AND NONINFRINGEMENT.
  */
-#ifndef NTP_H
-#define NTP_H
+#ifndef AWSS_TIMER_H
+#define AWSS_TIMER_H
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
 {
 #endif
 
-
-#define TOPIC_NTP                       "/ext/ntp/%s/%s/request"
-#define TOPIC_NTP_REPLY                 "/ext/ntp/%s/%s/response"
-
-#define NTP_TIME_STR_MAX_LEN            (20)
-
-int linkkit_ntp_time_request(void (*)(const char *ntp_offset_time_ms));
-int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx);
+int awss_stop_timer(void *timer);
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 }

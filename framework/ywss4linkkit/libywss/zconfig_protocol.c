@@ -36,6 +36,7 @@
 #include "zconfig_protocol.h"
 #include "passwd.h"
 #include "awss_main.h"
+#include "awss_timer.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -2055,6 +2056,9 @@ void zconfig_force_destroy(void)
         os_free((void *)adha_aplist);
         adha_aplist = NULL;
     }
+
+    awss_stop_timer(clr_aplist_timer);
+    clr_aplist_timer = NULL;
 }
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */

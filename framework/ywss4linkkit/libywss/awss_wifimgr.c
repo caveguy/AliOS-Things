@@ -37,6 +37,7 @@
 #include "os.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
+#include "awss_timer.h"
 #include "zconfig_utils.h"
 #include "zconfig_lib.h"
 #include "zconfig_protocol.h"
@@ -53,8 +54,10 @@ extern "C"
 static char g_req_msg_id[MSG_REQ_ID_LEN];
 static platform_netaddr_t g_wifimgr_req_sa;
 
-static void wifimgr_scan_request();
+static void *scan_req_timer = NULL;
+static void *scan_tx_wifilist_timer = NULL;
 
+static void wifimgr_scan_request();
 static void wifimgr_scan_tx_wifilist();
 
 static char wifi_scan_runninng = 0;
@@ -181,7 +184,12 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         list_add(&list->entry, &g_scan_list);
         HAL_MutexUnlock(g_scan_mutex);
 
-        if (last_ap) HAL_Sys_Post_Task(0, (void (*)(void *))wifimgr_scan_tx_wifilist, NULL);
+        if (last_ap) {
+            if (scan_tx_wifilist_timer == NULL)
+                scan_tx_wifilist_timer = HAL_Timer_Create("wifilist", (void (*)(void *))wifimgr_scan_tx_wifilist, NULL);
+            HAL_Timer_Stop(scan_tx_wifilist_timer);
+            HAL_Timer_Start(scan_tx_wifilist_timer, 1);
+        }
         awss_debug("sending message to app: %s\n", msg_aplist);
     }
 
@@ -208,7 +216,9 @@ int wifimgr_process_get_wifilist_request(void *ctx, void *resource, void *remote
         return -1;
     }
 
-    HAL_Sys_Post_Task(0, (void (*)(void *))wifimgr_scan_request, NULL);
+    if (scan_req_timer == NULL)
+        scan_req_timer = HAL_Timer_Create("scan_req", (void (*)(void *))wifimgr_scan_request, NULL);
+    HAL_Timer_Stop(scan_req_timer);
 
     id = json_get_value_by_name(msg, len, "id", &id_len, 0);
     memset(g_req_msg_id, 0, sizeof(g_req_msg_id));
@@ -225,6 +235,8 @@ int wifimgr_process_get_wifilist_request(void *ctx, void *resource, void *remote
     if (0 != awss_cmp_coap_send_resp(buf, strlen(buf), &g_wifimgr_req_sa, topic, request)) {
         awss_debug("sending failed.");
     }
+
+    HAL_Timer_Start(scan_req_timer, 1);
 
     return SHUB_OK;
 }
@@ -446,6 +458,13 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
     } else {
         switch_ap_done = 1;
         awss_cancel_aha_monitor();
+        HAL_MutexDestroy(g_scan_mutex);
+        g_scan_mutex = NULL;
+        wifi_scan_runninng = 0;
+        awss_stop_timer(scan_req_timer);
+        scan_req_timer = NULL;
+        awss_stop_timer(scan_tx_wifilist_timer);
+        scan_tx_wifilist_timer = NULL;
 
         void zconfig_force_destroy(void);
         zconfig_force_destroy();

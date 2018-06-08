@@ -30,6 +30,7 @@
 #include "enrollee.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
+#include "awss_timer.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -40,6 +41,9 @@ extern int switch_ap_done;
 static uint8_t adha_switch = 0;
 static uint8_t awss_stopped = 0;
 static void *g_awss_monitor_cb = NULL;
+
+static void *adha_timer = NULL;
+static void *aha_timer = NULL;
 
 static void adha_monitor(void)
 {
@@ -64,7 +68,7 @@ int aha_is_timeout()
 
 int awss_cancel_aha_monitor()
 {
-    HAL_Sys_Cancel_Task((void (*)(void *))aha_monitor, NULL);
+    HAL_Timer_Stop(aha_timer);
     aha_timeout = 0;
     return 0;
 }
@@ -78,7 +82,10 @@ static void awss_open_aha_monitor()
         return;
     }
     aha_timeout = 0;
-    HAL_Sys_Post_Task(AHA_MONITOR_TIMEOUT_MS, (void (*)(void *))aha_monitor, NULL);
+    if (aha_timer == NULL)
+        aha_timer = HAL_Timer_Create("aha", (void (*)(void *))aha_monitor, NULL);
+    HAL_Timer_Stop(aha_timer);
+    HAL_Timer_Start(aha_timer, AHA_MONITOR_TIMEOUT_MS);
 }
 
 int awss_report_cloud()
@@ -135,7 +142,10 @@ int awss_start()
                     awss_cmp_local_init();
 
                     adha_switch = 0;
-                    HAL_Sys_Post_Task(ADHA_WORK_CYCLE, (void (*)(void *))adha_monitor, NULL);
+                    if (adha_timer == NULL)
+                        adha_timer = HAL_Timer_Create("adha", (void (*)(void *))adha_monitor, NULL);
+                    HAL_Timer_Stop(adha_timer);
+                    HAL_Timer_Start(adha_timer, ADHA_WORK_CYCLE);
                     while (!adha_switch)
                         os_msleep(200);
                     adha_switch = 0;
@@ -180,6 +190,11 @@ int awss_start()
             break;
     } while (1);
 
+    awss_stop_timer(aha_timer);
+    aha_timer = NULL;
+    awss_stop_timer(adha_timer);
+    adha_timer = NULL;
+
     awss_success_notify();
 
     return 0;
@@ -187,8 +202,10 @@ int awss_start()
 
 int awss_stop()
 {
-    HAL_Sys_Cancel_Task((void (*)(void *))adha_monitor, NULL);
-    HAL_Sys_Cancel_Task((void (*)(void *))aha_monitor, NULL);
+    awss_stop_timer(aha_timer);
+    aha_timer = NULL;
+    awss_stop_timer(adha_timer);
+    adha_timer = NULL;
     __awss_stop();
     awss_cmp_local_deinit();
     awss_stopped = 1;

@@ -24,25 +24,37 @@
  * INCLUDING THE WARRANTIES OF MERCHANTIBILITY, FITNESS FOR A PARTICULAR
  * PURPOSE, TITLE, AND NONINFRINGEMENT.
  */
-#ifndef NTP_H
-#define NTP_H
+
+#include <stdlib.h>
+#include "os.h"
+#include "awss_timer.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
 {
 #endif
 
-
-#define TOPIC_NTP                       "/ext/ntp/%s/%s/request"
-#define TOPIC_NTP_REPLY                 "/ext/ntp/%s/%s/response"
-
-#define NTP_TIME_STR_MAX_LEN            (20)
-
-int linkkit_ntp_time_request(void (*)(const char *ntp_offset_time_ms));
-int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx);
-
-#if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
+int awss_stop_timer(void *timer)
+{
+    if (timer == NULL)
+        return 0;
+    HAL_Timer_Stop(timer);
+    HAL_Timer_Delete(timer);
+    return 0;
+}
+#if 0
+int awss_start_timer(void **timer, const char *name, void *func, void *user_data, int ms)
+{
+    if (timer == NULL)
+        return -1;
+    *timer = HAL_Timer_Create(name, (void (*)(void *))func, user_data);
+    if (*timer == NULL)
+        return -1;
+    HAL_Timer_Stop(*timer);
+    HAL_Timer_Start(*timer, ms);
+    return 0;
 }
 #endif
-
+#if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
+}
 #endif

@@ -922,6 +922,7 @@ static inline u8 *get_device_name_attr_from_w(u8 *wps_ie, u8 *len)
 /* storage to store apinfo */
 struct ap_info *zconfig_aplist = NULL;
 struct adha_info *adha_aplist = NULL;
+void *clr_aplist_timer = NULL;
 /* aplist num, less than MAX_APLIST_NUM */
 u8 zconfig_aplist_num = 0;
 
@@ -1178,13 +1179,15 @@ static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, signed c
     return 0;
 }
 
+static void *press_timer = NULL;
 static void awss_press_timeout()
 {
     g_user_press = 0;
+    awss_stop_timer(press_timer);
+    press_timer = NULL;
 }
 
 #define AWSS_PRESS_TIMEOUT_MS  (60000)
-
 int awss_config_press()
 {
     int timeout = os_awss_get_timeout_interval_ms();
@@ -1192,10 +1195,13 @@ int awss_config_press()
     g_user_press = 1;
     os_printf("press\r\n");
 
-    HAL_Sys_Cancel_Task((void (*)(void *))awss_press_timeout, NULL);
+    if (press_timer == NULL)
+        press_timer = HAL_Timer_Create("press", (void (*)(void *))awss_press_timeout, NULL);
+    HAL_Timer_Stop(press_timer);
+
     if (timeout < AWSS_PRESS_TIMEOUT_MS)
         timeout = AWSS_PRESS_TIMEOUT_MS;
-    HAL_Sys_Post_Task(timeout, (void (*)(void *))awss_press_timeout, NULL);
+    HAL_Timer_Start(press_timer, timeout);
 
     return 0;
 }

@@ -58,9 +58,6 @@ extern "C" {
 #define TOPIC_RESET_REPORT              "/sys/%s/%s/thing/reset"
 #define TOPIC_RESET_REPORT_REPLY        "/sys/%s/%s/thing/reset_reply"
 
-#define TOPIC_NTP                       "/ext/ntp/%s/%s/request"
-#define TOPIC_NTP_REPLY                 "/ext/ntp/%s/%s/reply"
-
 #define METHOD_DEV_INFO_NOTIFY          "device.info.notify"
 #define METHOD_AWSS_DEV_INFO_NOTIFY     "awss.device.info.notify"
 #define METHOD_AWSS_CONNECTAP_NOTIFY    "awss.event.connectap.notify"

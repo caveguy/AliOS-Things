@@ -29,6 +29,7 @@
 #include "awss_main.h"
 #include "zconfig_utils.h"
 #include "json_parser.h"
+#include "awss_timer.h"
 #include "awss_cmp.h"
 #include "passwd.h"
 #include "utils.h"
@@ -51,6 +52,10 @@ static char switchap_ssid[OS_MAX_SSID_LEN + 1] = {0};
 static char switchap_passwd[OS_MAX_PASSWD_LEN] = {0};
 static uint8_t switchap_bssid[ETH_ALEN] = {0};
 
+static void *report_reset_timer = NULL;
+static void *report_token_timer = NULL;
+static void *switchap_timer = NULL;
+
 static int awss_report_token_to_cloud();
 static int awss_report_reset_to_cloud();
 static int awss_switch_ap_online();
@@ -61,7 +66,8 @@ int awss_report_token_reply(char *topic, int topic_len, void *payload, int paylo
     awss_debug("%s\r\n", __func__);
 
     awss_report_token_suc = 1;
-    HAL_Sys_Cancel_Task((void (*)(void *))awss_report_token_to_cloud, NULL);
+    awss_stop_timer(report_token_timer);
+    report_token_timer = NULL;
 
     return 0;
 }
@@ -74,7 +80,9 @@ int awss_report_reset_reply(char *topic, int topic_len, void *payload, int paylo
 
     awss_report_reset_suc = 1;
     HAL_Kv_Set(AWSS_KV_RST, &rst, sizeof(rst), 0);
-    HAL_Sys_Cancel_Task((void (*)(void *))awss_report_reset_to_cloud, NULL);
+
+    awss_stop_timer(report_reset_timer);
+    report_reset_timer = NULL;
 
     void *cb = awss_get_event_monitor_cb();
     if (cb != NULL) {
@@ -184,8 +192,10 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
         if (strncmp(ssid, switchap_ssid, sizeof(ssid)) ||
             memcmp(bssid, switchap_bssid, sizeof(bssid)) ||
             strncmp(passwd, switchap_passwd, sizeof(passwd))) {
-            HAL_Sys_Cancel_Task((void (*)(void *))awss_switch_ap_online, NULL);
-            HAL_Sys_Post_Task(timeout, (void (*)(void *))awss_switch_ap_online, NULL);
+            if (switchap_timer == NULL)
+                switchap_timer = HAL_Timer_Create("swichap_online", (void (*)(void *))awss_switch_ap_online, NULL);
+            HAL_Timer_Stop(switchap_timer);
+            HAL_Timer_Start(switchap_timer, timeout);
         }
     }
 
@@ -206,7 +216,10 @@ static int awss_report_token_to_cloud()
     if (awss_report_token_suc || awss_report_token_cnt ++ > MATCH_REPORT_CNT_MAX)
         return 0;
 
-    HAL_Sys_Post_Task(MATCH_MONITOR_TIMEOUT_MS, (void (*)(void *))awss_report_token_to_cloud, NULL);
+    if (report_token_timer == NULL)
+        report_token_timer = HAL_Timer_Create("rp_token", (void (*)(void *))awss_report_token_to_cloud, NULL);
+    HAL_Timer_Stop(report_token_timer);
+    HAL_Timer_Start(report_token_timer, MATCH_MONITOR_TIMEOUT_MS);
 
     int packet_len = AWSS_REPORT_LEN_MAX;
 
@@ -246,10 +259,14 @@ static int awss_switch_ap_online()
 {
     os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, switchap_ssid, switchap_passwd,
                        AWSS_AUTH_TYPE_INVALID, AWSS_ENC_TYPE_INVALID, switchap_bssid, 0);
+    awss_stop_timer(switchap_timer);
+    switchap_timer = NULL;
     memset(switchap_ssid, 0, sizeof(switchap_ssid));
     memset(switchap_bssid, 0, sizeof(switchap_bssid));
     memset(switchap_passwd, 0, sizeof(switchap_passwd));
-    HAL_Sys_Post_Task(1000, (void (*)(void *))awss_reboot_system, NULL);
+
+    void *reboot_timer = HAL_Timer_Create("rb_timer", (void (*)(void *))awss_reboot_system, NULL);
+    HAL_Timer_Start(reboot_timer, 1000);;
 
     return 0;
 }
@@ -270,11 +287,15 @@ static int awss_report_reset_to_cloud()
     int ret = 0;
     int packet_len = AWSS_REPORT_LEN_MAX;
 
-    HAL_Sys_Cancel_Task((void (*)(void *))awss_report_reset_to_cloud, NULL);
+    if (report_reset_timer == NULL)
+        report_reset_timer = HAL_Timer_Create("report_rst", (void (*)(void *))awss_report_reset_to_cloud, NULL);
+    HAL_Timer_Stop(report_reset_timer);
+    HAL_Timer_Start(report_reset_timer, MATCH_MONITOR_TIMEOUT_MS);
+
     if (awss_report_token_suc) {
-        HAL_Sys_Post_Task(MATCH_MONITOR_TIMEOUT_MS, (void (*)(void *))awss_report_reset_to_cloud, NULL);
+        HAL_Timer_Start(report_reset_timer, MATCH_MONITOR_TIMEOUT_MS);
     } else {  // AWSS is not finished, it's no need to report reset
-        HAL_Sys_Post_Task(RECHECK_TIMEOUT_MS, (void (*)(void *))awss_report_reset_to_cloud, NULL);
+        HAL_Timer_Start(report_reset_timer, RECHECK_TIMEOUT_MS);
         return 0;
     }
 

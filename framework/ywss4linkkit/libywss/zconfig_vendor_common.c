@@ -31,8 +31,10 @@
 #include "zconfig_lib.h"
 #include "zconfig_utils.h"
 #include "zconfig_protocol.h"
+#include "zconfig_ieee80211.h"
 #include "enrollee.h"
 #include "awss_main.h"
+#include "awss_timer.h"
 #include "os.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
@@ -84,6 +86,8 @@ struct aws_info {
 static const u8 aws_fixed_scanning_channels[] = {
     1, 6, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
 };
+
+static void *rescan_timer = NULL;
 
 static void rescan_monitor();
 static void clr_aplist_monitor();
@@ -365,11 +369,13 @@ timeout_scanning:
     awss_debug("aws timeout scanning!\r\n");
 timeout_recving:
     awss_debug("aws timeout recving!\r\n");
-    HAL_Sys_Cancel_Task((void (*)(void *))rescan_monitor, NULL);
-    HAL_Sys_Post_Task(RESCAN_MONITOR_TIMEOUT_MS, (void(*)(void *))rescan_monitor, NULL);
+    if (rescan_timer == NULL)
+        rescan_timer = HAL_Timer_Create("rescan", (void(*)(void *))rescan_monitor, NULL);
+    HAL_Timer_Stop(rescan_timer);
+    HAL_Timer_Start(rescan_timer, RESCAN_MONITOR_TIMEOUT_MS);
     while (rescan_available == 0) {
         if (zconfig_get_press_status()) {
-            HAL_Sys_Cancel_Task((void (*)(void *))rescan_monitor, NULL);
+            HAL_Timer_Stop(rescan_timer);
             break;
         }
         os_msleep(200);
@@ -390,6 +396,8 @@ timeout_recving:
 
 success:
     os_awss_close_monitor();
+    awss_stop_timer(rescan_timer);
+    rescan_timer = NULL;
     /*
      * zconfig_destroy() after os_awss_monitor_close() beacause
      * zconfig_destroy will release mem/buffer that
@@ -413,7 +421,7 @@ static void rescan_monitor()
 static void clr_aplist_monitor()
 {
     clr_aplist = 1;
-    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, (void (*)(void *))clr_aplist_monitor, NULL);
+    HAL_Timer_Start(clr_aplist_timer, CLR_APLIST_MONITOR_TIMEOUT_MS);
 }
 
 int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi)
@@ -461,8 +469,10 @@ void aws_start(char *pk, char *dn, char *ds, char *ps)
 
     zconfig_init();
 
-    HAL_Sys_Cancel_Task((void (*)(void *))clr_aplist_monitor, NULL);
-    HAL_Sys_Post_Task(CLR_APLIST_MONITOR_TIMEOUT_MS, (void (*)(void *))clr_aplist_monitor, NULL);
+    if (clr_aplist_timer == NULL)
+        clr_aplist_timer = HAL_Timer_Create("clr_aplist", (void (*)(void *))clr_aplist_monitor, NULL);
+    HAL_Timer_Stop(clr_aplist_timer);
+    HAL_Timer_Start(clr_aplist_timer, CLR_APLIST_MONITOR_TIMEOUT_MS);
 
     os_awss_open_monitor(aws_80211_frame_handler);
 

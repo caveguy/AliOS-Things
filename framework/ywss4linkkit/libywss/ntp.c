@@ -99,7 +99,7 @@ int linkkit_ntp_time_request(void (*ntp_reply)(const char *ntp_offset_time_ms))
     g_ntp_reply_cb = ntp_reply;
     final_len = snprintf(packet, packet_len, "{\"deviceSendTime\":\"%u\"}", os_get_time_ms());
 
-    awss_debug("report token:%s\r\n", packet);
+    awss_debug("report ntp:%s\r\n", packet);
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_NTP, topic, TOPIC_LEN_MAX);
 
