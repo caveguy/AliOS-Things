@@ -254,7 +254,8 @@ static int id2_guider_get_iotId_iotToken(
     char *host,
     uint16_t *pport)
 {
-    char                iotx_payload[1024] = {0};
+    /*char                iotx_payload[1024] = {0};*/
+    char*               iotx_payload = NULL;
     int                 iotx_port = 443;
     int                 ret = -1;
     iotx_conn_info_pt   usr = iotx_conn_info_get();
@@ -299,8 +300,10 @@ static int id2_guider_get_iotId_iotToken(
             "message":"success"
         }
     */
+    iotx_payload = LITE_malloc(HTTP_RESP_MAX_LEN);
+    memset(iotx_payload, 0x0, HTTP_RESP_MAX_LEN);
     _http_response(iotx_payload,
-                   sizeof(iotx_payload),
+                   HTTP_RESP_MAX_LEN,
                    request_string,
                    guider_addr,
                    iotx_port,
@@ -454,6 +457,10 @@ static int id2_guider_get_iotId_iotToken(
     ret = 0;
 
 do_exit:
+    if (iotx_payload) {
+        LITE_free(iotx_payload);
+        iotx_payload = NULL;
+    }
     if (pvalue) {
         LITE_free(pvalue);
         pvalue = NULL;
@@ -594,11 +601,7 @@ int iotx_guider_id2_authenticate(void)
     _fill_conn_string(conn->client_id, sizeof(conn->client_id),
                       "%s"
                       "|securemode=%d"
-#if USING_SHA1_IN_HMAC
                       ",timestamp=%s,signmethod=" SHA_METHOD ",gw=0"
-#else
-                      ",timestamp=%s,signmethod=" MD5_METHOD ",gw=0"
-#endif
                       "%s|"
                       , dev->device_id
                       , secure_mode
