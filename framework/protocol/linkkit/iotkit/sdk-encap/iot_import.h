@@ -713,7 +713,7 @@ int HAL_Unregister_Recv_Callback(int fd, void (*)(int fd, void *));
  * @see None.
  * @note None.
  */
-int HAL_Sys_Register_Event(int event, void (*)(void *, void *), void *user_data);
+int HAL_Register_Event(int event, void (*)(void *, void *), void *user_data);
 
 
 /**
