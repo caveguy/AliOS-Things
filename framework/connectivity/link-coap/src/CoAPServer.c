@@ -182,7 +182,7 @@ CoAPContext *CoAPServer_init()
 #ifdef COAP_SERV_ASYN_SUPPORT
         fd = CoAPContextFd_get(g_context);
         COAP_DEBUG("The CoAP Server fd %d", fd);
-        HAL_Sys_Register_Rx_Avail(fd, CoAPServer_recv, (void *)g_context);
+        HAL_Register_Recv_Callback(fd, CoAPServer_recv, (void *)g_context);
         aos_post_delayed_action(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)g_context);
         //HAL_Sys_Post_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)g_context);
 #endif
@@ -252,7 +252,7 @@ void CoAPServer_deinit0(CoAPContext *context)
 
 #ifdef COAP_SERV_ASYN_SUPPORT
     fd = CoAPContextFd_get(context);
-    HAL_Sys_Unregister_Rx_Avail(fd, CoAPServer_recv);
+    HAL_Unregister_Recv_Callback(fd, CoAPServer_recv);
     HAL_Sys_Cancel_Task(CoAPServer_retransmit, (void *)context);
     HAL_Sys_Cancel_Task(CoAPServer_deinit0, (void *)context);
 #endif

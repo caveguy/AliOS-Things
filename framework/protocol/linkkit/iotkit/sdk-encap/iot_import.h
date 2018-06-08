@@ -616,16 +616,65 @@ int HAL_Kv_Del(const char *key);
 /**
  * @brief erase KV flash section
  *
- * @param[in] key: @n A pointer to key of KV couple.
+ * @param None.
  * @return 0: Success; -1: Failure.
  * @see None.
  * @note flash sections used by KV shoud be seperate from system flash.
  */
-int HAL_Erase_All_Kv();
+int HAL_Kv_Erase_All();
 
 
+/*
+ * @brief create timer with name, timer func and user data
+ *
+ * @param[in] name: @n timer name
+ * @param[in] func: @n func called when timer expire
+ * @param[in] user_data: @n user data passed by func, such as func(user_data)
+ * @return not NULL: Success; NULL: Failure.
+ * @see None.
+ */
+void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data);
+
+
+/*
+ * @brief start timer, when timer expire, timer function will be called.
+ *
+ * @param[in] timer: @n timer pointer returned by HAL_Timer_Create
+ * @param[in] ms: @n time in unit of ms from now to time expire.
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ * @Note:
+ *       if timer is not expire, firstly stop timer, and then restart timer from now.
+ *       user can start the same timer in its func();
+ */
+int HAL_Timer_Start(void *timer, int ms);
+
+
+/*
+ * @brief stop timer, if timer is not expire, stop the timer to prevent timer to expire.
+ *        if timer is not exist, do nothing.
+ *
+ * @param[in] timer: @n timer pointer returned by HAL_Timer_Create
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ */
+int HAL_Timer_Stop(void *timer);
+
+
+/*
+ * @brief delete timer and release timer resource.
+ *        if timer is not expire, stop the timer to prevent timer to expire.
+ *
+ * @param[in] timer: @n timer pointer returned by HAL_Timer_Create
+ * @return 0: Success; -1: Failure.
+ * @see None.
+ */
+int HAL_Timer_Delete(void *timer);
+
+
+#ifdef HAL_ASYNC_API
 /**
- * @brief register fd to system, system should poll theses fds
+ * @brief register fd to OS, OS should poll these fds
           when fd is available to read, trigger user with callback.
  *
  * @param[in] fd: @n A socket fd.
@@ -635,11 +684,14 @@ int HAL_Erase_All_Kv();
  * @see None.
  * @note None.
  */
-int HAL_Sys_Register_Rx_Avail(int fd, void (*)(int fd, void *), void *user_data);
+int HAL_Register_Recv_Callback(int fd, void (*)(int fd, void *), void *user_data);
+
+int HAL_Sys_Post_Task(int ms, void (*)(void *), void *);
+int HAL_Sys_Cancel_Task(void (*)(void *), void *);
 
 
 /**
- * @brief unregister fd from system
+ * @brief unregister fd from OS
  *
  * @param[in] fd: @n A socket fd.
  * @param[in] callback: @n trigger callback when rd is available to read, callback(user_data).
@@ -648,33 +700,7 @@ int HAL_Sys_Register_Rx_Avail(int fd, void (*)(int fd, void *), void *user_data)
  * @see None.
  * @note None.
  */
-int HAL_Sys_Unregister_Rx_Avail(int fd, void (*)(int fd, void *));
-
-
-/**
- * @brief post task to run after ms.
- *
- * @param[in] ms: @n time with unit of ms.
- * @param[in] task: @n the task to run.
- * @param[in] user_data: @n user context, passed by task.
- * @return 0: Success; -1: Failure.
- * @see None.
- * @note task should not be blocked.
- */
-int HAL_Sys_Post_Task(int ms, void (*)(void *), void *user_data);
-
-
-/**
- * @brief cancel task from system.
- *
- * @param[in] ms: @n time with unit of ms.
- * @param[in] task: @n the task to run, task(user_data).
- * @param[in] user_data: @n user context, passed by task.
- * @return 0: Success; -1: Failure.
- * @see None.
- * @note None.
- */
-int HAL_Sys_Cancel_Task(void (*)(void *), void *user_data);
+int HAL_Unregister_Recv_Callback(int fd, void (*)(int fd, void *));
 
 
 /**
@@ -699,7 +725,7 @@ int HAL_Sys_Register_Event(int event, void (*)(void *, void *), void *user_data)
  * @see None.
  * @note None.
  */
-int HAL_Sys_Unregister_Event(int event, void (*)(void *, void *));
+int HAL_Unregister_Event(int event, void (*)(void *, void *));
 
 
 /**
@@ -711,9 +737,10 @@ int HAL_Sys_Unregister_Event(int event, void (*)(void *, void *));
  * @see None.
  * @note None.
  */
-int HAL_Sys_Post_Event(int event, void *msg);
+int HAL_Post_Event(int event, void *msg);
 
 
+#endif
 /** @} */ //end of platform_firmware_upgrade
 
 #include "imports/iot_import_config.h"

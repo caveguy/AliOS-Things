@@ -349,7 +349,7 @@ int HAL_Kv_Del(const char *key)
     return ret;
 }
 
-int HAL_Erase_All_Kv()
+int HAL_Kv_Erase_All()
 {
     return aos_kv_del_by_prefix("linkkit_");
 }
@@ -357,11 +357,11 @@ typedef void (*async_fd_cb)(int, void *);
 typedef void (*async_task_cb)(void *);
 typedef void (*async_event_cb)(void *, void *);
 
-int HAL_Sys_Register_Rx_Avail(int fd, async_fd_cb  action, void *user_data)
+int HAL_Register_Recv_Callback(int fd, async_fd_cb  action, void *user_data)
 {
     return aos_poll_read_fd(fd, action, user_data);
 }
-int HAL_Sys_Unregister_Rx_Avail(int fd, async_fd_cb action)
+int HAL_Unregister_Recv_Callback(int fd, async_fd_cb action)
 {
     aos_cancel_poll_read_fd(fd, action, NULL);
     return 0;
@@ -477,7 +477,7 @@ static void linkkit_event_func(input_event_t *event, void *private_data)
 
 }
 
-int HAL_Sys_Register_Event(int event, async_event_cb cb, void *user_data)
+int HAL_Register_Event(int event, async_event_cb cb, void *user_data)
 {
     int ret = 0;
     static  int is_events_init = 0;
@@ -509,7 +509,7 @@ int HAL_Sys_Register_Event(int event, async_event_cb cb, void *user_data)
     return ret;
 }
 
-int HAL_Sys_UnRegister_Event(int event, async_event_cb cb)
+int HAL_UnRegister_Event(int event, async_event_cb cb)
 {
     if (!dlist_empty(&async_events)) {
         async_event_t *tmp;
@@ -526,7 +526,7 @@ int HAL_Sys_UnRegister_Event(int event, async_event_cb cb)
     return -1;
 }
 
-int HAL_Sys_Post_Event(int event, void *msg)
+int HAL_Post_Event(int event, void *msg)
 {
     return aos_post_event(EV_LINKKIT, event, (unsigned long)msg);
 }
