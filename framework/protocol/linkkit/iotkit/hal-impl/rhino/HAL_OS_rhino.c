@@ -533,7 +533,7 @@ int HAL_Post_Event(int event, void *msg)
 
 
 typedef struct {
-    char *name;
+    const char *name;
     int ms;
     aos_call_t cb;
     void *data;
