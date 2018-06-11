@@ -193,7 +193,7 @@ int iotx_net_connect(utils_network_pt pNetwork)
 int iotx_net_get_fd(utils_network_pt pNetwork, int is_ssl)
 {
     if (is_ssl == 1) {
-#ifndef IOTX_WITHOUT_TLS
+#ifdef IOTX_WITHOUT_TLS
         return -1;
 #else
         return HAL_SSL_GetFd(pNetwork->handle);
