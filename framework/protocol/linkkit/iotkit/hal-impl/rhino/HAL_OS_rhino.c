@@ -316,7 +316,7 @@ int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
         return -1;
     }
     snprintf(temp, real_len, LINKKIT_KV_START, key);
-    ret = aos_kv_set(temp, val, real_len, sync);
+    ret = aos_kv_set(temp, val, len, sync);
     aos_free(temp);
     return ret;
 }
