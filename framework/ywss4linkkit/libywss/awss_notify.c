@@ -221,6 +221,8 @@ int awss_notify_dev_info(int type, int count)
 
 int awss_connectap_notify_stop()
 {
+    if (connectap_notify_timer == NULL)
+        return 0;
     awss_stop_timer(connectap_notify_timer);
     connectap_notify_timer = NULL;
     return 0;
@@ -390,13 +392,17 @@ int awss_connectap_notify()
     awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] = 0;
     connectap_interval = 0;
     connectap_cnt = 0;
-    awss_stop_timer(connectap_notify_timer);
-    connectap_notify_timer = NULL;
+    if (connectap_notify_timer) {
+        awss_stop_timer(connectap_notify_timer);
+        connectap_notify_timer = NULL;
+    }
     return 1;
 }
 
 int awss_devinfo_notify_stop()
 {
+    if (devinfo_notify_timer == NULL)
+        return 0;
     awss_stop_timer(devinfo_notify_timer);
     devinfo_notify_timer = NULL;
     return 0;
@@ -404,6 +410,8 @@ int awss_devinfo_notify_stop()
 
 int awss_suc_notify_stop()
 {
+    if (suc_notify_timer == NULL)
+        return 0;
     awss_stop_timer(suc_notify_timer);
     suc_notify_timer = NULL;
     return 0;
@@ -436,6 +444,10 @@ int awss_suc_notify()
     awss_notify_resp[AWSS_NOTIFY_SUC] = 0;
     suc_interval = 0;
     suc_cnt = 0;
+    if (suc_notify_timer) {
+        awss_stop_timer(suc_notify_timer);
+        suc_notify_timer = NULL;
+    }
     return 1;
 }
 
@@ -465,6 +477,10 @@ int awss_devinfo_notify()
     awss_notify_resp[AWSS_NOTIFY_DEV_RAND] = 0;
     devinfo_interval = 0;
     devinfo_cnt = 0;
+    if (devinfo_notify_timer) {
+        awss_stop_timer(devinfo_notify_timer);
+        devinfo_notify_timer = NULL;
+    }
     return 1;
 }
 
