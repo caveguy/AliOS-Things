@@ -753,7 +753,7 @@ int enrollee_put(struct enrollee_info *in)
                     if (enrollee_report_timer == NULL)
                         enrollee_report_timer = HAL_Timer_Create("enrollee", (void (*)(void *))enrollee_report, NULL);
                     HAL_Timer_Stop(enrollee_report_timer);
-                    HAL_Timer_Start(enrollee_report_timer);
+                    HAL_Timer_Start(enrollee_report_timer, 1);
                 }
                 if (enrollee_info[i].state != ENR_IN_QUEUE)  // already reported
                     return 1;
@@ -783,7 +783,7 @@ int enrollee_put(struct enrollee_info *in)
     if (enrollee_report_timer == NULL)
         enrollee_report_timer = HAL_Timer_Create("enrollee", (void (*)(void *))enrollee_report, NULL);
     HAL_Timer_Stop(enrollee_report_timer);
-    HAL_Timer_Start(enrollee_report_timer);
+    HAL_Timer_Start(enrollee_report_timer, 1);
 
     return 0;
 }
