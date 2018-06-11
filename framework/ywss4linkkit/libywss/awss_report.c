@@ -41,7 +41,6 @@ extern "C"
 
 #define AWSS_REPORT_LEN_MAX       (256)
 #define MATCH_MONITOR_TIMEOUT_MS  (30 * 1000)
-#define RECHECK_TIMEOUT_MS        (5 * 1000)
 #define MATCH_REPORT_CNT_MAX      (2)
 
 volatile char awss_report_token_suc = 0;
@@ -291,13 +290,6 @@ static int awss_report_reset_to_cloud()
         report_reset_timer = HAL_Timer_Create("report_rst", (void (*)(void *))awss_report_reset_to_cloud, NULL);
     HAL_Timer_Stop(report_reset_timer);
     HAL_Timer_Start(report_reset_timer, MATCH_MONITOR_TIMEOUT_MS);
-
-    if (awss_report_token_suc) {
-        HAL_Timer_Start(report_reset_timer, MATCH_MONITOR_TIMEOUT_MS);
-    } else {  // AWSS is not finished, it's no need to report reset
-        HAL_Timer_Start(report_reset_timer, RECHECK_TIMEOUT_MS);
-        return 0;
-    }
 
     char *packet = os_zalloc(packet_len + 1);
     if (packet == NULL)

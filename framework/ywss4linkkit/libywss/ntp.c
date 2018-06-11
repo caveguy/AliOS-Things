@@ -46,13 +46,12 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
 #define DEV_TX_TIME          "deviceSendTime"
 #define SERVER_RX_TIME       "serverRecvTime"
 #define SERVER_TX_TIME       "serverSendTime"
-#define DEV_TIME_MAX_LEN     (10)
 
     char *elem = NULL;
     int len = 0, timeout = 0;
     char server_rx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
     char server_tx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
-    char dev_tx_time[DEV_TIME_MAX_LEN + 1] = {0};
+    char dev_tx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
 
     memset(g_ntp_time, 0, sizeof(g_ntp_time));
 
@@ -75,7 +74,7 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
     memcpy(server_rx_time, elem, len);
 
     elem = json_get_value_by_name(payload, payload_len, DEV_TX_TIME, &len, NULL);
-    if (elem == NULL || len <= 0 || len > DEV_TIME_MAX_LEN)
+    if (elem == NULL || len <= 0 || len > NTP_TIME_STR_MAX_LEN)
         goto NTP_FAIL;
     memcpy(dev_tx_time, elem, len);
 

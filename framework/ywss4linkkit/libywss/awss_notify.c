@@ -161,8 +161,6 @@ int awss_notify_dev_info(int type, int count)
     char *dev_info = NULL;
     int i;
 
-    show_mm();
-
     do {
         void *cb = NULL;
         char *method = NULL, *topic = NULL;
