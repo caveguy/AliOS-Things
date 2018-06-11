@@ -560,6 +560,16 @@ static void schedule_timer_cancel(void *p)
     aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
 }
 
+static void schedule_timer_delete(void *p)
+{
+    if (p == NULL) {
+        return;
+    }
+
+    schedule_timer_t *pdata =p;
+    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+    aos_free(p);
+}
 
 #define USE_YLOOP
 void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
@@ -614,8 +624,7 @@ int HAL_Timer_Delete(void *timer)
     if(timer == NULL) {
         return -1;
     }
-
-    aos_free(timer);
+    return aos_schedule_call(schedule_timer_delete, timer);
 #else
      return 0;
 #endif
