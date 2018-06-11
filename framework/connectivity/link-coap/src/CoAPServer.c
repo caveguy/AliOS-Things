@@ -38,6 +38,11 @@ static CoAPContext *g_context = NULL;
 static void        *g_coap_serv_mutex = NULL;
 static int          g_call_num = 0;
 
+#ifdef HAL_ASYNC_API
+static void        *g_retrans_timer = NULL;
+static void        *g_deinit_timer = NULL;
+#endif
+
 static unsigned int CoAPServerToken_get(unsigned char *p_encoded_data)
 {
     static unsigned int value = COAP_INIT_TOKEN;
@@ -88,7 +93,7 @@ static int CoAPServerPath_2_option(char *uri, CoAPMessage *message)
 }
 
 
-#ifdef COAP_SERV_ASYN_SUPPORT
+#ifdef HAL_ASYNC_API
 void CoAPServer_retransmit(void *data)
 {
     CoAPContext *context = (CoAPContext *)data;
@@ -96,10 +101,11 @@ void CoAPServer_retransmit(void *data)
     if(NULL == context){
         return;
     }
+
     CoAPMessage_retransmit(context);
 
-    HAL_Sys_Cancel_Task(CoAPServer_retransmit, data);
-    HAL_Sys_Post_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, data);
+    HAL_Timer_Stop(g_retrans_timer);
+    HAL_Timer_Start(g_retrans_timer, COAP_SERV_WAIT_TIME_MS);
 }
 
 int CoAPServer_recv(intptr_t fd, void *data)
@@ -121,7 +127,7 @@ int CoAPServer_recv(intptr_t fd, void *data)
 
 CoAPContext *CoAPServer_init()
 {
-#ifdef COAP_SERV_ASYN_SUPPORT
+#ifdef HAL_ASYNC_API
     intptr_t  fd = -1;
 #endif
 #ifdef COAP_SERV_MULTITHREAD
@@ -179,12 +185,13 @@ CoAPContext *CoAPServer_init()
         HAL_ThreadCreate(&g_coap_thread, CoAPServer_yield, (void *)g_context, NULL, &stack_used);
 #endif
 
-#ifdef COAP_SERV_ASYN_SUPPORT
+#ifdef HAL_ASYNC_API
         fd = CoAPContextFd_get(g_context);
-        COAP_DEBUG("The CoAP Server fd %d", fd);
         HAL_Register_Recv_Callback(fd, CoAPServer_recv, (void *)g_context);
-        aos_post_delayed_action(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)g_context);
-        //HAL_Sys_Post_Task(COAP_SERV_WAIT_TIME_MS, CoAPServer_retransmit, (void *)g_context);
+        g_retrans_timer  = HAL_Timer_Create("retrans", CoAPServer_retransmit, (void *)g_context);
+        if(NULL != g_retrans_timer){
+            HAL_Timer_Start(g_retrans_timer, COAP_SERV_WAIT_TIME_MS);
+        }
 #endif
     }
     else {
@@ -207,7 +214,7 @@ void CoAPServer_add_timer (void (*on_timer)(void *))
 
 void *CoAPServer_yield(void *param)
 {
-#ifndef COAP_SERV_ASYN_SUPPORT
+#ifndef HAL_ASYNC_API
     CoAPContext *context = (CoAPContext *)param;
     COAP_DEBUG("Enter to CoAP daemon task");
     while (g_coap_running) {
@@ -229,7 +236,7 @@ void *CoAPServer_yield(void *param)
 
 void CoAPServer_deinit0(CoAPContext *context)
 {
-#ifdef COAP_SERV_ASYN_SUPPORT
+#ifdef HAL_ASYNC_API
     intptr_t  fd = -1;
 #endif
 
@@ -250,11 +257,19 @@ void CoAPServer_deinit0(CoAPContext *context)
     }
 #endif
 
-#ifdef COAP_SERV_ASYN_SUPPORT
+#ifdef HAL_ASYNC_API
     fd = CoAPContextFd_get(context);
     HAL_Unregister_Recv_Callback(fd, CoAPServer_recv);
-    HAL_Sys_Cancel_Task(CoAPServer_retransmit, (void *)context);
-    HAL_Sys_Cancel_Task(CoAPServer_deinit0, (void *)context);
+    if(NULL != g_retrans_timer){
+        HAL_Timer_Stop(g_retrans_timer);
+        HAL_Timer_Delete(g_retrans_timer);
+        g_retrans_timer = NULL;
+    }
+    if(NULL != g_deinit_timer){
+        HAL_Timer_Stop(g_deinit_timer);
+        HAL_Timer_Delete(g_deinit_timer);
+        g_deinit_timer = NULL;
+    }
 #endif
 
     HAL_MutexDestroy(g_coap_serv_mutex);
@@ -271,8 +286,9 @@ void CoAPServer_deinit(CoAPContext *context)
     HAL_MutexLock(g_coap_serv_mutex);
     if(0 == g_call_num){
     HAL_MutexUnlock(g_coap_serv_mutex);
-#ifdef COAP_SERV_ASYN_SUPPORT
-    HAL_Sys_Post_Task(0, CoAPServer_deinit0, context);
+#ifdef HAL_ASYNC_API
+    g_deinit_timer  = HAL_Timer_Create("CoAPDeinit", CoAPServer_deinit0, (void *)context);
+    HAL_Timer_Start(g_deinit_timer, 0);
 #else
     CoAPServer_deinit0(context);
     HAL_SleepMs(1000);
