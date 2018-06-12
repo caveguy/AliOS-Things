@@ -19,7 +19,7 @@
 #ifdef CM_VIA_CLOUD_CONN
 
 #include "iot_import.h"
-
+#include "iot_export_event.h"
 #include "lite-utils.h"
 #include "lite-system.h"
 #include "iot_export.h"
@@ -645,6 +645,8 @@ void *iotx_cm_cloud_conn_init(void *handler, iotx_cm_init_param_t *pparam)
         connection->deinit_func(connection);
         return NULL;
     }
+
+    iotx_event_post(IOTX_CONN_CLOUD);
 
     device_info = iotx_device_info_get();
     memset(&g_cloud_target, 0x0, sizeof(iotx_cm_send_peer_t));

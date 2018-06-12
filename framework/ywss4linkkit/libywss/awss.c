@@ -40,7 +40,6 @@ extern "C"
 extern int switch_ap_done;
 static uint8_t adha_switch = 0;
 static uint8_t awss_stopped = 0;
-static void *g_awss_monitor_cb = NULL;
 
 static void *adha_timer = NULL;
 static void *aha_timer = NULL;
@@ -96,6 +95,7 @@ int awss_report_cloud()
     awss_cmp_local_init();
     awss_connectap_notify_stop();
     awss_connectap_notify();
+
 #ifndef AWSS_DISABLE_REGISTRAR
     awss_registrar_init();
 #endif
@@ -111,19 +111,17 @@ int awss_success_notify()
     return 0;
 }
 
-int awss_regist_event_monitor_cb(void (*monitor_cb)(int event))
+int awss_event_post(int event)
 {
-    g_awss_monitor_cb = monitor_cb;
-}
-
-void *awss_get_event_monitor_cb()
-{
-    return g_awss_monitor_cb;
+    extern int iotx_event_post(int);
+    return iotx_event_post(event);
 }
 
 int awss_start()
 {
     char ssid[PLATFORM_MAX_SSID_LEN + 1] = {0};
+
+    awss_event_post(AWSS_START);
     produce_random(aes_random, sizeof(aes_random));
 
     do {
@@ -147,7 +145,7 @@ int awss_start()
                     HAL_Timer_Stop(adha_timer);
                     HAL_Timer_Start(adha_timer, ADHA_WORK_CYCLE);
                     while (!adha_switch)
-                        os_msleep(200);
+                        os_msleep(50);
                     adha_switch = 0;
 
                     awss_cmp_local_deinit();
@@ -174,7 +172,7 @@ int awss_start()
                     dest_ap = 1;
                     break;
                 }
-                os_msleep(200);
+                os_msleep(50);
             }
 
             awss_cmp_local_deinit();

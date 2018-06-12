@@ -79,10 +79,12 @@ int awss_report_cloud();
 int awss_report_reset();
 
 enum awss_event_t {
-    AWSS_START = 0x10000,      // AWSS start without enbale, just supports device discover
+    AWSS_START = 0x1000,       // AWSS start without enbale, just supports device discover
     AWSS_ENABLE,               // AWSS enable
     AWSS_LOCK_CHAN,            // AWSS lock channel(Got AWSS sync packet)
+    AWSS_CS_ERR,               // AWSS AWSS checksum is error
     AWSS_PASSWD_ERR,           // AWSS decrypt passwd error
+    AWSS_GOT_SSID_PASSWD,      // AWSS parse ssid and passwd successfully
     AWSS_CONNECT_ADHA,         // AWSS try to connnect adha (device discover, router solution)
     AWSS_CONNECT_ADHA_FAIL,    // AWSS fails to connect adha
     AWSS_CONNECT_AHA,          // AWSS try to connect aha (AP solution)
@@ -95,26 +97,6 @@ enum awss_event_t {
     AWSS_BIND_NOTIFY,          // AWSS sends out bind notify information to support bind between user and device
     AWSS_RESET = 0x3000,            // Linkkit reset success (just got reset response from cloud without any other operation)
 };
-
-/**
- * @brief   report reset to cloud when device connects cloud.
- *
- * @retval  -1 : failure
- * @retval  0 : sucess
- * @note
- *      if device dosen't connect cloud, device will fails to send reset to cloud.
- *      when connection between devicea and cloud is ready, device will retry to report reset to cloud.
- */
-int awss_regist_event_monitor_cb(void (*monitor_cb)(int event));
-
-/**
- * @brief get awss event monitor callback registered.
- *
- * @param none
- *
- * @return callback function pointer.
- */
-void *awss_get_event_monitor_cb();
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 }

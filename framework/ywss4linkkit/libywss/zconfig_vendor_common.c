@@ -35,6 +35,7 @@
 #include "enrollee.h"
 #include "awss_main.h"
 #include "awss_timer.h"
+#include "awss.h"
 #include "os.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
@@ -117,6 +118,8 @@ void zconfig_channel_locked_callback(u8 primary_channel,
 
     if (aws_state == AWS_SCANNING)
         aws_state = AWS_CHN_LOCKED;
+
+    awss_event_post(AWSS_LOCK_CHAN);
 }
 
 void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
@@ -147,6 +150,8 @@ void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
     aws_result_channel = channel;
 
     aws_state = AWS_SUCCESS;
+
+    awss_event_post(AWSS_GOT_SSID_PASSWD);
 }
 
 u8 aws_next_channel(void)

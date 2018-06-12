@@ -83,7 +83,6 @@ static int _calc_hmac_signature(
                       dev->device_name,
                       dev->product_key,
                       timestamp_str);
-    LITE_ASSERT(rc < sizeof(hmac_source));
 
     utils_hmac_sha1(hmac_source, strlen(hmac_source),
                     signature,

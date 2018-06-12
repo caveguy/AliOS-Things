@@ -28,6 +28,7 @@
 #include "iot_import.h"
 #include "iot_export.h"
 #include "iot_export_mqtt.h"
+#include "iot_export_event.h"
 #include "linkkit_app.h"
 #include "linkkit_export.h"
 #ifdef AOS_ATCMD
@@ -99,64 +100,80 @@ static void cloud_service_event(input_event_t *event, void *priv_data)
 static void linkkit_event_monitor(int event)
 {
     switch (event) {
-    case LINKKIT_AWSS_START:                // AWSS start without enbale, just supports device discover
+    case IOTX_AWSS_START:                // AWSS start without enbale, just supports device discover
+        // operate led to indicate user
+        LOG("IOTX_AWSS_START");
+        break;
+    case IOTX_AWSS_ENABLE:               // AWSS enable
+        LOG("IOTX_AWSS_ENABLE");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_ENABLE:               // AWSS enable
+    case IOTX_AWSS_LOCK_CHAN:            // AWSS lock channel(Got AWSS sync packet)
+        LOG("IOTX_AWSS_LOCK_CHAN");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_LOCK_CHAN:            // AWSS lock channel(Got AWSS sync packet)
+    case IOTX_AWSS_PASSWD_ERR:           // AWSS decrypt passwd error
+        LOG("IOTX_AWSS_PASSWD_ERR");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_PASSWD_ERR:           // AWSS decrypt passwd error
+    case IOTX_AWSS_GOT_SSID_PASSWD:
+        LOG("IOTX_AWSS_GOT_SSID_PASSWD");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_ADHA:         // AWSS try to connnect adha (device discover, router solution)
+    case IOTX_AWSS_CONNECT_ADHA:         // AWSS try to connnect adha (device discover, router solution)
+        LOG("IOTX_AWSS_CONNECT_ADHA");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_ADHA_FAIL:    // AWSS fails to connect adha
+    case IOTX_AWSS_CONNECT_ADHA_FAIL:    // AWSS fails to connect adha
+        LOG("IOTX_AWSS_CONNECT_ADHA_FAIL");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_AHA:          // AWSS try to connect aha (AP solution)
+    case IOTX_AWSS_CONNECT_AHA:          // AWSS try to connect aha (AP solution)
+        LOG("IOTX_AWSS_CONNECT_AHA");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_AHA_FAIL:     // AWSS fails to connect aha
+    case IOTX_AWSS_CONNECT_AHA_FAIL:     // AWSS fails to connect aha
+        LOG("IOTX_AWSS_CONNECT_AHA_FAIL");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_SETUP_NOTIFY:         // AWSS sends out device setup information (AP and router solution)
+    case IOTX_AWSS_SETUP_NOTIFY:         // AWSS sends out device setup information (AP and router solution)
+        LOG("IOTX_AWSS_SETUP_NOTIFY");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_ROUTER:       // AWSS try to connect destination router
+    case IOTX_AWSS_CONNECT_ROUTER:       // AWSS try to connect destination router
+        LOG("IOTX_AWSS_CONNECT_ROUTER");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_CONNECT_ROUTER_FAIL:  // AWSS fails to connect destination router.
+    case IOTX_AWSS_CONNECT_ROUTER_FAIL:  // AWSS fails to connect destination router.
+        LOG("IOTX_AWSS_CONNECT_ROUTER_FAIL");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_GOT_IP:               // AWSS connects destination successfully and got ip address
+    case IOTX_AWSS_GOT_IP:               // AWSS connects destination successfully and got ip address
+        LOG("IOTX_AWSS_GOT_IP");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_SUC_NOTIFY:           // AWSS sends out success notify (AWSS sucess)
+    case IOTX_AWSS_SUC_NOTIFY:           // AWSS sends out success notify (AWSS sucess)
+        LOG("IOTX_AWSS_SUC_NOTIFY");
         // operate led to indicate user
         break;
-    case LINKKIT_AWSS_BIND_NOTIFY:          // AWSS sends out bind notify information to support bind between user and device
+    case IOTX_AWSS_BIND_NOTIFY:          // AWSS sends out bind notify information to support bind between user and device
+        LOG("IOTX_AWSS_BIND_NOTIFY");
         // operate led to indicate user
         break;
-    case LINKKIT_CONN_CLOUD:                // Device try to connect cloud
+    case IOTX_CONN_CLOUD:                // Device try to connect cloud
+        LOG("IOTX_CONN_CLOUD");
         // operate led to indicate user
         break;
-    case LINKKIT_CONN_CLOUD_FAIL_35:        // Device fails to connect cloud with error code of 0x0035 (DNS failure)
+    case IOTX_CONN_CLOUD_FAIL:           // Device fails to connect cloud, refer to net_sockets.h for error code
+        LOG("IOTX_CONN_CLOUD_FAIL");
         // operate led to indicate user
         break;
-    case LINKKIT_CONN_CLOUD_FAIL_44:        // Device fails to connect cloud with error code of 0x0044 (TCP failure)
+    case IOTX_CONN_CLOUD_SUC:            // Device connects cloud successfully
+        LOG("IOTX_CONN_CLOUD_SUC");
         // operate led to indicate user
         break;
-    case LINKKIT_CONN_CLOUD_FAIL_TIMEOUT:   // Device fails to connect cloud with timeout
-        // operate led to indicate user
-        break;
-    case LINKKIT_CONN_CLOUD_SUC:            // Device connects cloud successfully
-        // operate led to indicate user
-        break;
-    case LINKKIT_RESET:                     // Linkkit reset success (just got reset response from cloud without any other operation)
+    case IOTX_RESET:                     // Linkkit reset success (just got reset response from cloud without any other operation)
+        LOG("IOTX_RESET");
         // operate led to indicate user
         break;
     default:
@@ -166,7 +183,7 @@ static void linkkit_event_monitor(int event)
 
 static void start_netmgr(void *p)
 {
-    linkkit_regist_event_monitor_cb(linkkit_event_monitor);
+    iotx_event_regist_cb(linkkit_event_monitor);
     netmgr_start(true);
     aos_task_exit(0);
 }

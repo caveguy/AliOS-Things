@@ -37,6 +37,7 @@
 #include "passwd.h"
 #include "awss_main.h"
 #include "awss_timer.h"
+#include "awss.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -379,6 +380,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         log_error("crc error: recv 0x%x != 0x%x\r\n", crc, cal_crc);
         memset(zconfig_data, 0, sizeof(*zconfig_data));
         ret = -1;
+        awss_event_post(AWSS_CS_ERR);
         goto exit;
     }
 
@@ -439,6 +441,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         if (is_utf8((const char *)zc_passwd, passwd_len) == 0) {
             log_error("passwd err\r\n");
             memset(zconfig_data, 0, sizeof(*zconfig_data));
+            awss_event_post(AWSS_PASSWD_ERR);
             ret = -1;
             goto exit;
         }
@@ -606,6 +609,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
     cal_crc = zconfig_checksum_v3(in, 1 + ssid_len + passwd_len);
     if (crc != cal_crc) {
         awss_debug("wps crc check error: recv 0x%x != 0x%x\r\n", crc, cal_crc);
+        awss_event_post(AWSS_CS_ERR);
         /*
          * use zconfig_checksum_v3() because
          * java modified UTF-8, U+C080 equal U+00,
@@ -658,6 +662,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
         if (is_utf8((const char *)tmp_passwd, passwd_len) == 0) {
             memset(zconfig_data, 0, sizeof(*zconfig_data));
             warn_on(1, "p2p decrypt passwd content err\r\n");
+            awss_event_post(AWSS_PASSWD_ERR);
             return GOT_NOTHING;
         }
         break;

@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include "iotx_cm_common.h"
+#include "iot_export_event.h"
 #ifdef CM_VIA_CLOUD_CONN
 #include "iotx_cm_cloud_conn.h"
 #endif /* CM_SUPPORT_CLOUD_CONN */
@@ -1139,6 +1140,9 @@ static void invoke_event_callback_func(void *_cb_usr_ctx, va_list *params)
     msg = va_arg(*params, void *);
 
     assert(cm_ctx && cb_usr_ctx && msg);
+
+    if (report_token == 0)
+        iotx_event_post(IOTX_CONN_CLOUD_SUC);
 
     if (cb_usr_ctx && cm_ctx &&  cb_usr_ctx->event_func) {
         if (IOTX_CM_EVENT_CLOUD_CONNECTED == msg->event_id && report_token == 0) {

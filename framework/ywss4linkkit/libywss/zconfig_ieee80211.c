@@ -27,6 +27,7 @@
 #include "os.h"
 #include <stddef.h>
 #include <string.h>
+#include "awss.h"
 #include "awss_main.h"
 #include "aws_lib.h"
 #include "zconfig_utils.h"
@@ -1192,8 +1193,11 @@ int awss_config_press()
 {
     int timeout = os_awss_get_timeout_interval_ms();
 
+    os_printf("enable awss\r\n");
+
     g_user_press = 1;
-    os_printf("press\r\n");
+
+    awss_event_post(AWSS_ENABLE);
 
     if (press_timer == NULL)
         press_timer = HAL_Timer_Create("press", (void (*)(void *))awss_press_timeout, NULL);

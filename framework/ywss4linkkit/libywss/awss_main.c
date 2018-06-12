@@ -37,6 +37,7 @@
 #include "passwd.h"
 #include "utils.h"
 #include "enrollee.h"
+#include "awss.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -69,28 +70,41 @@ int __awss_start(void)
     aws_destroy();
 
     char awss_notify_needed = 1;
+    char adha = 0;
     do {
         if (awss_stop_connecting)
             break;
-        if (strcmp(ssid, DEFAULT_SSID) == 0 || strcmp(ssid, ADHA_SSID) == 0)
+
+        if ((adha = strcmp(ssid, ADHA_SSID)) == 0 || strcmp(ssid, DEFAULT_SSID) == 0) {
             awss_notify_needed = 0;
+            awss_event_post(adha != 0 ? AWSS_CONNECT_AHA : AWSS_CONNECT_ADHA);
+        } else {
+            awss_event_post(AWSS_CONNECT_ROUTER);
+        }
 
         ret = os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, ssid, passwd,
                                  auth, encry, bssid, channel);
         if (!ret) {
             awss_debug("awss connect ssid:%s success", ssid);
+            awss_event_post(AWSS_GOT_IP);
 
             if (awss_notify_needed == 0) {
                 awss_connectap_notify_stop();
                 awss_suc_notify_stop();
                 awss_cmp_local_init();
                 awss_devinfo_notify();
+                awss_event_post(AWSS_SETUP_NOTIFY);
             } else {
                 awss_devinfo_notify_stop();
                 produce_random(aes_random, sizeof(aes_random));
             }
         } else {
             log_warn("awss connect ssid:%s passwd:%s fail", ssid, passwd);
+            if (awss_notify_needed == 0) {
+                awss_event_post(adha != 0 ? AWSS_CONNECT_AHA_FAIL : AWSS_CONNECT_ADHA_FAIL);
+            } else {
+                awss_event_post(AWSS_CONNECT_ROUTER_FAIL);
+            }
         }
     } while (0);
 

@@ -335,52 +335,6 @@ int linkkit_subdev_logout(const void* sub_thing_id, handle_subdev_cb_fp_t cb);
 #endif
 
 /**
- * @brief event list used for linkkit_regist_event_monitor_cb
- */
-enum linkkit_event_t {
-    LINKKIT_AWSS_START = 0x10000,      // AWSS start without enbale, just supports device discover
-    LINKKIT_AWSS_ENABLE,               // AWSS enable
-    LINKKIT_AWSS_LOCK_CHAN,            // AWSS lock channel(Got AWSS sync packet)
-    LINKKIT_AWSS_PASSWD_ERR,           // AWSS decrypt passwd error
-    LINKKIT_AWSS_CONNECT_ADHA,         // AWSS try to connnect adha (device discover, router solution)
-    LINKKIT_AWSS_CONNECT_ADHA_FAIL,    // AWSS fails to connect adha
-    LINKKIT_AWSS_CONNECT_AHA,          // AWSS try to connect aha (AP solution)
-    LINKKIT_AWSS_CONNECT_AHA_FAIL,     // AWSS fails to connect aha
-    LINKKIT_AWSS_SETUP_NOTIFY,         // AWSS sends out device setup information (AP and router solution)
-    LINKKIT_AWSS_CONNECT_ROUTER,       // AWSS try to connect destination router
-    LINKKIT_AWSS_CONNECT_ROUTER_FAIL,  // AWSS fails to connect destination router.
-    LINKKIT_AWSS_GOT_IP,               // AWSS connects destination successfully and got ip address
-    LINKKIT_AWSS_SUC_NOTIFY,           // AWSS sends out success notify (AWSS sucess)
-    LINKKIT_AWSS_BIND_NOTIFY,          // AWSS sends out bind notify information to support bind between user and device
-    LINKKIT_CONN_CLOUD = 0x2000,       // Device try to connect cloud
-    LINKKIT_CONN_CLOUD_FAIL_35,        // Device fails to connect cloud with error code of 0x0035 (DNS failure)
-    LINKKIT_CONN_CLOUD_FAIL_44,        // Device fails to connect cloud with error code of 0x0044 (TCP failure)
-    LINKKIT_CONN_CLOUD_FAIL_TIMEOUT,   // Device fails to connect cloud with timeout
-    LINKKIT_CONN_CLOUD_SUC,            // Device connects cloud successfully
-    LINKKIT_RESET = 0x3000,            // Linkkit reset success (just got reset response from cloud without any other operation)
-};
-
-/**
- * @brief register callback to monitor all event from system.
- *
- * @param callback, when some event occurs, the system will trigger callback to user.
- *                  refer to enum linkkit_event_t for event list support by linkkit.
- *
- * @return 0 when success, -1 when fail.
- * @note: user should make sure that callback is not block and runs to complete fast.
- */
-extern int linkkit_regist_event_monitor_cb(void (*monitor_cb)(int event));
-
-/**
- * @brief get event monitor callback registered.
- *
- * @param none
- *
- * @return callback function pointer.
- */
-extern void *linkkit_get_event_monitor_cb();
-
-/**
  * @brief get time from cloud using ntp protocol.
  *
  * @param callback, when device get reply from cloud, it will call callback to trigger user.

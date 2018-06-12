@@ -38,6 +38,7 @@
 #include "awss_wifimgr.h"
 #include "awss_main.h"
 #include "awss_timer.h"
+#include "awss.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -359,6 +360,9 @@ int awss_connectap_notify()
         return 0;
     }
 
+    if (connectap_cnt == 0)
+        awss_event_post(AWSS_BIND_NOTIFY);
+
     do {
         if (awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] != 0) {
             break;
@@ -421,6 +425,10 @@ int awss_suc_notify()
     static char suc_cnt = 0;
 
     awss_debug("resp:%d\r\n", awss_notify_resp[AWSS_NOTIFY_SUC]);
+
+    if (suc_cnt == 0)
+        awss_event_post(AWSS_SUC_NOTIFY);
+
     do {
         if (awss_notify_resp[AWSS_NOTIFY_SUC] != 0) {
             break;

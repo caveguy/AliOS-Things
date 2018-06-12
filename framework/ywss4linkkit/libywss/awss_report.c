@@ -83,10 +83,7 @@ int awss_report_reset_reply(char *topic, int topic_len, void *payload, int paylo
     awss_stop_timer(report_reset_timer);
     report_reset_timer = NULL;
 
-    void *cb = awss_get_event_monitor_cb();
-    if (cb != NULL) {
-        ((void (*)(int))cb)(AWSS_RESET);
-    }
+    awss_event_post(AWSS_RESET);
 
     return 0;
 }
