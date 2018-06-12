@@ -686,9 +686,6 @@ int HAL_Timer_Delete(void *timer);
  */
 int HAL_Register_Recv_Callback(int fd, void (*)(int fd, void *), void *user_data);
 
-int HAL_Sys_Post_Task(int ms, void (*)(void *), void *);
-int HAL_Sys_Cancel_Task(void (*)(void *), void *);
-
 
 /**
  * @brief unregister fd from OS
@@ -701,43 +698,6 @@ int HAL_Sys_Cancel_Task(void (*)(void *), void *);
  * @note None.
  */
 int HAL_Unregister_Recv_Callback(int fd, void (*)(int fd, void *));
-
-
-/**
- * @brief register callback to monitor event.
- *
- * @param[in] event: @n event id.
- * @param[in] callback: @n trigger callback when event occurs, callback(msg, user_data).
- * @param[in] user_data: @n user context, passed by callback.
- * @return 0: Success; -1: Failure.
- * @see None.
- * @note None.
- */
-int HAL_Register_Event(int event, void (*)(void *, void *), void *user_data);
-
-
-/**
- * @brief unregister callback from system.
- *
- * @param[in] event: @n event id.
- * @param[in] callback: @n trigger callback when event occurs, callback(msg, user_data).
- * @return 0: Success; -1: Failure.
- * @see None.
- * @note None.
- */
-int HAL_Unregister_Event(int event, void (*)(void *, void *));
-
-
-/**
- * @brief post event to triger callback which monitor the event.
- *
- * @param[in] event: @n event id.
- * @param[in] msg: @n message passed by callback.
- * @return 0: Success; -1: Failure.
- * @see None.
- * @note None.
- */
-int HAL_Post_Event(int event, void *msg);
 
 
 #endif
