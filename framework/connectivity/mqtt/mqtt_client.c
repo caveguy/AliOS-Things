@@ -1179,7 +1179,11 @@ static int iotx_mc_handle_recv_UNSUBACK(iotx_mc_client_t *c)
     }
 
     iotx_mc_topic_handle_t messageHandler;
+    memset(&messageHandler, 0, sizeof(iotx_mc_topic_handle_t));
     (void)iotx_mc_mask_subInfo_from(c, mypacketid, &messageHandler);
+    if ((NULL == messageHandler.handle.h_fp) || (NULL == messageHandler.topic_filter)) {
+        return MQTT_SUB_INFO_NOT_FOUND_ERROR;
+    }
 
     /* Remove from message handler array */
     HAL_MutexLock(c->lock_generic);
@@ -1914,8 +1918,10 @@ static void iotx_mc_keepalive(iotx_mc_client_t *pClient)
 
         /* If network suddenly interrupted, stop pinging packet, try to reconnect network immediately */
         if (IOTX_MC_STATE_DISCONNECTED == currentState) {
+#ifdef HAL_ASYNC_API
             int fd = -1;
             utils_network_pt network = (utils_network_pt)pClient->ipstack;
+#endif
             log_err("network is disconnected!");
             iotx_mc_disconnect_callback(pClient);
 
@@ -2079,7 +2085,9 @@ static void cb_recv(int fd, void *arg)
 static int iotx_mc_connect(iotx_mc_client_t *pClient)
 {
     int rc = FAIL_RETURN;
+#ifdef HAL_ASYNC_API
     int fd = -1;
+#endif
 
     if (NULL == pClient) {
         return NULL_VALUE_ERROR;
@@ -2213,7 +2221,9 @@ static int iotx_mc_handle_reconnect(iotx_mc_client_t *pClient)
 static int iotx_mc_disconnect(iotx_mc_client_t *pClient)
 {
     int             rc = -1;
+#ifdef HAL_ASYNC_API
     int             fd = -1;
+#endif
 
     if (NULL == pClient) {
         return NULL_VALUE_ERROR;
