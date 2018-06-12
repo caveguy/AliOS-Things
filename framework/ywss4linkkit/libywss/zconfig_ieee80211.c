@@ -1071,6 +1071,11 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth
         }
     }
 
+    if (!strcmp((void *)ssid, zc_adha_ssid) && g_user_press)
+        return 0;
+    if (!strcmp((void *)ssid, zc_default_ssid) && g_user_press == 0)
+        return 0;
+
     if (i < MAX_APLIST_NUM) {
         zconfig_aplist_num ++;
     } else {
@@ -1085,7 +1090,7 @@ static inline int __zconfig_save_apinfo(u8 *ssid, u8* bssid, u8 channel, u8 auth
     zconfig_aplist[i].encry[0] = group_cipher;
     zconfig_aplist[i].encry[1] = pairwise_cipher;
 
-    if (!strcmp((void *)ssid, zc_adha_ssid)) {
+    if (!strcmp((void *)ssid, zc_adha_ssid) || !strcmp((void *)ssid, zc_default_ssid)) {
         if (adha_aplist->cnt < MAX_APLIST_NUM)
             adha_aplist->aplist[adha_aplist->cnt ++] = i;
     }
@@ -1163,9 +1168,12 @@ static inline int zconfig_extract_apinfo_from_beacon(u8 *data, u16 len, signed c
      * device just process aha, and skip all the adha.
      */
     if (g_user_press && !strcmp((void *)ssid, zc_default_ssid)) {
-        memcpy(zc_bssid, bssid, ETH_ALEN);
-        g_user_press = 0;
-        return ALINK_DEFAULT_SSID;
+        if (adha_aplist->cnt > adha_aplist->try_idx) {
+            u8 ap_idx = adha_aplist->aplist[adha_aplist->try_idx ++];
+            memcpy(zc_bssid, zconfig_aplist[ap_idx].mac, ETH_ALEN);
+            g_user_press = 0;
+            return ALINK_DEFAULT_SSID;
+        }
     }
 
     if (!strcmp((void *)ssid, zc_adha_ssid) && g_user_press == 0) {
