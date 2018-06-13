@@ -526,7 +526,7 @@ int iotx_alcs_subdev_update_stage(iotx_alcs_subdev_item_t *item)
                          item->product_key, item->device_name, &subdev_item);
 
     if (subdev_item == NULL) {
-        log_err("No Matched Item");
+        log_debug("No Matched Item");
         return FAIL_RETURN;
     }
 

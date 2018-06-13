@@ -108,19 +108,17 @@ void CoAPServer_retransmit(void *data)
     HAL_Timer_Start(g_retrans_timer, COAP_SERV_WAIT_TIME_MS);
 }
 
-int CoAPServer_recv(intptr_t fd, void *data)
+void CoAPServer_recv(intptr_t fd, void *data)
 {
     CoAPContext *context  = NULL;
 
     if(NULL == data){
-        return -1;
+        return;
     }
 
     COAP_DEBUG("Fd %d is ready to read %p", fd, data);
     context  = (CoAPContext *)data;
     CoAPMessage_process(context, 1);
-
-    return 0;
 }
 
 #endif
