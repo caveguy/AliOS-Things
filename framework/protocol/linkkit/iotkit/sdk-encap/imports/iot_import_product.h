@@ -13,11 +13,17 @@
 #define FIRMWARE_VERSION_MAXLEN     (32 + 1)
 
 
-
+#if 1
 #define PRODUCT_KEY             "b1iuHMGJYGI"
 #define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
 #define DEVICE_NAME             "aaaaaassssssddddddffffffgggggghh"
 #define DEVICE_SECRET           "tmu5qP1GfwBobNd9TxeQ0G8OutVnyrZu"
+#else
+#define PRODUCT_KEY             "b1IZKVmzRSQ"
+#define PRODUCT_SECRET          "bv44lI26i3xJj1Ul"
+#define DEVICE_NAME             "xxxxxxxxxxxxxxxxxxx"
+#define DEVICE_SECRET           "vYVCNToOYerrBOfjBdHJ168tXSfyhp81"
+#endif
 
 /**
  * @brief   获取设备的`Partner ID`, 仅用于紧密合作伙伴
