@@ -23,6 +23,7 @@ extern void on_svr_auth_timer(CoAPContext *);
 
 #ifdef HAL_ASYNC_API
 static void *g_alcs_timer = NULL;
+static void *g_alcs_mqtt_timer = NULL;
 static void alcs_repeat_action(void *handle);
 #endif
 static void alcs_heartbeat(void *handle);
@@ -276,6 +277,11 @@ int iotx_alcs_adapter_deinit(void)
         HAL_Timer_Delete(g_alcs_timer);
         g_alcs_timer = NULL;
     }
+    if(NULL != g_alcs_mqtt_timer){
+        HAL_Timer_Stop(g_alcs_mqtt_timer);
+        HAL_Timer_Delete(g_alcs_mqtt_timer);
+        g_alcs_mqtt_timer = NULL;
+    }
 #endif
 
     alcs_context_deinit();
@@ -283,6 +289,27 @@ int iotx_alcs_adapter_deinit(void)
     alcs_auth_deinit();
 
     return SUCCESS_RETURN;
+}
+
+static void iotx_alcs_adapter_func(void *handle)
+{
+    alcs_mqtt_status_e status = ALCS_MQTT_STATUS_ERROR;
+    char product_key[PRODUCT_KEY_MAXLEN] = {0};
+    char device_name[DEVICE_NAME_MAXLEN] = {0};
+    iotx_alcs_adapter_t *adapter = (iotx_alcs_adapter_t *)handle;
+
+    if(NULL == adapter){
+        return;
+    }
+
+    log_debug("start iotx_alcs_adapter_func");
+    HAL_GetProductKey(product_key);
+    HAL_GetDeviceName(device_name);
+    status = alcs_mqtt_init(adapter->coap_ctx, product_key, device_name);
+    if(ALCS_MQTT_STATUS_SUCCESS != status){
+        HAL_Timer_Stop(g_alcs_mqtt_timer);
+        HAL_Timer_Start(g_alcs_mqtt_timer, 2000);
+    }
 }
 
 int iotx_alcs_adapter_init(iotx_alcs_adapter_t *adapter, iotx_alcs_param_t *param)
@@ -364,13 +391,16 @@ int iotx_alcs_adapter_init(iotx_alcs_adapter_t *adapter, iotx_alcs_param_t *para
         log_err("ALCS Linked List Init Failed");
         return FAIL_RETURN;
     }
-    if (alcs_mqtt_init(adapter->coap_ctx, product_key, device_name) != ALCS_MQTT_STATUS_SUCCESS) {
-        /*solve the prpblem of hard fault when mqtt connection fails once*/
-        //iotx_alcs_adapter_deinit();
-        log_err("ALCS MQTT Init Failed");
-        return FAIL_RETURN;
-    }
+
+    alcs_mqtt_prefixkey_update(adapter->coap_ctx);
+    alcs_mqtt_blacklist_update(adapter->coap_ctx);
+
 #ifdef HAL_ASYNC_API /*&& defined(CM_SUPPORT_MULTI_THREAD)*/
+    g_alcs_mqtt_timer = HAL_Timer_Create("alcsMqtt",  iotx_alcs_adapter_func, (void *)adapter);
+    if(NULL != g_alcs_mqtt_timer){
+        HAL_Timer_Start(g_alcs_mqtt_timer, 1000);
+    }
+
     g_alcs_timer = HAL_Timer_Create("alcsAdpter", alcs_repeat_action, (void *)adapter);
     if(NULL != g_alcs_timer){
         HAL_Timer_Start(g_alcs_timer, 0);
