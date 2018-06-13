@@ -191,7 +191,7 @@ typedef void (*CoAPEventNotifier)(unsigned int event, NetworkAddr *remote, void 
 
 typedef void (*CoAPRecvMsgHandler) (CoAPContext *context, const char *paths, NetworkAddr *remote, CoAPMessage *message);
 
-typedef int (*CoAPDataEncrypt)(CoAPContext *context, NetworkAddr* addr, CoAPMessage* message, CoAPLenString *src, CoAPLenString *dest);
+typedef int (*CoAPDataEncrypt)(CoAPContext *context, const char* paths, NetworkAddr* addr, CoAPMessage* message, CoAPLenString *src, CoAPLenString *dest);
 
 struct CoAPMessage
 {

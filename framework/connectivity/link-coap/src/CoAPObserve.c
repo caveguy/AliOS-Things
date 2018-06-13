@@ -211,7 +211,7 @@ int CoAPObsServer_notify(CoAPContext *context,
                 if(NULL != handler){
                     src.len = payloadlen;
                     src.data = payload;
-                    ret = handler(context, &node->remote, &message, &src, &dest);
+                    ret = handler(context, path, &node->remote, &message, &src, &dest);
                     if(COAP_SUCCESS == ret){
                         CoAPMessagePayload_set(&message, dest.data, dest.len);
                     }else{

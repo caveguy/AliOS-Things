@@ -18,7 +18,7 @@
 
 
 
-#include "stdio.h"
+#include <stdio.h>
 #include "CoAPExport.h"
 #include "CoAPSerialize.h"
 #include "CoAPDeserialize.h"
@@ -28,7 +28,6 @@
 #include "CoAPPlatform.h"
 #include "CoAPInternal.h"
 #include "lite-list.h"
-#include <aos/aos.h>
 
 #define COAPAckMsg(header) \
     ((header.code == COAP_MSG_CODE_EMPTY_MESSAGE) \
