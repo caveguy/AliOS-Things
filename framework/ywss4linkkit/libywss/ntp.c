@@ -47,11 +47,11 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
 #define SERVER_RX_TIME       "serverRecvTime"
 #define SERVER_TX_TIME       "serverSendTime"
 
+    int len = 0;
     char *elem = NULL;
-    int len = 0, timeout = 0;
     char server_rx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
     char server_tx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
-    char dev_tx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
+    char dev_diff_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
 
     memset(g_ntp_time, 0, sizeof(g_ntp_time));
 
@@ -76,9 +76,29 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
     elem = json_get_value_by_name(payload, payload_len, DEV_TX_TIME, &len, NULL);
     if (elem == NULL || len <= 0 || len > NTP_TIME_STR_MAX_LEN)
         goto NTP_FAIL;
-    memcpy(dev_tx_time, elem, len);
+    /*
+     * atoi fails to convert string to integer
+     * so we convert manully
+     */
+    uint32_t tx = 0;
+    while (len -- > 0) {
+        tx *= 10;
+        tx += elem[0] - '0';
+        elem ++;
+    }
+    uint32_t rx = os_get_time_ms();
+    uint32_t diff = (rx - tx) >> 1;
+    if (diff >= 1000000) goto NTP_FAIL;
 
-    strncpy(g_ntp_time, server_tx_time, sizeof(server_tx_time) - 1);
+    len = strlen(server_tx_time);
+    elem = &server_tx_time[len > 9 ? len - 9 : 0];
+    tx = atoi(elem);
+    tx += diff;
+    if (tx > 999999999)
+        tx = 999999999;
+    sprintf(elem, "%u", tx);
+
+    strncpy(g_ntp_time, server_tx_time, sizeof(g_ntp_time) - 1);
 
 NTP_FAIL:
     if (g_ntp_reply_cb != NULL)
