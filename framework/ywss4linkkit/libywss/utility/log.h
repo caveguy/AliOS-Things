@@ -88,101 +88,18 @@ do {\
 }while(0)
 
 #define log_fatal(FMT, ...) \
-    log_print(LOG_LEVEL & LL_FATAL, "ALINK", COL_RED, "FATAL", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_FATAL, "iLop", COL_RED, "FATAL", FMT, ##__VA_ARGS__)
 #define log_error(FMT, ...) \
-    log_print(LOG_LEVEL & LL_ERROR, "ALINK", COL_YEL, "ERROR", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_ERROR, "iLop", COL_YEL, "ERROR", FMT, ##__VA_ARGS__)
 #define log_warn(FMT, ...) \
-    log_print(LOG_LEVEL & LL_WARN, "ALINK", COL_BLU, "WARN", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_WARN, "iLop", COL_BLU, "WARN", FMT, ##__VA_ARGS__)
 #define log_info(FMT, ...) \
-    log_print(LOG_LEVEL & LL_INFO, "ALINK", COL_GRE, "INFO", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_INFO, "iLop", COL_GRE, "INFO", FMT, ##__VA_ARGS__)
 #define log_debug(FMT, ...) \
-    log_print(LOG_LEVEL & LL_DEBUG, "ALINK", COL_WHE, "DEBUG", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_DEBUG, "iLop", COL_WHE, "DEBUG", FMT, ##__VA_ARGS__)
 #define log_trace(FMT, ...) \
-    log_print(LOG_LEVEL & LL_TRACE, "ALINK", COL_CYN, "TRACE", FMT, ##__VA_ARGS__)
+    log_print(LOG_LEVEL & LL_TRACE, "iLop", COL_CYN, "TRACE", FMT, ##__VA_ARGS__)
 
 */
-
-
-/******************************************/
-#define CALL_FUCTION_FAILED         "Call function \"%s\" failed\n"
-#define RET_FAILED(ret)  (ret != SERVICE_RESULT_OK)
-
-#define RET_GOTO(Ret,gotoTag,strError, args...)         \
-      {\
-        if ( RET_FAILED(Ret) )    \
-        {   \
-            log_trace(strError, ##args); \
-            goto gotoTag; \
-        }\
-      }
-
-#define RET_FALSE(Ret,strError,args...)         \
-    {\
-        if ( RET_FAILED(Ret) )    \
-        {   \
-            log_trace(strError, ##args); \
-            return false; \
-        }\
-     }
-
-#define RET_RETURN(Ret,strError,args...)         \
-    {\
-        if ( RET_FAILED(Ret) )    \
-        {   \
-            log_trace(strError, ##args); \
-            return Ret; \
-        }\
-    }
-#define RET_LOG(Ret,strError,args...)         \
-    {\
-        if ( RET_FAILED(Ret) )    \
-        {   \
-            log_error(strError, ##args); \
-        }\
-    }
-
-#define PTR_RETURN(Pointer,Ret,strError,args...)         \
-    {\
-        if ( !Pointer)    \
-        {   \
-            log_error(strError, ##args); \
-            return Ret; \
-        }\
-     }
-
-#define PTR_FALSE(Pointer,strError,args...)         \
-    {\
-        if ( !Pointer)    \
-        {   \
-            log_trace(strError, ##args); \
-            return FALSE; \
-        }\
-    }
-#define PTR_LOG(Pointer,strError,args...)         \
-    {\
-        if ( !Pointer)    \
-        {   \
-            log_error(strError, ##args); \
-        }\
-    }
-
-
-#define PTR_GOTO(Pointer, gotoTag, strError, args...)         \
-    {\
-        if ( !Pointer)    \
-        {   \
-            log_trace(strError, ##args); \
-            goto gotoTag; \
-        }\
-     }
-
-#define POINTER_RETURN(Pointer,strError,args...)         \
-    {\
-        if ( !Pointer)    \
-        {   \
-            log_trace(strError, ##args); \
-            return Pointer; \
-        }\
-     }
 
 #endif

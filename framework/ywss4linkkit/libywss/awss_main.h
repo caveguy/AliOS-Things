@@ -28,6 +28,8 @@
 #ifndef _AWSS_MAIN_H_
 #define _AWSS_MAIN_H_
 
+#include "log.h"
+
 #define AWSS_VER                       "{\"smartconfig\":\"2.0\",\"zconfig\":\"2.0\",\"router\":\"2.0\",\"ap\":\"2.0\"}"
 
 #define DEFAULT_SSID                   zc_default_ssid
@@ -45,7 +47,7 @@ extern "C"
 
 #define AWSS_DEBUG 1
 #if (AWSS_DEBUG == 1)
-    #define awss_debug(fmt, args...) os_printf(fmt, ##args)
+    #define awss_debug(fmt, args...) log_debug(fmt, ##args)
 #else
     #define awss_debug(fmt, args...)
 #endif

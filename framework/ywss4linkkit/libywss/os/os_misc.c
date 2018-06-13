@@ -326,7 +326,6 @@ uint32_t os_aton(const char *ip_str)
 		val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
 		break;
 	default:
-		OS_ASSERT(0, "unhandled");
 		break;
 	}
 
@@ -349,10 +348,6 @@ char *os_wifi_get_mac_str(char mac_str[OS_MAC_LEN])
             str++; /* eating char ':' */
         }
     }
-
-    OS_ASSERT(colon_num == (OS_ETH_ALEN - 1)
-            && strlen(mac_str) == OS_MAC_LEN - 1,
-            "invalid mac str format");
 
     for (i = 0; i < OS_MAC_LEN && mac_str[i]; i++) {
         if ('a' <= mac_str[i] && mac_str[i] <= 'z') {

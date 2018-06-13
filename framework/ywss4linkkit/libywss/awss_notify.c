@@ -108,7 +108,7 @@ static inline int awss_suc_notify_resp(void *context, int result, void *userdata
 
 static int awss_notify_response(int type, int result, void *message)
 {
-    awss_debug("%s, type:%d\n", __func__, type);
+    awss_debug("%s, type:%d,result:%u\r\n", __func__, type, result);
 
     if (message == NULL)
         return -1;
@@ -126,6 +126,8 @@ static int awss_notify_response(int type, int result, void *message)
 
         if ((payload = awss_cmp_get_coap_payload(message, &len)) == NULL || len > 0x40 || len == 0)
             return 0;
+
+        awss_debug("payload:%s\r\n", payload);
 
         elem = json_get_value_by_name(payload, len, AWSS_JSON_ID, &mlen, 0);
         if (elem == NULL)
@@ -206,12 +208,8 @@ int awss_notify_dev_info(int type, int count)
         }
     } while (0);
 
-    if (buf) {
-        os_free(buf);
-    }
-    if (dev_info) {
-        os_free(dev_info);
-    }
+    if (buf) os_free(buf);
+    if (dev_info) os_free(dev_info);
 
     return awss_notify_resp[type];
 }

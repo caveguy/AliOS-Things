@@ -81,7 +81,6 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
 
     dev_name = os_zalloc(OS_PRODUCT_NAME_LEN + 1);
     pk = os_zalloc(OS_PRODUCT_KEY_LEN + 1);
-    OS_CHECK_MALLOC(pk && dev_name);
 
     os_product_get_key(pk);
     pk_len = strlen(pk);
@@ -91,7 +90,6 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
 
     len = RANDOM_MAX_LEN + dev_name_len + pk_len;
     text = os_zalloc(len + 1); /* +1 for string print */
-    OS_CHECK_MALLOC(text);
 
     awss_build_sign_src(text, &len);
     if(os_get_conn_encrypt_type() == 3) // aes-key per product
@@ -106,7 +104,6 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
     enrollee_frame_len = sizeof(probe_req_frame) + ie_len;
 
     enrollee_frame = os_zalloc(enrollee_frame_len);
-    OS_CHECK_MALLOC(enrollee_frame);
 
     /* construct the enrollee frame right now */
     len = sizeof(probe_req_frame) - FCS_SIZE;
