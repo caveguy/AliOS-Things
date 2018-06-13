@@ -414,14 +414,18 @@ void CoAPMessage_dump(NetworkAddr *remote, CoAPMessage *message)
 {
     int ret = COAP_SUCCESS;
     unsigned int ctype;
+    unsigned char code, msgclass, detail;
 
     if(NULL == remote || NULL == message){
         return;
     }
+    code = (unsigned char)message->header.code;
+    msgclass = code >> 5;
+    detail = code & 0x1F;
 
     COAP_DEBUG("*********Message Info**********");
     COAP_DEBUG("Version     : %d", message->header.version);
-    COAP_DEBUG("Code        : 0x%x", message->header.code);
+    COAP_DEBUG("Code        : %d.%02d(0x%x)", msgclass, detail, code);
     COAP_DEBUG("Type        : 0x%x", message->header.type);
     COAP_DEBUG("Msgid       : %d", message->header.msgid);
     COAP_DEBUG("Option      : %d", message->optcount);
@@ -473,25 +477,26 @@ int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *mes
                         buff, (unsigned int)msglen, ctx->waittime);
     if (msglen == readlen) {/*Send message success*/
         if (CoAPReqMsg(message->header) || CoAPCONRespMsg(message->header)) {
-            COAP_DEBUG("Add message id %d len %d to the list",
+            COAP_DEBUG("The message id %d len %d send success, add to the list",
                        message->header.msgid, msglen);
             ret = CoAPMessageList_add(ctx, remote, message, buff, msglen);
             if(COAP_SUCCESS != ret){
                 coap_free(buff);
-                COAP_ERR("Add the message to list failed");
+                COAP_ERR("Add the message %d to list failed", message->header.msgid);
                 return ret;
             }
         } else {
             coap_free(buff);
-            COAP_DEBUG("The message %d needless to be retransmitted",
+            COAP_DEBUG("The message %d isn't CON msg, needless to be retransmitted",
                        message->header.msgid);
         }
     } else {
         coap_free(buff);
-        COAP_ERR("CoAP transoprt write failed, return %d", ret);
+        COAP_ERR("CoAP transoprt write failed, send message %d return %d", message->header.msgid, ret);
         return COAP_ERROR_WRITE_FAILED;
     }
 
+    COAP_DEBUG("---------Send a Message--------");
     CoAPMessage_dump(remote, message);
     return COAP_SUCCESS;
 }
