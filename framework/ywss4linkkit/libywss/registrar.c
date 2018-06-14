@@ -215,12 +215,8 @@ static int enrollee_enable_somebody_cipher(char *key, char *dev_name, char *ciph
 
             int key_byte_len = strlen(cipher) / 2;
             uint8_t *key_byte = os_zalloc(MAX_KEY_LEN + 1);
-            OS_CHECK_MALLOC(key_byte);
 
             utils_str_to_hex(cipher, strlen(cipher), key_byte, MAX_KEY_LEN);
-            OS_ASSERT(key_byte_len == AES_KEY_LEN,
-                      "aes key len invalid, %d != %d",
-                      key_byte_len, AES_KEY_LEN);
 
             memcpy((char *)&enrollee_info[i].key[0], key_byte, AES_KEY_LEN);
 
@@ -536,7 +532,6 @@ int awss_report_enrollee(unsigned char *payload, int payload_len, signed char rs
     char *param = NULL, *packet = NULL;
     int packet_len = AWSS_REPORT_PKT_LEN - 1;
 
-    OS_CHECK_PARAMS(payload && payload_len);
     payload_str = os_zalloc(payload_len * 2 + 1);
     param = os_zalloc(AWSS_REPORT_PKT_LEN);
     packet = os_zalloc(AWSS_REPORT_PKT_LEN);
