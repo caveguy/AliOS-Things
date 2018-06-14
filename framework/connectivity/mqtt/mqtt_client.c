@@ -2365,8 +2365,8 @@ static int iotx_mc_report_mid(iotx_mc_client_t *pclient)
     iotx_mqtt_topic_info_t      topic_info;
     char                        requestId[MIDREPORT_REQID_LEN + 1] = {0};
     iotx_device_info_pt         dev  = iotx_device_info_get();
-    char                        pid[PID_STRLEN_MAX + 1] = {0};
-    char                        mid[MID_STRLEN_MAX + 1] = {0};
+    char                        pid[PID_STR_MAXLEN + 1] = {0};
+    char                        mid[MID_STR_MAXLEN + 1] = {0};
 
     memset(pid, 0, sizeof(pid));
     memset(mid, 0, sizeof(mid));

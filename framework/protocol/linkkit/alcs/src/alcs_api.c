@@ -1,8 +1,8 @@
 #include <time.h>
+#include "iot_import.h"
 #include "alcs_api.h"
 #include "alcs_coap.h"
 #include "digest/utils_hmac.h"
-#include "iot_import_awss.h"
 #include "json_parser.h"
 #include "alcs_api_internal.h"
 #include "CoAPPlatform.h"

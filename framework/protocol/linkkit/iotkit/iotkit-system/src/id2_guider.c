@@ -481,8 +481,8 @@ do_exit:
 extern char *guider_get_domain();
 int iotx_guider_id2_authenticate(void)
 {
-    char                partner_id[PID_STRLEN_MAX + 16] = {0};
-    char                module_id[MID_STRLEN_MAX + 16] = {0};
+    char                partner_id[PID_STR_MAXLEN + 16] = {0};
+    char                module_id[MID_STR_MAXLEN + 16] = {0};
     char                guider_url[GUIDER_URL_LEN] = {0};
     SECURE_MODE         secure_mode = MODE_TLS_GUIDER;
     char                guider_sign[GUIDER_SIGN_LEN] = {0};

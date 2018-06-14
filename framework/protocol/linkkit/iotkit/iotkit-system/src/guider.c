@@ -182,7 +182,7 @@ RETURN:
 
 void _ident_partner(char *buf, int len)
 {
-    char                tmp[PID_STRLEN_MAX] = {0};
+    char                tmp[PID_STR_MAXLEN] = {0};
 
     memset(tmp, 0, sizeof(tmp));
     HAL_GetPartnerID(tmp);
@@ -197,7 +197,7 @@ void _ident_partner(char *buf, int len)
 
 void _ident_module(char *buf, int len)
 {
-    char                tmp[MID_STRLEN_MAX] = {0};
+    char                tmp[MID_STR_MAXLEN] = {0};
 
     memset(tmp, 0, sizeof(tmp));
     HAL_GetModuleID(tmp);
@@ -507,8 +507,8 @@ do_exit:
 
 int iotx_guider_authenticate(void)
 {
-    char                partner_id[PID_STRLEN_MAX + 16] = {0};
-    char                module_id[MID_STRLEN_MAX + 16] = {0};
+    char                partner_id[PID_STR_MAXLEN + 16] = {0};
+    char                module_id[MID_STR_MAXLEN + 16] = {0};
     char                guider_url[GUIDER_URL_LEN] = {0};
     SECURE_MODE         secure_mode = MODE_TLS_GUIDER;
     char                guider_sign[GUIDER_SIGN_LEN] = {0};
