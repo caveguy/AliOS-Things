@@ -53,8 +53,8 @@ static int iotx_mc_push_subInfo_to(iotx_mc_client_t *c, int len, unsigned short 
                                    list_node_t **node);
 static int iotx_mc_check_handle_is_identical(iotx_mc_topic_handle_t *messageHandlers1,
                                              iotx_mc_topic_handle_t *messageHandler2);
-#ifdef HAL_ASYNC_API
 static void cb_recv_timeout(void *arg);
+#ifdef HAL_ASYNC_API
 static void cb_recv(int fd, void *arg);
 static int iotx_mqtt_recv_callback(void *handle, int timeout_ms);
 #endif
@@ -2045,7 +2045,7 @@ static int MQTTPubInfoProc(iotx_mc_client_t *pClient)
     return SUCCESS_RETURN;
 }
 
-#ifdef HAL_ASYNC_API
+
 static void cb_recv_timeout(void *arg)
 {
     iotx_mc_client_t *pClient = (iotx_mc_client_t *)arg;
@@ -2060,6 +2060,7 @@ static void cb_recv_timeout(void *arg)
     HAL_Timer_Start(pClient->ping_timer, pClient->connect_data.keepAliveInterval * 1000);
 }
 
+#ifdef HAL_ASYNC_API
 static void cb_recv(int fd, void *arg)
 {
     iotx_mc_client_t *pClient = (iotx_mc_client_t *)arg;
