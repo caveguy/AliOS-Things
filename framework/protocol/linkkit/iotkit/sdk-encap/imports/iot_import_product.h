@@ -22,8 +22,18 @@
 #if 1
 #define PRODUCT_KEY             "b1iuHMGJYGI"
 #define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
+#define DEVICE_NAME             "oooooooooooooooooooooooooooooooo"
+#define DEVICE_SECRET           "ri2CWiX0HYlBGQXaF4LjWozf6YAsebOE"
+#elif 0
+#define PRODUCT_KEY             "b1iuHMGJYGI"
+#define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
 #define DEVICE_NAME             "aaaaaassssssddddddffffffgggggghh"
 #define DEVICE_SECRET           "tmu5qP1GfwBobNd9TxeQ0G8OutVnyrZu"
+#elif 0
+#define PRODUCT_KEY             "a15PBSCMz22"
+#define PRODUCT_SECRET          "a1UXk99ZK3A"
+#define DEVICE_NAME             "light-hy"
+#define DEVICE_SECRET           "jGwLqSrNzPQUFE8sgyMFBSOHSyMRkYA2"
 #else
 #define PRODUCT_KEY             "b1IZKVmzRSQ"
 #define PRODUCT_SECRET          "bv44lI26i3xJj1Ul"
