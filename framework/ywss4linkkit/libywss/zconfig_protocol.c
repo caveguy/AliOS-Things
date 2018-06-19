@@ -1277,7 +1277,7 @@ static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
 */
 int is_invalid_pkg(void *pkt_data, u32 pkt_length)
 {
-#define MIN_PKG         (10)
+#define MIN_PKG         (33)
 #define MAX_PKG         (1480 + 56 + 200)
     if (pkt_length < MIN_PKG || pkt_length > MAX_PKG)
       return 1;
