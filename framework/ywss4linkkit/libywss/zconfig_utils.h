@@ -38,32 +38,10 @@ extern "C"
 #ifndef DEBUG
     #define __zc_loglevel_printf(log_level, format, ...)	do { } while (0)
 #else
-
-#ifdef _PLATFORM_QCOM_
-    extern int cmnos_printf(const char * format, ...);
-    #define __zc_loglevel_printf(log_level, format, ...)	\
-        do {													\
-            cmnos_printf(format, ##__VA_ARGS__);					\
-        } while (0)
-#elif defined (_PLATFORM_ESPRESSIF_)
-    extern int printf(const char *format, ...);
-    #define __zc_loglevel_printf(log_level, format, ...)	\
-        do {													\
-            printf(format, ##__VA_ARGS__);					\
-        } while (0)
-#elif defined (_PLATFORM_REALTEK_) //realtek 8711
-    extern int printf(const char *format, ...);
-    #define __zc_loglevel_printf(log_level, format, ...)	\
-        do {													\
-            printf(format, ##__VA_ARGS__);					\
-        } while (0)
-#else
     #define __zc_loglevel_printf(log_level, format, ...)	\
     do {													\
             os_printf(format, ##__VA_ARGS__);		\
     } while (0)
-#endif //end of _PLATFORM_QCOM_
-
 #endif //end of ifndef DEBUG
 
 //for library safety, close the log output 
