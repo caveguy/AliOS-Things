@@ -39,6 +39,7 @@ const char *secmode_str[] = {
 
 #ifdef SUPPORT_SINGAPORE_DOMAIN
 int g_domain_type = 1;
+#define SUPPORT_AUTH_ROUTER
 #else
 int g_domain_type = 0;
 #endif /* SUPPORT_SINGAPORE_DOMAIN */
@@ -59,10 +60,25 @@ char *guider_get_domain()
 }
 
 
+static int                  iotx_guider_authed = 0;
+
+void iotx_guider_auth_set(int authed)
+{
+    iotx_guider_authed = authed;
+}
+
+int iotx_guider_auth_get(void)
+{
+    return iotx_guider_authed;
+}
+
+
 static int _calc_hmac_signature(
     char *hmac_sigbuf,
     const int hmac_buflen,
-    const char *timestamp_str)
+    const char *timestamp_str,
+    int is_for_ext,
+    int ext_value)
 {
     char                    signature[64];
     char*                   hmac_source;
@@ -76,13 +92,24 @@ static int _calc_hmac_signature(
     hmac_source = LITE_malloc(512);
     LITE_ASSERT(hmac_source);
     memset(hmac_source, 0, 512);
-    rc = HAL_Snprintf(hmac_source,
+    if (is_for_ext) {
+        rc = HAL_Snprintf(hmac_source,
+                      512,
+                      "clientId%s" "deviceName%s" "ext%d" "productKey%s" "timestamp%s",
+                      dev->device_id,
+                      dev->device_name,
+					  ext_value,
+                      dev->product_key,
+                      timestamp_str);
+    } else {
+        rc = HAL_Snprintf(hmac_source,
                       512,
                       "clientId%s" "deviceName%s" "productKey%s" "timestamp%s",
                       dev->device_id,
                       dev->device_name,
                       dev->product_key,
                       timestamp_str);
+	}
 
     utils_hmac_sha1(hmac_source, strlen(hmac_source),
                     signature,
@@ -362,7 +389,10 @@ static char *guider_set_auth_req_str(char sign[], char ts[])
 
     rc = sprintf(ret,
                  "productKey=%s&" "deviceName=%s&" "signmethod=%s&" "sign=%s&"
-                 "version=default&" "clientId=%s&" "timestamp=%s&" "resources=mqtt"
+                 "version=default&" "clientId=%s&" "timestamp=%s&" "resources=mqtt"			 
+#ifdef SUPPORT_AUTH_ROUTER
+                 "&ext=1"
+#endif
                  , dev->product_key
                  , dev->device_name
                  , SHA_METHOD
@@ -528,16 +558,20 @@ int iotx_guider_authenticate(void)
     guider_get_url(guider_url, sizeof(guider_url));
     secure_mode = guider_get_secure_mode();
     guider_get_timestamp_str(timestamp_str, sizeof(timestamp_str));
-    _calc_hmac_signature(guider_sign, sizeof(guider_sign), timestamp_str);
-
-    guider_print_dev_guider_info(dev, partner_id, module_id, guider_url, secure_mode,
-                                 timestamp_str, guider_sign, NULL, NULL);
 
 #ifndef MQTT_DIRECT
     char            iotx_conn_host[HOST_ADDRESS_LEN + 1] = {0};
     uint16_t        iotx_conn_port = 1883;
     char            iotx_id[GUIDER_IOT_ID_LEN + 1] = {0};
     char            iotx_token[GUIDER_IOT_TOKEN_LEN + 1] = {0};
+
+#ifdef SUPPORT_AUTH_ROUTER
+    _calc_hmac_signature(guider_sign, sizeof(guider_sign), timestamp_str, 1, 1);
+#else
+    _calc_hmac_signature(guider_sign, sizeof(guider_sign), timestamp_str, 0, 0);
+#endif
+    guider_print_dev_guider_info(dev, partner_id, module_id, guider_url, secure_mode,
+                                 timestamp_str, guider_sign, NULL, NULL);
 
 
     req_str = guider_set_auth_req_str(guider_sign, timestamp_str);
@@ -551,12 +585,18 @@ int iotx_guider_authenticate(void)
                                        iotx_conn_host,
                                        &iotx_conn_port)) {
         if (req_str) {
-            HAL_Free(req_str);
+            	LITE_free(req_str);
         }
 
         log_err("_iotId_iotToken_http() failed");
         return -1;
     }
+#else
+    _calc_hmac_signature(guider_sign, sizeof(guider_sign), timestamp_str, 0, 0);
+
+    guider_print_dev_guider_info(dev, partner_id, module_id, guider_url, secure_mode,
+                                 timestamp_str, guider_sign, NULL, NULL);
+
 #endif
 
     /* Start Filling Connection Information */
@@ -624,7 +664,7 @@ int iotx_guider_authenticate(void)
     guider_print_conn_info(conn);
 
     if (req_str) {
-        HAL_Free(req_str);
+        LITE_free(req_str);
     }
 
     return 0;

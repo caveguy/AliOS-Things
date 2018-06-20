@@ -537,7 +537,7 @@ int iotx_guider_id2_authenticate(void)
                                            iotx_conn_host,
                                            &iotx_conn_port)) {
         if (req_str) {
-            HAL_Free(req_str);
+            LITE_free(req_str);
         }
 
         log_err("_iotId_iotToken_http() failed");
@@ -611,7 +611,7 @@ int iotx_guider_id2_authenticate(void)
     guider_print_conn_info(conn);
 
     if (req_str) {
-        HAL_Free(req_str);
+        LITE_free(req_str);
     }
 
     LITE_free(id2);
