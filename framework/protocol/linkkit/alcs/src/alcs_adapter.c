@@ -21,11 +21,9 @@ static iotx_alcs_adapter_t g_alcs_adapter;
 extern void on_client_auth_timer(CoAPContext *);
 extern void on_svr_auth_timer(CoAPContext *);
 
-#ifdef HAL_ASYNC_API
 static void *g_alcs_timer = NULL;
 static void *g_alcs_mqtt_timer = NULL;
 static void alcs_repeat_action(void *handle);
-#endif
 static void alcs_heartbeat(void *handle);
 
 static iotx_alcs_adapter_t *__iotx_alcs_get_ctx(void)
@@ -271,7 +269,6 @@ int iotx_alcs_adapter_deinit(void)
     alcs_mqtt_deinit(adapter->coap_ctx, product_key, device_name);
 
     //if (adapter->coap_ctx) CoAPContext_free(adapter->coap_ctx);
-#ifdef HAL_ASYNC_API
     if(NULL != g_alcs_timer){
         HAL_Timer_Stop(g_alcs_timer);
         HAL_Timer_Delete(g_alcs_timer);
@@ -282,7 +279,6 @@ int iotx_alcs_adapter_deinit(void)
         HAL_Timer_Delete(g_alcs_mqtt_timer);
         g_alcs_mqtt_timer = NULL;
     }
-#endif
 
     alcs_context_deinit();
     alcs_deinit();
@@ -395,7 +391,6 @@ int iotx_alcs_adapter_init(iotx_alcs_adapter_t *adapter, iotx_alcs_param_t *para
     alcs_mqtt_prefixkey_update(adapter->coap_ctx);
     alcs_mqtt_blacklist_update(adapter->coap_ctx);
 
-#ifdef HAL_ASYNC_API /*&& defined(CM_SUPPORT_MULTI_THREAD)*/
     g_alcs_mqtt_timer = HAL_Timer_Create("alcsMqtt",  iotx_alcs_adapter_func, (void *)adapter);
     if(NULL != g_alcs_mqtt_timer){
         HAL_Timer_Start(g_alcs_mqtt_timer, 1000);
@@ -405,8 +400,6 @@ int iotx_alcs_adapter_init(iotx_alcs_adapter_t *adapter, iotx_alcs_param_t *para
     if(NULL != g_alcs_timer){
         HAL_Timer_Start(g_alcs_timer, 0);
     }
-
-#endif
 
     return SUCCESS_RETURN;
 }
@@ -591,7 +584,6 @@ int IOT_ALCS_Destroy(void **phandle)
     return SUCCESS_RETURN;
 }
 
-#ifdef HAL_ASYNC_API
 static void alcs_repeat_action(void *handle)
 {
     if (handle == NULL) {
@@ -601,7 +593,6 @@ static void alcs_repeat_action(void *handle)
     HAL_Timer_Stop(g_alcs_timer);
     HAL_Timer_Start(g_alcs_timer, 1000);
 }
-#endif
 
 static void alcs_heartbeat(void *handle)
 {
