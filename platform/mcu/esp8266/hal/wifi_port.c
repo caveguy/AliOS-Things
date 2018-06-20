@@ -666,14 +666,12 @@ void ICACHE_FLASH_ATTR sniffer_wifi_promiscuous_rx(uint8_t *buf, uint16_t buf_le
 
 static void start_monitor(hal_wifi_module_t *m)
 {
-    uint8_t mac[6];
-    wifi_set_opmode(STATION_MODE);
-    wifi_get_macaddr(STATION_IF, mac);
     wifi_station_disconnect();
+    WIFI_MODE mode = wifi_get_opmode_default();
+    wifi_set_mode(mode);
     wifi_promiscuous_enable(0);
     wifi_set_promiscuous_rx_cb(sniffer_wifi_promiscuous_rx);
     wifi_promiscuous_enable(1);
-    wifi_promiscuous_set_mac(mac);
 }
 
 static void stop_monitor(hal_wifi_module_t *m)
