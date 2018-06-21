@@ -529,7 +529,7 @@ uintptr_t HAL_SSL_Establish(const char *host,
 
     //mbedtls_platform_set_calloc_free(LITE_calloc_routine, LITE_free_routine);
 
-    pTlsData = LITE_malloc(sizeof(TLSDataParams_t), MEM_MAGIC, "HAL");
+    pTlsData = HAL_Malloc(sizeof(TLSDataParams_t));
     if (NULL == pTlsData) {
         return (uintptr_t)NULL;
     }
