@@ -743,26 +743,6 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
     return GOT_SSID_PASSWD;
 }
 
-/* debug code */
-void dump_pkgs(u8 tods)
-{
-    u8 package_num, i, data, score;
-    u8 buf[128];
-
-    /* package num */
-    package_num = pkg_len(1) & PAYLOAD_BITS_MASK;/* total len, include len(1B) & crc(2B) */
-
-    for (i = 1; i <= package_num; i ++) {
-        data = pkg_len(i);
-        score = pkg_score(i);
-        buf[i - 1] = data & PAYLOAD_BITS_MASK;
-        os_printf("%02x %s", score, (i % GROUP_NUMBER == 0) ? "  " : "");
-    }
-    os_printf("\r\n");
-
-    dump_hex(&buf[0], package_num, GROUP_NUMBER);
-}
-
 static inline int package_cmp(u8 *package, u8 *src, u8 *dst, u8 tods, u16 len)
 {
     struct package *pkg = (struct package *)package;
@@ -889,6 +869,7 @@ found_match:
         if (channel != ap_info->channel) {
             awss_debug("fix channel from %d to %d\r\n", channel, ap_info->channel);
             zc_channel = ap_info->channel;//fix by ap_info channel
+            aws_switch_dst_chan(zc_channel);
         }
     } else {
         /* warning: channel may eq 0! */
