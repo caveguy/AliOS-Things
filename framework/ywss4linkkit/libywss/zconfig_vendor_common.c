@@ -82,7 +82,7 @@ struct aws_info {
 #define aws_start_timestamp          (aws_info->start_timestamp)
 #define aws_stop                     (aws_info->stop)
 
-#define aws_channel_lock_timeout_ms  (4 * 1000)
+#define aws_channel_lock_timeout_ms  (8 * 1000)
 
 static const u8 aws_fixed_scanning_channels[] = {
     1, 6, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
@@ -223,6 +223,35 @@ void aws_switch_channel(void)
     aws_chn_timestamp = os_get_time_ms();
 
     os_printf("chan %d\r\n", channel);
+}
+
+void aws_switch_dst_chan(int channel)
+{
+    int i = aws_chn_index;
+    for (; i < AWS_MAX_CHN_NUMS; i ++) {
+        if (aws_chn_list[i] == 0)
+            continue;
+        if (aws_chn_list[i] == channel)
+            break;
+    }
+
+    if (i >= AWS_MAX_CHN_NUMS) {
+        for (i = 0; i < aws_chn_index; i ++) {
+             if (aws_chn_list[i] == 0)
+                 continue;
+             if (aws_chn_list[i] == channel)
+                 break;
+        }
+    }
+    if (i == aws_chn_index) // no need to switch channel.
+        return;
+
+    aws_chn_index = i;
+    aws_locked_chn = channel;
+    os_awss_switch_channel(channel, 0, NULL);
+    aws_chn_timestamp = os_get_time_ms();
+
+    info("adjust chan %d\r\n", channel);
 }
 
 enum {
