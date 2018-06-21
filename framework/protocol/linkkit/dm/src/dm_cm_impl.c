@@ -140,9 +140,10 @@ static void dm_cm_register_action(void *params)
 
     dm_lite_free(param);
 	
-	HAL_Timer_Stop(g_dm_cm_timer_param->timer);
+	  HAL_Timer_Stop(g_dm_cm_timer_param->timer);
+	  HAL_Timer_Delete(g_dm_cm_timer_param->timer);
 	
-	dm_cm_impl_remove_timer();
+	  dm_cm_impl_remove_timer();
 
     dm_log_debug("ret = IOT_CM_Register() = %d\n", ret);
 
@@ -192,8 +193,8 @@ static int dm_cm_impl_regist(void *_self, char *uri, iotx_cm_register_fp_t regis
     para->URI = topic;
 
     dm_printf("post_delayed() before: %d, uri: %s\n", time, para->URI);
-	timer = HAL_Timer_Create("dm", dm_cm_register_action, para);
-	dm_cm_impl_add_timer(timer, para);
+	  timer = HAL_Timer_Create("dm", dm_cm_register_action, para);
+	  dm_cm_impl_add_timer(timer, para);
     HAL_Timer_Start(timer, time);	
 
     dm_log_debug("post_delayed() = %d\n", ret);
