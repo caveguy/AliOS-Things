@@ -666,9 +666,8 @@ void ICACHE_FLASH_ATTR sniffer_wifi_promiscuous_rx(uint8_t *buf, uint16_t buf_le
 
 static void start_monitor(hal_wifi_module_t *m)
 {
+    wifi_set_mode(STATION_MODE);
     wifi_station_disconnect();
-    WIFI_MODE mode = wifi_get_opmode_default();
-    wifi_set_mode(mode);
     wifi_promiscuous_enable(0);
     wifi_set_promiscuous_rx_cb(sniffer_wifi_promiscuous_rx);
     wifi_promiscuous_enable(1);
