@@ -369,7 +369,7 @@ static int _TLSConnectNetwork(TLSDataParams_t *pTlsData, const char *addr, const
 
     while ((ret = mbedtls_ssl_handshake(&(pTlsData->ssl))) != 0) {
         if ((ret != MBEDTLS_ERR_SSL_WANT_READ) && (ret != MBEDTLS_ERR_SSL_WANT_WRITE)) {
-            SSL_LOG("failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret);
+            SSL_LOG("failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret);			
             return ret;
         }
     }
@@ -537,14 +537,9 @@ uintptr_t HAL_SSL_Establish(const char *host,
     sprintf(port_str, "%u", port);
 
     if (0 != _TLSConnectNetwork(pTlsData, host, port_str, ca_crt, ca_crt_len, NULL, 0, NULL, 0, NULL, 0)) {
-        mbedtls_x509_crt_free(&(pTlsData->cacertl));
-        mbedtls_x509_crt_free(&(pTlsData->clicert));
-        if (pTlsData->ssl.hostname) {
-            mbedtls_free(pTlsData->ssl.hostname);
-            pTlsData->ssl.hostname = NULL;
-        }
-        LITE_free(pTlsData);
-        return 0;
+        _network_ssl_disconnect(pTlsData);
+        HAL_Free((void *)pTlsData);
+        return (uintptr_t)NULL;
     }
     return (uintptr_t)pTlsData;
 }
