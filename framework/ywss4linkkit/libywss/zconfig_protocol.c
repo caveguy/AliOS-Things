@@ -103,8 +103,8 @@ static inline u8 get_group_index(u16 len)
 
 static inline u8 get_data_index(u16 len)
 {
-    u8 index = (len >> PAYLOAD_BITS_CNT) & 0xF;
-    return index - (ZC_GRP_PKT_IDX_START - 1);        /* from 1 to 9 */
+    u8 index = (len >> PAYLOAD_BITS_CNT) & 0xF;  /* from 2 to 9 */
+    return index - (ZC_GRP_PKT_IDX_START - 1);   /* adjust, from 1 to 8 */
 }
 
 #define sn_minus(a,b)    (((a) - (b)) & 0xfff)
@@ -334,8 +334,8 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
 {
     int i, ssid_len, package_num, passwd_len, ret;
     u8 *buf, *pbuf, *tmp, flag, passwd_encrypt, passwd_cipher_len = 0;
-    u8 data, score = score;
     u16 crc, cal_crc;
+    u8 data, score;
 
     if (!zconfig_recv_completed(tods))
         return -1;
@@ -369,7 +369,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
     passwd_encrypt = (flag & PASSWD_ENCRYPT_MASK) >> PASSWD_ENCRYPT_BIT_OFFSET;
 
     if (passwd_encrypt == PASSWD_ENCRYPT_CIPHER || passwd_encrypt == PASSWD_ENCRYPT_OPEN) {
-        log_error("!aes128-cfb is not support: flag 0x%x\r\n", flag);
+        os_printf("!aes128-cfb is not support: flag 0x%x\r\n", flag);
         ret = -1;
         goto exit;
     } else {
@@ -377,8 +377,19 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
     }
 
     if (crc != cal_crc) {
-        log_error("crc error: recv 0x%x != 0x%x\r\n", crc, cal_crc);
-        memset(zconfig_data, 0, sizeof(*zconfig_data));
+        os_printf("crc error: recv 0x%x != 0x%x\r\n", crc, cal_crc);
+        //memset(zconfig_data, 0, sizeof(*zconfig_data));
+        u8 tods_tmp = tods;
+        for (tods = 0; tods < 2; tods ++) {
+            for (i = 1; i <= package_num; i ++) {
+                score = pkg_score(i);
+                if (score > 0x60)
+                    pkg_score(i) = 0x60;
+                else
+                    pkg_score(i) = score >> 1;
+            }
+        }
+        tods = tods_tmp;
         ret = -1;
         awss_event_post(AWSS_CS_ERR);
         goto exit;
@@ -439,7 +450,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         memset(zc_passwd, 0, ZC_MAX_PASSWD_LEN);
         aes_decrypt_string((char *)tmp, (char *)zc_passwd, passwd_len, os_get_encrypt_type(), 0);
         if (is_utf8((const char *)zc_passwd, passwd_len) == 0) {
-            log_error("passwd err\r\n");
+            os_printf("passwd err\r\n");
             memset(zconfig_data, 0, sizeof(*zconfig_data));
             awss_event_post(AWSS_PASSWD_ERR);
             ret = -1;
@@ -452,7 +463,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
             tmp[i] += 32;
         strncpy((char *)zc_passwd, (const char *)tmp, ZC_MAX_PASSWD_LEN);
 
-        log_error("encrypt:%d not support\r\n", passwd_encrypt);
+        os_printf("encrypt:%d not support\r\n", passwd_encrypt);
         memset(zconfig_data, 0, sizeof(*zconfig_data));
         ret = -1;
         goto exit;
@@ -1109,7 +1120,7 @@ static inline int try_to_replace_same_pos(int tods, int pos, int new_len)
             new_match = 1;
     }
 
-    if (old_match && !new_match) {
+    if ((old_match && !new_match) || tods == 0) {
         replace = 1;
         pkg_len(pos) = new_len;
     }
