@@ -507,14 +507,14 @@ int HAL_Wifi_Get_Ap_Info(
     _OU_ char passwd[HAL_MAX_PASSWD_LEN],
     _OU_ uint8_t bssid[ETH_ALEN])
 {
-    netmgr_ap_config_t config;
+    netmgr_ap_config_t config = {0};
 
     netmgr_get_ap_config(&config);
     if (ssid) {
-        strncpy(ssid, config.ssid, PLATFORM_MAX_SSID_LEN);
+        strncpy(ssid, config.ssid, PLATFORM_MAX_SSID_LEN - 1);
     }
     if (passwd) {
-        strncpy(passwd, config.pwd, PLATFORM_MAX_PASSWD_LEN);
+        strncpy(passwd, config.pwd, PLATFORM_MAX_PASSWD_LEN - 1);
     }
     if (bssid) {
         memcpy(bssid, config.bssid, ETH_ALEN);
