@@ -392,7 +392,7 @@ static void schedule_timer_cancel(void *p)
     }
 
     schedule_timer_t *pdata =p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+    aos_cancel_delayed_action(-1, pdata->cb, pdata->data);
 }
 
 static void schedule_timer_delete(void *p)
@@ -402,7 +402,7 @@ static void schedule_timer_delete(void *p)
     }
 
     schedule_timer_t *pdata =p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+    aos_cancel_delayed_action(-1, pdata->cb, pdata->data);
     aos_free(p);
 }
 
@@ -418,7 +418,7 @@ void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
     timer->name = name;
     timer->cb = func;
     timer->data = user_data;
-    
+
     return timer;
 #else
     return NULL;
