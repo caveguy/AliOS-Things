@@ -875,6 +875,8 @@ static void registrar_raw_frame_init(struct enrollee_info *enr)
 
     os_wifi_get_ap_info(ssid, passwd, bssid);
     ssid_len = strlen(ssid);
+    if (ssid_len > OS_MAX_SSID_LEN - 1)
+        ssid_len = OS_MAX_SSID_LEN - 1;
     passwd_len = strlen(passwd);
 
     ie_len = ENROLLEE_SIGN_SIZE + ssid_len + passwd_len + REGISTRAR_IE_FIX_LEN;
