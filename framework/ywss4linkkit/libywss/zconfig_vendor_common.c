@@ -215,17 +215,28 @@ void aws_send_aha_probe_req()
     os_wifi_send_80211_raw_frame(FRAME_PROBE_REQ, probe, sizeof(probe));
 }
 
+static void aws_switch_dst_chan(int channel);
+static int aws_amend_dst_chan = 0;
 void aws_switch_channel(void)
 {
+    if (aws_amend_dst_chan != 0) {
+        aws_switch_dst_chan(aws_amend_dst_chan);
+        aws_amend_dst_chan = 0;
+        return;
+    }
+
     int channel = aws_next_channel();
-    os_awss_switch_channel(channel, 0, NULL);
-
     aws_chn_timestamp = os_get_time_ms();
-
+    os_awss_switch_channel(channel, 0, NULL);
     os_printf("chan %d\r\n", channel);
 }
 
-void aws_switch_dst_chan(int channel)
+void aws_set_dst_chan(int channel)
+{
+    aws_amend_dst_chan = channel;
+}
+
+static void aws_switch_dst_chan(int channel)
 {
     int i = aws_chn_index;
     for (; i < AWS_MAX_CHN_NUMS; i ++) {
@@ -248,10 +259,11 @@ void aws_switch_dst_chan(int channel)
 
     aws_chn_index = i;
     aws_locked_chn = channel;
-    os_awss_switch_channel(channel, 0, NULL);
     aws_chn_timestamp = os_get_time_ms();
+    aws_state = AWS_CHN_LOCKED;
+    os_awss_switch_channel(channel, 0, NULL);
 
-    info("adjust chan %d\r\n", channel);
+    os_printf("adjust chan %d\r\n", channel);
 }
 
 enum {
@@ -341,7 +353,7 @@ void aws_main_thread_func(void)
 
 rescanning:
     //start scaning channel
-    while (aws_state == AWS_SCANNING || aws_force_scanning()) {
+    while (aws_amend_dst_chan != 0 || aws_state == AWS_SCANNING || aws_force_scanning()) {
         switch (aws_is_chnscan_timeout()) {
         case CHNSCAN_ONGOING:
             break;
@@ -353,6 +365,9 @@ rescanning:
         default:
             break;
         }
+
+        if (aws_state != AWS_SCANNING)
+            break;
 
         int interval = (os_awss_get_channelscan_interval_ms() + 2) / 3;
         if (interval < 1)

@@ -879,8 +879,8 @@ found_match:
     if (ap_info && ap_info->encry[tods] == encry && ap_info->channel) {
         if (channel != ap_info->channel) {
             awss_debug("fix channel from %d to %d\r\n", channel, ap_info->channel);
-            zc_channel = ap_info->channel;//fix by ap_info channel
-            aws_switch_dst_chan(zc_channel);
+            zc_channel = ap_info->channel;  // fix by ap_info channel
+            aws_set_dst_chan(zc_channel);
         }
     } else {
         /* warning: channel may eq 0! */
