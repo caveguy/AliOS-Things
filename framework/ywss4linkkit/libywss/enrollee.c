@@ -76,8 +76,9 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
     int dev_name_len, pk_len;
     int len, ie_len;
 
-    if (enrollee_frame_len)
+    if (enrollee_frame_len) {
         return;
+    }
 
     dev_name = os_zalloc(OS_PRODUCT_NAME_LEN + 1);
     pk = os_zalloc(OS_PRODUCT_KEY_LEN + 1);
@@ -92,10 +93,11 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
     text = os_zalloc(len + 1); /* +1 for string print */
 
     awss_build_sign_src(text, &len);
-    if(os_get_conn_encrypt_type() == 3) // aes-key per product
+    if (os_get_conn_encrypt_type() == 3) { // aes-key per product
         os_product_get_secret(key);
-    else  // aes-key per device
+    } else { // aes-key per device
         os_get_device_secret(key);
+    }
     produce_signature(sign, (uint8_t *)text, len, key);
 
     os_free(text);
@@ -164,8 +166,9 @@ void awss_destroy_enrollee_info(void)
 
 void awss_broadcast_enrollee_info(void)
 {
-    if (enrollee_frame_len == 0 || enrollee_frame == NULL)
+    if (enrollee_frame_len == 0 || enrollee_frame == NULL) {
         return;
+    }
 
     os_wifi_send_80211_raw_frame(FRAME_PROBE_REQ, enrollee_frame,
                                  enrollee_frame_len);
@@ -173,10 +176,10 @@ void awss_broadcast_enrollee_info(void)
 
 /* return 0 for success, -1 dev_name not match, otherwise return -2 */
 static int decrypt_ssid_passwd(
-            uint8_t *ie, uint8_t ie_len,
-            uint8_t out_ssid[OS_MAX_SSID_LEN],
-            uint8_t out_passwd[OS_MAX_PASSWD_LEN],
-            uint8_t out_bssid[ETH_ALEN])
+    uint8_t *ie, uint8_t ie_len,
+    uint8_t out_ssid[OS_MAX_SSID_LEN],
+    uint8_t out_passwd[OS_MAX_PASSWD_LEN],
+    uint8_t out_bssid[ETH_ALEN])
 {
     uint8_t tmp_ssid[OS_MAX_SSID_LEN + 1] = {0}, tmp_passwd[OS_MAX_PASSWD_LEN + 1] = {0};
     uint8_t *p_dev_name_sign = NULL, *p_ssid = NULL, *p_passwd = NULL, *p_bssid = NULL;
