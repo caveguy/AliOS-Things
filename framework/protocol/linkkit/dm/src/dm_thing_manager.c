@@ -2049,7 +2049,7 @@ static void generate_subscribe_uri(void *_dm_thing_manager, void *_thing, int cl
 #endif
     const char *common_uri_array[] = {string_method_name_thing_enable, string_method_name_thing_delete, string_method_name_thing_disable,};
 
-    if (dm_thing_manager->_cloud_connected == 0) {
+    if (dm_thing_manager->_cloud_connected == 0 && cloud) {
         dm_log_err("subscribe not allowed when cloud not connected");
         return;
     }
