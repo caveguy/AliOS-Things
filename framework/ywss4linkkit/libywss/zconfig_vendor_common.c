@@ -110,33 +110,35 @@ u8 aws_result_encry = ZC_ENC_TYPE_INVALID;
 u8 aws_result_channel = 0;
 
 void zconfig_channel_locked_callback(u8 primary_channel,
-        u8 secondary_channel, u8 *bssid)
+                                     u8 secondary_channel, u8 *bssid)
 {
     aws_locked_chn = primary_channel;
-    if (bssid)
+    if (bssid) {
         memcpy(aws_locked_bssid, bssid, 6);
+    }
 
-    if (aws_state == AWS_SCANNING)
+    if (aws_state == AWS_SCANNING) {
         aws_state = AWS_CHN_LOCKED;
+    }
 
     awss_event_post(AWSS_LOCK_CHAN);
 }
 
 void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
-        u8 *bssid, u8 auth, u8 encry, u8 channel)
+                                      u8 *bssid, u8 auth, u8 encry, u8 channel)
 {
     if (bssid) {
         awss_debug("ssid:%s, passwd:%s, bssid:%02x%02x%02x%02x%02x%02x, %s, %s, %d\r\n",
-              ssid, passwd,
-              bssid[0], bssid[1], bssid[2],
-              bssid[3], bssid[4], bssid[5],
-              zconfig_auth_str(auth), zconfig_encry_str(encry),
-              channel);
+                   ssid, passwd,
+                   bssid[0], bssid[1], bssid[2],
+                   bssid[3], bssid[4], bssid[5],
+                   zconfig_auth_str(auth), zconfig_encry_str(encry),
+                   channel);
     } else {
         awss_debug("ssid:%s, passwd:%s, bssid:--, %s, %s, %d\r\n",
-              ssid, passwd,
-              zconfig_auth_str(auth), zconfig_encry_str(encry),
-              channel);
+                   ssid, passwd,
+                   zconfig_auth_str(auth), zconfig_encry_str(encry),
+                   channel);
     }
 
     memcpy(aws_result_ssid, ssid, ZC_MAX_SSID_LEN);
@@ -159,11 +161,13 @@ u8 aws_next_channel(void)
     /* aws_chn_index start from -1 */
     while (1) {
         aws_chn_index++;
-        if (aws_chn_index >= AWS_MAX_CHN_NUMS)
-            aws_chn_index = 0;//rollback to start
+        if (aws_chn_index >= AWS_MAX_CHN_NUMS) {
+            aws_chn_index = 0;    //rollback to start
+        }
 
-        if (aws_chn_list[aws_chn_index])    //valid channel
+        if (aws_chn_list[aws_chn_index]) {  //valid channel
             break;
+        }
     }
 
     aws_cur_chn = aws_chn_list[aws_chn_index];
@@ -240,22 +244,27 @@ static void aws_switch_dst_chan(int channel)
 {
     int i = aws_chn_index;
     for (; i < AWS_MAX_CHN_NUMS; i ++) {
-        if (aws_chn_list[i] == 0)
+        if (aws_chn_list[i] == 0) {
             continue;
-        if (aws_chn_list[i] == channel)
+        }
+        if (aws_chn_list[i] == channel) {
             break;
+        }
     }
 
     if (i >= AWS_MAX_CHN_NUMS) {
         for (i = 0; i < aws_chn_index; i ++) {
-             if (aws_chn_list[i] == 0)
-                 continue;
-             if (aws_chn_list[i] == channel)
-                 break;
+            if (aws_chn_list[i] == 0) {
+                continue;
+            }
+            if (aws_chn_list[i] == channel) {
+                break;
+            }
         }
     }
-    if (i == aws_chn_index) // no need to switch channel.
+    if (i == aws_chn_index) { // no need to switch channel.
         return;
+    }
 
     aws_chn_index = i;
     aws_locked_chn = channel;
@@ -281,10 +290,11 @@ int aws_is_chnscan_timeout(void)
 
     if (time_elapsed_ms_since(aws_chn_timestamp) > os_awss_get_channelscan_interval_ms()) {
         if ((0 != os_awss_get_timeout_interval_ms()) &&
-            (time_elapsed_ms_since(aws_start_timestamp) > os_awss_get_timeout_interval_ms()))
+            (time_elapsed_ms_since(aws_start_timestamp) > os_awss_get_timeout_interval_ms())) {
             return CHNSCAN_TIMEOUT;
-        else
+        } else {
             return CHNSCAN_NEXT_CHN;
+        }
     }
 
     return CHNSCAN_ONGOING;
@@ -308,11 +318,12 @@ int aws_force_scanning(void)
 {
 #ifdef WITH_AUTH_ENCRY
     int timeout = sizeof(aws_fixed_scanning_channels) / sizeof(u8)
-        * os_awss_get_timeout_interval_ms() * 2; /* 2 round */
+                  * os_awss_get_timeout_interval_ms() * 2; /* 2 round */
 
     /* force scanning useful only when aws is success */
-    if (aws_state != AWS_SUCCESS)
+    if (aws_state != AWS_SUCCESS) {
         return 0;
+    }
 
     //channel scanning at most 2 round
     if (time_elapsed_ms_since(aws_start_timestamp) >= timeout) {
@@ -322,12 +333,13 @@ int aws_force_scanning(void)
          * for platform which need auth & encry, retry to get auth info
          */
         int found = zconfig_get_auth_info(aws_result_ssid, aws_result_bssid,
-                &aws_result_auth, &aws_result_encry,
-                &aws_result_channel);
-        if (found)
+                                          &aws_result_auth, &aws_result_encry,
+                                          &aws_result_channel);
+        if (found) {
             return 0;
-        else
-            return 1;/* keep scanning */
+        } else {
+            return 1;    /* keep scanning */
+        }
     }
 #else
     //no need scanning a round
@@ -355,23 +367,25 @@ rescanning:
     //start scaning channel
     while (aws_amend_dst_chan != 0 || aws_state == AWS_SCANNING || aws_force_scanning()) {
         switch (aws_is_chnscan_timeout()) {
-        case CHNSCAN_ONGOING:
-            break;
-        case CHNSCAN_NEXT_CHN:
-            aws_switch_channel();
-            break;
-        case CHNSCAN_TIMEOUT:
-            goto timeout_scanning;
-        default:
+            case CHNSCAN_ONGOING:
+                break;
+            case CHNSCAN_NEXT_CHN:
+                aws_switch_channel();
+                break;
+            case CHNSCAN_TIMEOUT:
+                goto timeout_scanning;
+            default:
+                break;
+        }
+
+        if (aws_state != AWS_SCANNING) {
             break;
         }
 
-        if (aws_state != AWS_SCANNING)
-            break;
-
         int interval = (os_awss_get_channelscan_interval_ms() + 2) / 3;
-        if (interval < 1)
+        if (interval < 1) {
             interval = 1;
+        }
 
 #ifndef AWSS_DISABLE_ENROLLEE
         /* 80211 frame handled by callback */
@@ -387,7 +401,7 @@ rescanning:
 
     //channel lock
     awss_debug("[channel scanning] %d ms\r\n",
-        time_elapsed_ms_since(aws_start_timestamp));
+               time_elapsed_ms_since(aws_start_timestamp));
 
     /*
      * make sure switch to locked channel,
@@ -400,8 +414,9 @@ rescanning:
         /* 80211 frame handled by callback */
         os_msleep(100);
 
-        if (aws_is_chnscan_timeout() == CHNSCAN_TIMEOUT)
+        if (aws_is_chnscan_timeout() == CHNSCAN_TIMEOUT) {
             goto timeout_recving;
+        }
 
         if (aws_state == AWS_SCANNING) {
             awss_debug("channel rescanning...\n");
@@ -410,7 +425,7 @@ rescanning:
     }
 
     awss_debug("[channel recving] %d ms\r\n",
-        time_elapsed_ms_since(aws_start_timestamp));
+               time_elapsed_ms_since(aws_start_timestamp));
 
     goto success;
 
@@ -418,8 +433,9 @@ timeout_scanning:
     awss_debug("aws timeout scanning!\r\n");
 timeout_recving:
     awss_debug("aws timeout recving!\r\n");
-    if (rescan_timer == NULL)
+    if (rescan_timer == NULL) {
         rescan_timer = HAL_Timer_Create("rescan", (void(*)(void *))rescan_monitor, NULL);
+    }
     HAL_Timer_Stop(rescan_timer);
     HAL_Timer_Start(rescan_timer, RESCAN_MONITOR_TIMEOUT_MS);
     while (rescan_available == 0) {
@@ -456,10 +472,11 @@ success:
      *    aws_get_ssid_passwd() was called in os_awss_monitor_close()
      */
     if (strcmp((const char *)aws_result_ssid, (const char *)zc_adha_ssid) == 0 ||
-        strcmp((const char *)aws_result_ssid, (const char *)zc_default_ssid) == 0)
+        strcmp((const char *)aws_result_ssid, (const char *)zc_default_ssid) == 0) {
         zconfig_destroy();
-    else
+    } else {
         zconfig_force_destroy();
+    }
 }
 
 static void rescan_monitor()
@@ -481,16 +498,18 @@ int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type
 
     if (aws_state == AWS_CHN_LOCKED) {
         switch (ret) {
-        case PKG_START_FRAME:
-        case PKG_DATA_FRAME:
-        case PKG_GROUP_FRAME:
-            lock_start = os_get_time_ms();
-            break;
-        default:
-            if (time_elapsed_ms_since(lock_start) > aws_channel_lock_timeout_ms)
-                /* set to rescanning */
-                aws_state = AWS_SCANNING;
-            break;
+            case PKG_START_FRAME:
+            case PKG_DATA_FRAME:
+            case PKG_GROUP_FRAME:
+                lock_start = os_get_time_ms();
+                break;
+            default:
+                if (time_elapsed_ms_since(lock_start) > aws_channel_lock_timeout_ms)
+                    /* set to rescanning */
+                {
+                    aws_state = AWS_SCANNING;
+                }
+                break;
         }
     }
 
@@ -500,14 +519,16 @@ int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type
 void aws_start(char *pk, char *dn, char *ds, char *ps)
 {
     aws_info = os_zalloc(sizeof(struct aws_info));
-    if (!aws_info) return;
+    if (!aws_info) {
+        return;
+    }
 
     aws_state = AWS_SCANNING;
 
     /* start from -1 */
     aws_chn_index = 0xff;
     memcpy(aws_chn_list, aws_fixed_scanning_channels,
-            sizeof(aws_fixed_scanning_channels));
+           sizeof(aws_fixed_scanning_channels));
 
     memset(aws_result_ssid, 0, sizeof(aws_result_ssid));
     memset(aws_result_passwd, 0, sizeof(aws_result_passwd));
@@ -518,8 +539,9 @@ void aws_start(char *pk, char *dn, char *ds, char *ps)
 
     zconfig_init();
 
-    if (clr_aplist_timer == NULL)
+    if (clr_aplist_timer == NULL) {
         clr_aplist_timer = HAL_Timer_Create("clr_aplist", (void (*)(void *))clr_aplist_monitor, NULL);
+    }
     HAL_Timer_Stop(clr_aplist_timer);
     HAL_Timer_Start(clr_aplist_timer, CLR_APLIST_MONITOR_TIMEOUT_MS);
 
@@ -536,8 +558,9 @@ void aws_destroy(void)
 {
     if (aws_info) {
         aws_stop = AWS_STOPPING;
-        while (aws_state != AWS_SUCCESS && aws_state != AWS_TIMEOUT)
+        while (aws_state != AWS_SUCCESS && aws_state != AWS_TIMEOUT) {
             os_msleep(100);
+        }
 
         os_free(aws_info);
         aws_info = NULL;
@@ -549,22 +572,29 @@ void aws_destroy(void)
 }
 
 int aws_get_ssid_passwd(char *ssid, char *passwd, unsigned char *bssid,
-    char *auth, char *encry, unsigned char *channel)
+                        char *auth, char *encry, unsigned char *channel)
 {
-    if (aws_state != AWS_SUCCESS)
+    if (aws_state != AWS_SUCCESS) {
         return 0;
-    if (ssid)
+    }
+    if (ssid) {
         strncpy(ssid, (char *)aws_result_ssid, ZC_MAX_SSID_LEN);
-    if (passwd)
+    }
+    if (passwd) {
         strncpy(passwd, (char *)aws_result_passwd, ZC_MAX_PASSWD_LEN);
-    if (bssid)
+    }
+    if (bssid) {
         memcpy(bssid, aws_result_bssid, ETH_ALEN);
-    if (auth)
+    }
+    if (auth) {
         *auth = aws_result_auth;
-    if (encry)
+    }
+    if (encry) {
         *encry = aws_result_encry;
-    if (channel)
+    }
+    if (channel) {
         *channel = aws_result_channel;
+    }
     return 1;
 }
 
