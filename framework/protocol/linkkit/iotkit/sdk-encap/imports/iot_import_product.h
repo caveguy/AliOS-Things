@@ -27,6 +27,11 @@
 #elif 0
 #define PRODUCT_KEY             "b1iuHMGJYGI"
 #define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
+#define DEVICE_NAME             "zero1"
+#define DEVICE_SECRET           "ntsiEjqKBXEjxkVQWHOml2drOPbE66oq"
+#elif 0
+#define PRODUCT_KEY             "b1iuHMGJYGI"
+#define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
 #define DEVICE_NAME             "aaaaaassssssddddddffffffgggggghh"
 #define DEVICE_SECRET           "tmu5qP1GfwBobNd9TxeQ0G8OutVnyrZu"
 #elif 0
