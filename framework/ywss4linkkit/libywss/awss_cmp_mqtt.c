@@ -40,10 +40,11 @@ extern "C"
 static char user_data;
 static char online_init = 0;
 
-int awss_cmp_mqtt_register_cb(char *topic, void* cb)
+int awss_cmp_mqtt_register_cb(char *topic, void *cb)
 {
-    if (topic == NULL)
+    if (topic == NULL) {
         return -1;
+    }
 
     return mqtt_subscribe(topic, (void (*)(char *, int, void *, int, void *))cb, &user_data);
 }
@@ -53,9 +54,9 @@ int awss_cmp_mqtt_unregister_cb(char *topic)
     return mqtt_unsubscribe(topic);
 }
 
-int awss_cmp_mqtt_send(char *topic, void *data, int len)
+int awss_cmp_mqtt_send(char *topic, void *data, int len, int qos)
 {
-    return mqtt_publish(topic, 1, data, len);  // IOTX_MQTT_QOS1
+    return mqtt_publish(topic, qos, data, len);  //IOTX_MQTT_QOS1 or IOTX_MQTT_QOS1
 }
 
 const struct awss_cmp_couple awss_online_couple[] = {
@@ -72,8 +73,9 @@ const struct awss_cmp_couple awss_online_couple[] = {
 
 int awss_cmp_online_init()
 {
-    if (online_init)
+    if (online_init) {
         return 0;
+    }
 
     char topic[TOPIC_LEN_MAX] = {0};
     int i;
@@ -81,7 +83,7 @@ int awss_cmp_online_init()
     {
         char pk[PRODUCT_KEY_LEN + 1] = {0};
         char dn[PRODUCT_NAME_LEN + 1] = {0};
-        char ds[OS_DEVICE_SECRET_LEN + 1] ={0};
+        char ds[OS_DEVICE_SECRET_LEN + 1] = {0};
 
         os_product_get_key(pk);
         os_product_get_name(dn);
@@ -105,8 +107,9 @@ int awss_cmp_online_deinit()
     unsigned char i;
     char topic[TOPIC_LEN_MAX] = {0};
 
-    if (!online_init)
+    if (!online_init) {
         return 0;
+    }
 
     awss_connectap_notify_stop();
 

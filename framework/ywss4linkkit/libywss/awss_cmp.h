@@ -77,18 +77,17 @@ extern "C" {
 #define AWSS_KV_RST                     "awss.rst"
 
 #if(AWSS_CMP_DEBUG==1)
-    #define awss_cmp_debug(fmt, args...) log_debug(fmt, ##args)
+#define awss_cmp_debug(fmt, args...) log_debug(fmt, ##args)
 #else
-    #define awss_cmp_debug(fmt, args...)
+#define awss_cmp_debug(fmt, args...)
 #endif
 
 /**
  * @brief this is a network address structure, including host(ip or host name) and port.
  */
-typedef struct
-{
-	char host[16]; /**< host ip(dotted-decimal notation) or host name(string) */
-	unsigned short port; /**< udp port or tcp port */
+typedef struct {
+    char host[16]; /**< host ip(dotted-decimal notation) or host name(string) */
+    unsigned short port; /**< udp port or tcp port */
 } platform_netaddr_t;
 
 struct awss_cmp_couple {
@@ -124,7 +123,7 @@ int awss_cmp_coap_deinit();
 
 int awss_cmp_mqtt_register_cb(char *topic, void *cb);
 int awss_cmp_mqtt_unregister_cb(char *topic);
-int awss_cmp_mqtt_send(char *topic, void *pkt, int pkt_len);
+int awss_cmp_mqtt_send(char *topic, void *pkt, int pkt_len, int qos);
 
 int awss_release_coap_ctx(void *session);
 void *awss_cpy_coap_ctx(void *request, void *remote, char mcast);
@@ -134,7 +133,7 @@ char *awss_build_sign_src(char *sign_src, int *sign_src_len);
 const char *awss_build_topic(const char *topic_fmt, char *topic, unsigned int tlen);
 unsigned char awss_cmp_get_coap_code(void *request);
 
-int awss_build_packet(int type, void *id, void *ver, void *method,void *data, int code, void *pkt, int *pkt_len);
+int awss_build_packet(int type, void *id, void *ver, void *method, void *data, int code, void *pkt, int *pkt_len);
 
 int online_connectap_monitor(void *ctx, void *resource, void *remote, void *request);
 int awss_enrollee_checkin(char *topic, int topic_len, void *payload, int payload_len, void *ctx);

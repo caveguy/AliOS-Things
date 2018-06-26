@@ -27,6 +27,11 @@
 #elif 0
 #define PRODUCT_KEY             "b1iuHMGJYGI"
 #define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
+#define DEVICE_NAME             "zero1"
+#define DEVICE_SECRET           "ntsiEjqKBXEjxkVQWHOml2drOPbE66oq"
+#elif 0
+#define PRODUCT_KEY             "b1iuHMGJYGI"
+#define PRODUCT_SECRET          "Na027DnOTFtkLfEz"
 #define DEVICE_NAME             "aaaaaassssssddddddffffffgggggghh"
 #define DEVICE_SECRET           "tmu5qP1GfwBobNd9TxeQ0G8OutVnyrZu"
 #elif 0
@@ -63,7 +68,7 @@ int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN]);
  * @param   product_key : 用来存放ProductKey字符串的数组
  * @return  写到product_key[]数组中的字符长度, 单位是字节(Byte)
  */
-int HAL_SetProductKey(_IN_ char* product_key);
+int HAL_SetProductKey(_IN_ char *product_key);
 
 /**
  * @brief   设置设备的`DeviceName`, 用于标识设备单品的名字, 三元组之一
@@ -71,7 +76,7 @@ int HAL_SetProductKey(_IN_ char* product_key);
  * @param   device_name : 用来存放DeviceName字符串的数组
  * @return  写到device_name[]数组中的字符长度, 单位是字节(Byte)
  */
-int HAL_SetDeviceName(_IN_ char* device_name);
+int HAL_SetDeviceName(_IN_ char *device_name);
 
 /**
  * @brief   设置设备的`DeviceSecret`, 用于标识设备单品的密钥, 三元组之一
@@ -79,7 +84,7 @@ int HAL_SetDeviceName(_IN_ char* device_name);
  * @param   device_secret : 用来存放DeviceSecret字符串的数组
  * @return  写到device_secret[]数组中的字符长度, 单位是字节(Byte)
  */
-int HAL_SetDeviceSecret(_IN_ char* device_secret);
+int HAL_SetDeviceSecret(_IN_ char *device_secret);
 
 /**
  * @brief   设置设备的`ProductSecret`, 用于标识设备单品的密钥, 三元组之一
@@ -87,7 +92,7 @@ int HAL_SetDeviceSecret(_IN_ char* device_secret);
  * @param   product_secret : 用来存放ProductSecret字符串的数组
  * @return  写到product_secret[]数组中的字符长度, 单位是字节(Byte)
  */
-int HAL_SetProductSecret(_IN_ char* product_secret);
+int HAL_SetProductSecret(_IN_ char *product_secret);
 
 /**
  * @brief   获取设备的`ProductKey`, 用于标识设备的品类, 三元组之一
@@ -152,7 +157,7 @@ int HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN]);
  * @return  写到id2_str[]数组中的字符长度，单位是字节(Byte)
  */
 #ifdef MQTT_ID2_AUTH
-int HAL_GetID2(_OU_ char* id2_str);
+int HAL_GetID2(_OU_ char *id2_str);
 #endif /**< MQTT_ID2_AUTH*/
 
 typedef struct _hal_wireless_info_t {
