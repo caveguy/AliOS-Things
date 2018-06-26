@@ -82,13 +82,15 @@ static inline u8 is_data_frame(u16 len)
 {
     u8 group_frame, index;
     /* is start frame */
-    if (is_start_frame(len))
+    if (is_start_frame(len)) {
         return 0;
+    }
 
     /* is group frame? */
     group_frame = is_group_frame(len);
-    if (group_frame)
+    if (group_frame) {
         return 0;
+    }
 
     index = (len >> PAYLOAD_BITS_CNT) & 0xF;
     return (index >= ZC_GRP_PKT_IDX_START && index <= ZC_GRP_PKT_IDX_END);
@@ -96,8 +98,9 @@ static inline u8 is_data_frame(u16 len)
 
 static inline u8 get_group_index(u16 len)
 {
-    if (is_start_frame(len))
+    if (is_start_frame(len)) {
         return 0;
+    }
     return (len - GROUP_FRAME) * GROUP_NUMBER;
 }
 
@@ -146,15 +149,17 @@ static inline int zconfig_get_data_len(void)
         goto out;
     }
 
-    if (zconfig_data->data[1].max_pos > zconfig_data->data[0].max_pos)
+    if (zconfig_data->data[1].max_pos > zconfig_data->data[0].max_pos) {
         len = zconfig_data->data[1].max_pos;
-    else
+    } else {
         len = zconfig_data->data[0].max_pos;
+    }
 out:
-    if (len < GROUP_NUMBER)
+    if (len < GROUP_NUMBER) {
         return GROUP_NUMBER;
-    else
+    } else {
         return len >= MAX_PKG_NUMS ? (MAX_PKG_NUMS - GROUP_NUMBER - 1) : len;
+    }
 }
 
 /*
@@ -164,8 +169,9 @@ out:
  */
 static inline void encode_chinese(u8 *in, u8 in_len, u8 *out, u8 *out_len, u8 bits)
 {
-    if (bits == 0 || bits > 7)
+    if (bits == 0 || bits > 7) {
         return;
+    }
     u8 bit[ZC_MAX_SSID_LEN * 8] = { 0 };
     u8 i, j;
     u8 output_len = ((in_len * 8) + bits - 1) / bits;
@@ -185,15 +191,17 @@ static inline void encode_chinese(u8 *in, u8 in_len, u8 *out, u8 *out_len, u8 bi
         }
     }
 
-    if (out_len)
+    if (out_len) {
         *out_len = output_len;
+    }
 }
 
 /* x bit -> 8bit */
 static inline void decode_chinese(u8 *in, u8 in_len, u8 *out, u8 *out_len, u8 bits)
 {
-    if (bits == 0 || bits > 7 || in_len == 0)
+    if (bits == 0 || bits > 7 || in_len == 0) {
         return;
+    }
 
     u8 i, j;
     u8 output_len = (in_len * bits) / 8;
@@ -216,8 +224,9 @@ static inline void decode_chinese(u8 *in, u8 in_len, u8 *out, u8 *out_len, u8 bi
     }
 
     os_free(bit);
-    if (out_len)
+    if (out_len) {
         *out_len = output_len;
+    }
 }
 
 /* check recv completed or not */
@@ -225,11 +234,11 @@ static inline int zconfig_recv_completed(u8 tods)
 {
     int i;
     u8 len, flag, ssid_len, passwd_len;
-/*
-    byte:    0    1        2    3        4        5    6
-    name:        total_len    flag    ssid_len    passwd_len    ssid    ...
-    index:        0x100        0x180    0x200        0x280        0x300    0x380
-*/
+    /*
+        byte:    0    1        2    3        4        5    6
+        name:        total_len    flag    ssid_len    passwd_len    ssid    ...
+        index:        0x100        0x180    0x200        0x280        0x300    0x380
+    */
     len = pkg_len(1) & PAYLOAD_BITS_MASK;/* total len, include len(1B) & crc(2B) */
     flag = pkg_len(2) & PAYLOAD_BITS_MASK;
     if (flag & SSID_EXIST_MASK) {/* ssid exist */
@@ -249,9 +258,9 @@ static inline int zconfig_recv_completed(u8 tods)
 #define SSID_AUTO_COMPLETE_SCORE    (score_max + 1)
     /* ssid atuo-completion */
     if (zc_ssid[0] != '\0' && (flag & SSID_EXIST_MASK)
-            && pkg_score(2) < SSID_AUTO_COMPLETE_SCORE
-            && pkg_score(3) > score_mid
-            && !zc_ssid_auto_complete_disable) {
+        && pkg_score(2) < SSID_AUTO_COMPLETE_SCORE
+        && pkg_score(3) > score_mid
+        && !zc_ssid_auto_complete_disable) {
 
         /* over-written ssid_len here */
         ssid_len = strlen((char const *)zc_ssid);
@@ -287,8 +296,9 @@ static inline int zconfig_recv_completed(u8 tods)
                 zc_ssid_is_gbk = 1;
                 zc_ssid_auto_complete_disable = 1;
                 goto skip_ssid_auto_complete;
-            } else
+            } else {
                 zc_ssid_is_gbk = 0;
+            }
 
             buf = os_zalloc(256);
             bug_on(!buf, "malloc failed!\r\n");
@@ -312,7 +322,9 @@ static inline int zconfig_recv_completed(u8 tods)
 
 skip_ssid_auto_complete:
     //awss_debug("expect len = %d, max len = %d\r\n", len, zc_max_pos);
-    if (zc_max_pos < len) return 0;  // receive all the packets
+    if (zc_max_pos < len) {
+        return 0;    // receive all the packets
+    }
 
     for (i = 1; i <= len; i ++) {  // check score for all the packets
         if (pkg_score(i) <= score_min) {
@@ -322,10 +334,12 @@ skip_ssid_auto_complete:
 
     /* 4 for total_len, flag, ssid_len, passwd_len, 2 for crc */
     if (flag & SSID_EXIST_MASK) { /* ssid exist */
-        if (len != ssid_len + passwd_len + 4 + 2)
+        if (len != ssid_len + passwd_len + 4 + 2) {
             return 0;
-    } else if (len != passwd_len + 3 + 2)
-            return 0;
+        }
+    } else if (len != passwd_len + 3 + 2) {
+        return 0;
+    }
 
     return 1;
 }
@@ -337,8 +351,9 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
     u16 crc, cal_crc;
     u8 data, score;
 
-    if (!zconfig_recv_completed(tods))
+    if (!zconfig_recv_completed(tods)) {
         return -1;
+    }
 
     buf = os_zalloc(256);
     tmp = os_zalloc(128);
@@ -383,10 +398,11 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         for (tods = 0; tods < 2; tods ++) {
             for (i = 1; i <= package_num; i ++) {
                 score = pkg_score(i);
-                if (score > 0x60)
+                if (score > 0x60) {
                     pkg_score(i) = 0x60;
-                else
+                } else {
                     pkg_score(i) = score >> 1;
+                }
             }
         }
         tods = tods_tmp;
@@ -404,8 +420,9 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
             /* CAN'T use snprintf here, because of SPACE char */
             memcpy((char *)tmp, pbuf, ssid_len);
             tmp[ssid_len] = '\0';
-            for (i = 0; i < ssid_len; i++)
+            for (i = 0; i < ssid_len; i++) {
                 tmp[i] += 32;
+            }
         } else {//chinese format
             decode_chinese(pbuf, ssid_len, tmp, NULL, 6);
             /* make sure 'tmp' is null-terminated */
@@ -419,10 +436,11 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
             if (!strncmp((const char *)tmp, (char *)zc_ssid, ZC_MAX_SSID_LEN)) {
                 os_printf("SSID1: [%s]\r\n", zc_ssid);
             } else {
-                if (zc_ssid_is_gbk)
+                if (zc_ssid_is_gbk) {
                     os_printf("gbk SSID: [%s]\r\n", zc_ssid);
-                else
+                } else {
                     os_printf("gbk? SSID: [%s]\r\n", zc_ssid);
+                }
             }
         }
 
@@ -459,8 +477,9 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
     } else {
         memcpy((char *)tmp, pbuf, passwd_len);
         tmp[passwd_len] = '\0';
-        for (i = 0; i < passwd_len; i++)
+        for (i = 0; i < passwd_len; i++) {
             tmp[i] += 32;
+        }
         strncpy((char *)zc_passwd, (const char *)tmp, ZC_MAX_PASSWD_LEN);
 
         os_printf("encrypt:%d not support\r\n", passwd_encrypt);
@@ -525,8 +544,9 @@ void decode(u8 *data, u8 len)
 {
     u8 i;
 
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         data[i] = decode_table[data[i]];
+    }
 }
 
 enum _GOT_RESULT_ {
@@ -539,10 +559,11 @@ static int is_ascii_string(u8 *str)
 {
     int i = 0;
     while (str[i] != '\0') {
-        if (str[i] < 128)
+        if (str[i] < 128) {
             i++;
-        else
+        } else {
             return 0;
+        }
     }
     return 1;
 }
@@ -558,16 +579,19 @@ static inline void passwd_check_utf8(u8 *passwd, int *passwd_len)
 {
     int i, len;
 
-    if (!passwd || !passwd_len)
+    if (!passwd || !passwd_len) {
         return;
+    }
 
     len = *passwd_len;
     for (i = 0; i < len; i ++) {
-        if (passwd[i] < 0x80)  // [0x01 ~ 0x7F]
+        if (passwd[i] < 0x80) { // [0x01 ~ 0x7F]
             continue;
+        }
         passwd[i] = 0;  // resetore to 0x00
-        if (i + 2 < len)  // move the rest to overwrite useless content.
+        if (i + 2 < len) { // move the rest to overwrite useless content.
             memmove(passwd + i + 1, passwd + i + 2, len - i - 2);
+        }
         len --;
     }
     *passwd_len = len;
@@ -583,7 +607,7 @@ static inline void passwd_check_utf8(u8 *passwd, int *passwd_len)
  *
  * use src mac to do ssid completion
  */
-static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bssid)
+static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bssid)
 {
     uint8_t tmp_ssid[ZC_MAX_SSID_LEN + 1] = {0}, tmp_passwd[ZC_MAX_PASSWD_LEN + 1] = {0};
     int ssid_len, passwd_len, ssid_truncated = 0;
@@ -595,8 +619,9 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
 
 #define W_LEN        (32)  // total_len
 #define EXTRA_LEN    (3)   // ssid_len(1B) + checksum(2B)
-    if (!in || total_len <= 4)
+    if (!in || total_len <= 4) {
         return GOT_NOTHING;
+    }
 
     /* attr_id(2) + attr_len(2) = 4 */
     in += 4;
@@ -611,8 +636,9 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
         ssid_len &= P2P_SSID_LEN_MASK;
     }
     passwd_len = total_len - ssid_len - EXTRA_LEN; /* ssid_len(1B), crc(2B) */
-    if (ssid_len > W_LEN - EXTRA_LEN || passwd_len < 0)
+    if (ssid_len > W_LEN - EXTRA_LEN || passwd_len < 0) {
         return GOT_NOTHING;
+    }
 
     crc = os_get_unaligned_be16(in + 1 + ssid_len + passwd_len);
     // restore 0xc080 to 0x00
@@ -632,8 +658,9 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
         return GOT_NOTHING;
     }
 
-    if (start_time == 0)
+    if (start_time == 0) {
         start_time = zconfig_get_time();
+    }
 
 #define MAC_LOCAL_ADMINISTERED_BIT    (0x02)
     memcpy(zc_android_src, src, ETH_ALEN);
@@ -652,36 +679,37 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
 
     memcpy(tmp_ssid, in, ssid_len);
     in += ssid_len;
-    if (passwd_len)
+    if (passwd_len) {
         memcpy(tmp_passwd, in, passwd_len);
+    }
 
     decode(tmp_ssid, ssid_len);
 
     switch (encrypt) {
-    case P2P_ENCODE_TYPE_ENCRYPT:
-    {
-        // decypt passwd using aes128-cfb
-        uint8_t passwd_cipher_len = 0;
-        uint8_t *passwd_cipher = os_zalloc(128);
-        if (passwd_cipher == NULL)
-            return GOT_NOTHING;
-        decode_chinese(tmp_passwd, passwd_len, passwd_cipher, &passwd_cipher_len, 7);
-        passwd_len = passwd_cipher_len;
-        memset(tmp_passwd, 0, ZC_MAX_PASSWD_LEN);
-        aes_decrypt_string((char *)passwd_cipher, (char *)tmp_passwd, passwd_len, os_get_encrypt_type(), 0);
-        os_free(passwd_cipher);
-        if (is_utf8((const char *)tmp_passwd, passwd_len) == 0) {
-            memset(zconfig_data, 0, sizeof(*zconfig_data));
-            warn_on(1, "p2p decrypt passwd content err\r\n");
-            awss_event_post(AWSS_PASSWD_ERR);
-            return GOT_NOTHING;
+        case P2P_ENCODE_TYPE_ENCRYPT: {
+            // decypt passwd using aes128-cfb
+            uint8_t passwd_cipher_len = 0;
+            uint8_t *passwd_cipher = os_zalloc(128);
+            if (passwd_cipher == NULL) {
+                return GOT_NOTHING;
+            }
+            decode_chinese(tmp_passwd, passwd_len, passwd_cipher, &passwd_cipher_len, 7);
+            passwd_len = passwd_cipher_len;
+            memset(tmp_passwd, 0, ZC_MAX_PASSWD_LEN);
+            aes_decrypt_string((char *)passwd_cipher, (char *)tmp_passwd, passwd_len, os_get_encrypt_type(), 0);
+            os_free(passwd_cipher);
+            if (is_utf8((const char *)tmp_passwd, passwd_len) == 0) {
+                memset(zconfig_data, 0, sizeof(*zconfig_data));
+                warn_on(1, "p2p decrypt passwd content err\r\n");
+                awss_event_post(AWSS_PASSWD_ERR);
+                return GOT_NOTHING;
+            }
+            break;
         }
-        break;
-    }
-    default:
-        warn_on(1, "p2p encypt:%d not support\r\n", encrypt);
-        memset(zconfig_data, 0, sizeof(*zconfig_data));
-        return GOT_NOTHING;
+        default:
+            warn_on(1, "p2p encypt:%d not support\r\n", encrypt);
+            memset(zconfig_data, 0, sizeof(*zconfig_data));
+            return GOT_NOTHING;
     }
 
     awss_debug("ssid:%s, passwd:%s, tlen:%d\r\n", tmp_ssid, tmp_passwd, total_len);
@@ -695,10 +723,11 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
     // for utf-8 ssid, max length is 29 - 2 or 29 - 3
     // gbk ssid also encoded as utf-8
     // SAMSUNG S4 max name length = 22
-    if (!is_ascii_string((u8 *)tmp_ssid))  // chinese ssid
-        ssid_truncated = 1;  // in case of gbk chinese
-    else if (total_len >= W_LEN - EXTRA_LEN)
+    if (!is_ascii_string((u8 *)tmp_ssid)) { // chinese ssid
+        ssid_truncated = 1;    // in case of gbk chinese
+    } else if (total_len >= W_LEN - EXTRA_LEN) {
         ssid_truncated = 1;
+    }
 
     if (ssid_truncated) {
         struct ap_info *ap_info;
@@ -709,10 +738,11 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
             /* should not happen */
             warn_on(1, "pre:%s < cur:%s\r\n", zc_pre_ssid, tmp_ssid);
             best_ssid = tmp_ssid;  /* current ssid */
-        } else if (pre_ssid_len)
-            best_ssid = zc_pre_ssid;  /* prepare ssid */
-        else
-            best_ssid = tmp_ssid;  /* default use current ssid */
+        } else if (pre_ssid_len) {
+            best_ssid = zc_pre_ssid;    /* prepare ssid */
+        } else {
+            best_ssid = tmp_ssid;    /* default use current ssid */
+        }
 
         //awss_debug("ssid truncated, best ssid: %s\r\n", best_ssid);
 
@@ -722,8 +752,9 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
             strncpy((char *)zc_ssid, ap_info->ssid, ZC_MAX_SSID_LEN);
             memcpy(zc_bssid, ap_info->mac, ETH_ALEN);
         } else {
-            if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN))
+            if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN)) {
                 memcpy(zc_android_bssid, bssid, ETH_ALEN);
+            }
             ap_info = zconfig_get_apinfo(zc_android_bssid);
             if (ap_info) {
                 if (ap_info->ssid[0] == '\0') {  // hide ssid, MUST not truncate
@@ -736,16 +767,18 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8* bss
                 strncpy((char *)zc_android_ssid, (char *)best_ssid, ZC_MAX_SSID_LEN);
             }
 
-            if (zc_android_ssid[0] == '\0')
+            if (zc_android_ssid[0] == '\0') {
                 return GOT_NOTHING;
+            }
 
             strncpy((char *)zc_ssid, (char *)zc_android_ssid, ZC_MAX_SSID_LEN);
             memcpy(zc_bssid, zc_android_bssid, ETH_ALEN);
         }
     } else {
         strcpy((char *)zc_ssid, (char const *)tmp_ssid);
-        if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN))
+        if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN)) {
             memcpy(zc_bssid, bssid, ETH_ALEN);
+        }
     }
 
     strcpy((char *)zc_passwd, (char const *)tmp_passwd);
@@ -758,8 +791,9 @@ static inline int package_cmp(u8 *package, u8 *src, u8 *dst, u8 tods, u16 len)
 {
     struct package *pkg = (struct package *)package;
 
-    if (pkg->len != len)
+    if (pkg->len != len) {
         return 1;
+    }
     return 0;
 }
 
@@ -772,19 +806,24 @@ static inline void package_save(u8 *package, u8 *src, u8 *dst, u8 tods, u16 len)
 
 /* len -= (rth->it_len + hdrlen); see ieee80211.c */
 const u8 zconfig_fixed_offset[ZC_ENC_TYPE_MAX + 1][2] = {
-    {//open, none, ip(20) + udp(8) + 8(LLC)
+    {
+        //open, none, ip(20) + udp(8) + 8(LLC)
         36, 36
     },
-    {//wep       , + iv(4) + data + ICV(4)
+    {
+        //wep       , + iv(4) + data + ICV(4)
         44, 44  // feixun, wep64(10byte), wep128(26byte)
     },
-    {//tkip      ,  + iv/keyID(4)    + Ext IV(4) + data + MIC(8) + ICV(4)
+    {
+        //tkip      ,  + iv/keyID(4)    + Ext IV(4) + data + MIC(8) + ICV(4)
         56, 56  // tkip(10byte, 20byte), wpa2+tkip(20byte)
     },
-    {//aes       , + ccmp header(8) + data + MIC(8) + ICV(4)
+    {
+        //aes       , + ccmp header(8) + data + MIC(8) + ICV(4)
         52, 52 //
     },
-    {//tkip-aes
+    {
+        //tkip-aes
         56, 52,    //fromDs==tkip,toDs==aes
     }
 };
@@ -808,14 +847,16 @@ static inline int is_hint_frame(u8 encry, int len, u8 *bssid, u8 *src, u8 channe
     int i;
     struct ap_info *ap_info;
 
-    if (encry > ZC_ENC_TYPE_MAX)
+    if (encry > ZC_ENC_TYPE_MAX) {
         return 0;
+    }
 
     len -= zconfig_fixed_offset[encry][0];    /* dont't care about tkip-aes */
 
     for (i = 0; zconfig_hint_frame[i]; i++) {
-        if (zconfig_hint_frame[i] == len)
+        if (zconfig_hint_frame[i] == len) {
             goto found_match;
+        }
     }
 
     return 0;
@@ -849,15 +890,16 @@ found_match:
                     memcpy(zc_bssid, bssid, ETH_ALEN);
                     memcpy(zc_src_mac, src, ETH_ALEN);
                     //TODO: clear previous buffer, channel lock state?
-                    if (zconfig_data->data[0].state_machine == STATE_CHN_LOCKED_BY_BR)//zc_state
+                    if (zconfig_data->data[0].state_machine == STATE_CHN_LOCKED_BY_BR) { //zc_state
                         zconfig_data->data[0].state_machine = STATE_CHN_SCANNING;
+                    }
                     warn("%c WDS! bssid:"MAC_FORMAT" -> bssid:"MAC_FORMAT"\r\n",
-                            flag_tods(tods), MAC_VALUE(zc_bssid),
-                            MAC_VALUE(bssid));
+                         flag_tods(tods), MAC_VALUE(zc_bssid),
+                         MAC_VALUE(bssid));
                 } else {
                     log("%c WDS? src:"MAC_FORMAT" -> bssid:"MAC_FORMAT"\r\n",
-                            flag_tods(tods), MAC_VALUE(src),
-                            MAC_VALUE(bssid));
+                        flag_tods(tods), MAC_VALUE(src),
+                        MAC_VALUE(bssid));
                     return 0;
                 }
             } //else case 3
@@ -879,17 +921,18 @@ found_match:
     if (ap_info && ap_info->encry[tods] == encry && ap_info->channel) {
         if (channel != ap_info->channel) {
             awss_debug("fix channel from %d to %d\r\n", channel, ap_info->channel);
-            zc_channel = ap_info->channel;//fix by ap_info channel
-            aws_switch_dst_chan(zc_channel);
+            zc_channel = ap_info->channel;  // fix by ap_info channel
+            aws_set_dst_chan(zc_channel);
         }
     } else {
         /* warning: channel may eq 0! */
     };
 
-    if (ap_info) /* save ssid */
+    if (ap_info) { /* save ssid */
         strcpy((char *)zc_ssid, ap_info->ssid);
-    else /* in case of zc_ssid is dirty by v2 */
+    } else { /* in case of zc_ssid is dirty by v2 */
         memset(zc_ssid, 0, ZC_MAX_SSID_LEN);
+    }
 
     return 1;
 }
@@ -904,37 +947,37 @@ found_match:
  */
 static inline u8 get_data_score(u16 group_sn, u16 sn_now, u16 sn_last, u8 index_now, u8 index_last, u8 tods)
 {
-/*
-example: 1
- 8+3 250 0  d0e cc:fa:00:c8:cf:d2 > ff:ff:ff:ff:ff:ff
- 8+4 2bf 0  d15 cc:fa:00:c8:cf:d2 > ff:ff:ff:ff:ff:ff    //两个包index_delta=1, sn_delta=7
+    /*
+    example: 1
+     8+3 250 0  d0e cc:fa:00:c8:cf:d2 > ff:ff:ff:ff:ff:ff
+     8+4 2bf 0  d15 cc:fa:00:c8:cf:d2 > ff:ff:ff:ff:ff:ff    //两个包index_delta=1, sn_delta=7
 
-example: 2
- 8+0, 3e1,  9a5
- 8+1, 13f,  9a7
-         group_sn=9a7, sn=9ab-9a7, pos=e-9, len=3ce        //here, index_delta=5, sn_delta=4
-         group_sn=9a7, sn=9ac-9ab, pos=f-9, len=454
-         group_sn=9a7, sn=9ad-9ac, pos=10-9, len=4d2
-example: 3
- 8+3, 225,  a32
- 8+6, 3c7,  a39        //此处应该是16+6, index_delta=3, sn_delta=7
-example: 4
- 0+0, 4e0,  da5
- 0+7, 441,  dab        //此处应该是8+7， index_delta=7, sn_delta=6
- 0+0, 4e0,  d89
- 0+8, 4c2,  d8f        //此处应该是8+8， index_delta=8, sn_delta=6
+    example: 2
+     8+0, 3e1,  9a5
+     8+1, 13f,  9a7
+             group_sn=9a7, sn=9ab-9a7, pos=e-9, len=3ce        //here, index_delta=5, sn_delta=4
+             group_sn=9a7, sn=9ac-9ab, pos=f-9, len=454
+             group_sn=9a7, sn=9ad-9ac, pos=10-9, len=4d2
+    example: 3
+     8+3, 225,  a32
+     8+6, 3c7,  a39        //此处应该是16+6, index_delta=3, sn_delta=7
+    example: 4
+     0+0, 4e0,  da5
+     0+7, 441,  dab        //此处应该是8+7， index_delta=7, sn_delta=6
+     0+0, 4e0,  d89
+     0+8, 4c2,  d8f        //此处应该是8+8， index_delta=8, sn_delta=6
 
-//example: 4
- 0+0 [100] 294 0 4e0
- 0+1 [60] 2a2 0 11a
- 0+2 [40] 2aa 0 181
-         group_sn:2aa, sn:2b8-2aa=14, pos:3-2, len:20a
-         group_sn:2aa, sn:2bc-2b8=18, pos:4-2, len:28a
-         group_sn:2aa, sn:2c0-2bc=22, pos:5-2, len:310
-         group_sn:2aa, sn:2c4-2c0=26, pos:6-2, len:391
-         group_sn:2aa, sn:2c8-2c4=30, pos:7-2, len:412
-         group_sn:2aa, sn:2cc-2c8=34, pos:8-2, len:493
-*/
+    //example: 4
+     0+0 [100] 294 0 4e0
+     0+1 [60] 2a2 0 11a
+     0+2 [40] 2aa 0 181
+             group_sn:2aa, sn:2b8-2aa=14, pos:3-2, len:20a
+             group_sn:2aa, sn:2bc-2b8=18, pos:4-2, len:28a
+             group_sn:2aa, sn:2c0-2bc=22, pos:5-2, len:310
+             group_sn:2aa, sn:2c4-2c0=26, pos:6-2, len:391
+             group_sn:2aa, sn:2c8-2c4=30, pos:7-2, len:412
+             group_sn:2aa, sn:2cc-2c8=34, pos:8-2, len:493
+    */
     static const u16 score_level[][2] = {
         {0,      0},
         {1,      2}, //include, example 1, 3
@@ -953,20 +996,23 @@ example: 4
     u8 res;
 
     /* suppose: sn > zc_prev_sn, pos > zc_cur_pos */
-    if (sn_compare(sn_now, group_sn) <= 0 || sn_compare(sn_now, zc_prev_sn) <= 0)
+    if (sn_compare(sn_now, group_sn) <= 0 || sn_compare(sn_now, zc_prev_sn) <= 0) {
         return score_min;
-    else if (index_now <= index_last)
+    } else if (index_now <= index_last) {
         return score_min;
+    }
 
-    while (delta > score_level[i][0]) /* include */
+    while (delta > score_level[i][0]) { /* include */
         i++;
+    }
 
     res = score_level[i][1];
 
-    if (zc_score_uplimit > res)
+    if (zc_score_uplimit > res) {
         return zc_score_uplimit - res;
-    else
+    } else {
         return score_low;
+    }
 }
 
 /*
@@ -991,23 +1037,25 @@ static inline int try_to_sync_pos(u8 tods, u16 last_sn, u8 sn, int last_group_po
 retry:
     for (i = 0; i <= zconfig_get_data_len(); i += GROUP_NUMBER) {
         for (match = 0, score = score_max, j = 1;
-                        j <= GROUP_NUMBER; j++) {
-            if (!tmp_score(j))
+             j <= GROUP_NUMBER; j++) {
+            if (!tmp_score(j)) {
                 continue;
+            }
 
             if (empty_match) {
-                if (pkg_score(i+j) <= 1) {
+                if (pkg_score(i + j) <= 1) {
                     match++;
                     score = 1;
                 }
             } else {
-                if (!pkg_len(i+j))
+                if (!pkg_len(i + j)) {
                     continue;
-                if (pkg_len(i+j) == tmp_len(j)) {
+                }
+                if (pkg_len(i + j) == tmp_len(j)) {
                     match++;
-                    score = (score > pkg_score(i+j)) ? pkg_score(i+j) : score;
+                    score = (score > pkg_score(i + j)) ? pkg_score(i + j) : score;
                 } else {/* encounter first unmatch */
-                    log("[%d]=%x, [%d]=%x\r\n", i+j, pkg_len(i+j), j, tmp_len(j));
+                    log("[%d]=%x, [%d]=%x\r\n", i + j, pkg_len(i + j), j, tmp_len(j));
                     break;
                 }
             }
@@ -1018,7 +1066,7 @@ retry:
             match_end = j - 1;
             match_score = score;
             log("match=%d, match_group=%d, match_end=%d\r\n",
-                    match, match_group, match_end);
+                match, match_group, match_end);
         }
     }
 
@@ -1029,8 +1077,9 @@ retry:
 
     if (group_pos != -1) {//根据后位置确定
         guess_pos = group_pos - GROUP_NUMBER;//前一组
-        if (guess_pos < 0)
+        if (guess_pos < 0) {
             guess_pos = (zconfig_get_data_len() / GROUP_NUMBER) * GROUP_NUMBER;
+        }
 
         if (!max_match || empty_match) {//case 3
             match_score = 2;
@@ -1043,14 +1092,15 @@ retry:
     //前位置 有效性难以判断，忽略
 
     if (max_match > 0) {
-        if (max_match == 1)
+        if (max_match == 1) {
             match_score = match_score > 10 ? 10 : match_score;
-        else if (max_match == 2)
+        } else if (max_match == 2) {
             match_score = match_score > 20 ? 20 : match_score;
-        else if (max_match <= GROUP_NUMBER)
+        } else if (max_match <= GROUP_NUMBER) {
             match_score = match_score > 30 ? 30 : match_score;
-        else
+        } else {
             goto clear;
+        }
 
         if (guess_pos != -1) {
             if (guess_pos == match_group) {//case 1
@@ -1060,10 +1110,11 @@ retry:
                 reason = 1;
             } else {//case 2
                 match_score -= 0;//bonus
-                if (max_match >= 2 && !empty_match) 
+                if (max_match >= 2 && !empty_match) {
                     final_pos = match_group;
-                else
+                } else {
                     final_pos = guess_pos;
+                }
                 reason = 2;
             }
         } else {//case 4: 只有match_pos存在
@@ -1071,25 +1122,28 @@ retry:
 
             reason = 4;
         }
-    } else
+    } else {
         goto clear;
+    }
 
 replace:
     if (final_pos != -1) {
         reason = reason;
         os_printf("\tX = %d, score=%d, match=%d, reason=%d\r\n", final_pos, match_score, max_match, reason);
-        if (match_end != GROUP_NUMBER)
+        if (match_end != GROUP_NUMBER) {
             os_printf("\t match from [1-%d]\r\n", match_end);
+        }
         for (i = final_pos + 1, j = 1; i <= final_pos + match_end; i++, j++) {
             if (pkg_score(i) < match_score && tmp_score(j)) {
                 pkg_len(i) = tmp_len(j);
                 pkg_score(i) = (match_score > tmp_score(j) - 1) ?
-                            (match_score - (tmp_score(j) - 1)) : match_score;//TODO
+                               (match_score - (tmp_score(j) - 1)) : match_score;//TODO
                 os_printf("\t%d+%d [%d] %c %-3x\r\n", final_pos, j, pkg_score(i), flag_tods(tods), tmp_len(j));
 
                 zc_replace = 1;
-                if (zc_max_pos < i)
+                if (zc_max_pos < i) {
                     zc_max_pos = i;
+                }
 
                 ret = 0;
             }
@@ -1112,12 +1166,14 @@ static inline int try_to_replace_same_pos(int tods, int pos, int new_len)
     int replace = 0, i, old_match = 0, new_match = 0;
 
     for (i = pos % GROUP_NUMBER; i <= zconfig_get_data_len();
-            i += GROUP_NUMBER) {
-        if (i != pos && pkg_len(i) == pkg_len(pos))
+         i += GROUP_NUMBER) {
+        if (i != pos && pkg_len(i) == pkg_len(pos)) {
             old_match = 1;
+        }
 
-        if (pkg_len(i) == new_len)
+        if (pkg_len(i) == new_len) {
             new_match = 1;
+        }
     }
 
     if ((old_match && !new_match) || tods == 0) {
@@ -1167,27 +1223,34 @@ u8 zconfig_get_auth_info(u8 *ssid, u8 *bssid, u8 *auth, u8 *encry, u8 *channel)
     struct ap_info *ap_info = NULL;
 
     /* sanity check */
-    if (!bssid || !memcmp(bssid, zero_mac, ETH_ALEN))
+    if (!bssid || !memcmp(bssid, zero_mac, ETH_ALEN)) {
         valid_bssid = NULL;
-    else
+    } else {
         valid_bssid = bssid;
+    }
 
     /* use mac or ssid to search apinfo */
-    if (valid_bssid)
+    if (valid_bssid) {
         ap_info = zconfig_get_apinfo(valid_bssid);
-    else
+    } else {
         ap_info = zconfig_get_apinfo_by_ssid(ssid);
-    if (!ap_info)
+    }
+    if (!ap_info) {
         return 0;
+    }
 
-    if (auth)
+    if (auth) {
         *auth = ap_info->auth;
-    if (encry)
-        *encry = ap_info->encry[1]; /* tods side */
-    if (!valid_bssid && bssid)
+    }
+    if (encry) {
+        *encry = ap_info->encry[1];    /* tods side */
+    }
+    if (!valid_bssid && bssid) {
         memcpy(bssid, ap_info->mac, ETH_ALEN);
-    if (channel)
+    }
+    if (channel) {
         *channel = ap_info->channel;
+    }
 
     return 1;
 
@@ -1198,10 +1261,11 @@ u8 zconfig_callback_over(u8 *ssid, u8 *passwd, u8 *bssid)
     u8 auth = ZC_AUTH_TYPE_INVALID, encry = ZC_ENC_TYPE_INVALID, channel = 0;
 
     awss_debug("zconfig done. ssid:%s, passwd:%s, mac:%02x%02x%02x%02x%02x%02x\r\n",
-          ssid, passwd, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
+               ssid, passwd, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
 
-    if (zconfig_finished)
+    if (zconfig_finished) {
         return 0;
+    }
 
     zconfig_get_auth_info(ssid, bssid, &auth, &encry, &channel);
 
@@ -1218,27 +1282,28 @@ static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
 {
     /* state change callback */
     switch (state) {
-    case STATE_CHN_SCANNING:
-        break;
-    case STATE_CHN_LOCKED_BY_P2P:
-        //locked state used by action/wps frame
-        zconfig_callback_channel_locked(channel);
-        break;
-    case STATE_CHN_LOCKED_BY_BR:
-        //locked state used by br frame
-        zconfig_callback_channel_locked(zc_channel ? zc_channel : channel);
-        break;
-    case STATE_RCV_DONE:
-        /*
-         * in case of p2p/router, direct into RCV_DONE state,
-         * skiped the chn lock state, so better to call channel lock here
-         */
-        if (!is_channel_locked())
+        case STATE_CHN_SCANNING:
+            break;
+        case STATE_CHN_LOCKED_BY_P2P:
+            //locked state used by action/wps frame
             zconfig_callback_channel_locked(channel);
-        zconfig_callback_over(zc_ssid, zc_passwd, zc_bssid);
-        break;
-    default:
-        break;
+            break;
+        case STATE_CHN_LOCKED_BY_BR:
+            //locked state used by br frame
+            zconfig_callback_channel_locked(zc_channel ? zc_channel : channel);
+            break;
+        case STATE_RCV_DONE:
+            /*
+             * in case of p2p/router, direct into RCV_DONE state,
+             * skiped the chn lock state, so better to call channel lock here
+             */
+            if (!is_channel_locked()) {
+                zconfig_callback_channel_locked(channel);
+            }
+            zconfig_callback_over(zc_ssid, zc_passwd, zc_bssid);
+            break;
+        default:
+            break;
     }
 
     /*
@@ -1252,8 +1317,9 @@ static inline void zconfig_set_state(u8 state, u8 tods, u8 channel)
      * watch out zc_state rolling back.
      * zconfig_set_state(CHN_LOCKED) will be called more than once,
      */
-    if (zc_state < state)
+    if (zc_state < state) {
         zc_state = state;
+    }
 }
 
 /*
@@ -1271,10 +1337,11 @@ int is_invalid_pkg(void *pkt_data, u32 pkt_length)
 {
 #define MIN_PKG         (33)
 #define MAX_PKG         (1480 + 56 + 200)
-    if (pkt_length < MIN_PKG || pkt_length > MAX_PKG)
-      return 1;
-    else
-      return 0;
+    if (pkt_length < MIN_PKG || pkt_length > MAX_PKG) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int zconfig_recv_callback_w(struct parser_res *res)
@@ -1288,14 +1355,15 @@ int zconfig_recv_callback_w(struct parser_res *res)
     int ret = get_ssid_passwd_from_w(data, len, res->src, res->bssid);
     if (ret == GOT_CHN_LOCK) {
         awss_debug("callback for v2:%02x%02x%02x\r\n",
-              res->src[0], res->src[1], res->src[2]);
+                   res->src[0], res->src[1], res->src[2]);
         goto chn_locked;
     } else if (ret == GOT_SSID_PASSWD) {
         goto rcv_done;
-    } else if (ret == GOT_NOTHING)
+    } else if (ret == GOT_NOTHING) {
         return PKG_INVALID;
-    else
+    } else {
         return PKG_INVALID;
+    }
 
 chn_locked:
     zconfig_set_state(STATE_CHN_LOCKED_BY_P2P, tods, channel);
@@ -1351,8 +1419,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
         } else if (!memcmp(zc_android_src, src, ETH_ALEN)) {
             struct ap_info *ap_info = zconfig_get_apinfo(bssid);
             if (ap_info) {
-                if (ap_info->ssid[0] != 0x00 && ap_info->ssid[0] != 0xFF)
+                if (ap_info->ssid[0] != 0x00 && ap_info->ssid[0] != 0xFF) {
                     strncpy((char *)zc_android_ssid, ap_info->ssid, ZC_MAX_SSID_LEN);
+                }
                 memcpy(zc_android_bssid, bssid, ETH_ALEN);
                 os_printf("src %02x%02x%02x match %02x%02x%02x\r\n",
                           zc_android_src[0], zc_android_src[1], zc_android_src[2],
@@ -1363,8 +1432,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
         /* same src mac & br & bssid */
         if (memcmp(&src[0], zc_src_mac, ETH_ALEN) ||
             memcmp(&dst[0], br_mac, sizeof(br_mac)) ||
-            memcmp(bssid, zc_bssid, ETH_ALEN)) //in case of WDS
+            memcmp(bssid, zc_bssid, ETH_ALEN)) { //in case of WDS
             goto drop;
+        }
 
         if (timestamp - zc_timestamp > time_interval) {
             awss_debug("\t\t\t\t\ttimestamp = %d\r\n", timestamp - zc_timestamp);
@@ -1372,8 +1442,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
         }
 
         ret = sn_compare(sn, zc_prev_sn);
-        if (ret <= 0)  // retry packet, update timestamp
+        if (ret <= 0) { // retry packet, update timestamp
             zc_timestamp = timestamp;
+        }
         if (ret == 0) {
             os_printf("drop: %3x == %3x\r\n", sn, zc_prev_sn);//log level, too many retry pkg
             goto drop;
@@ -1384,8 +1455,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
 
         //assert(sn > zc_prev_sn && !timeout);
 
-        if (len <= zc_frame_offset) /* length invalid */
+        if (len <= zc_frame_offset) { /* length invalid */
             goto drop;
+        }
 
         len -= zc_frame_offset;
 
@@ -1409,20 +1481,22 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
                     try_to_sync_pos(tods, zc_prev_sn, sn, zc_group_pos, -1);
                 }
                 zc_pos_unsync = 1;/* also a new start */
-                if (index < zc_last_index)
+                if (index < zc_last_index) {
                     os_printf("\tenter try_to_sync_pos: rollback \r\n");
-                else if (timeout)
+                } else if (timeout) {
                     os_printf("\tenter try_to_sync_pos: timeout \r\n");
-                else
+                } else {
                     os_printf("\tenter try_to_sync_pos: != \r\n");
+                }
             }
 pos_unsync:
             if (zc_pos_unsync) {/* tmp save */
                 package_save((u8 *)tmp(index), src, dst, tods, len);
-                if (zc_pos_unsync == 1)
+                if (zc_pos_unsync == 1) {
                     tmp_score(index) = 1;
-                else
-                    tmp_score(index) = (sn - zc_prev_sn);//TODO: index? last_tmp_score
+                } else {
+                    tmp_score(index) = (sn - zc_prev_sn);    //TODO: index? last_tmp_score
+                }
                 zc_pos_unsync ++; /* unsync pkg counter */
                 os_printf("\tX+%d [%d] %-3x %c %-3x\r\n", index, tmp_score(index), sn, flag_tods(tods), len);
                 goto update_sn;//FIXME: update prev_sn or not?
@@ -1432,11 +1506,12 @@ pos_unsync:
             score = get_data_score(zc_group_sn, sn, zc_prev_sn, pos, zc_cur_pos, tods);
             if (score == score_min) {//better not drop any pkg here
                 os_printf("\t drop: group_sn:%x, sn:%x-%x=%x, pos:%d-%d, len:%x\r\n",
-                        zc_group_sn, sn, zc_prev_sn, sn_minus(sn, zc_group_sn), pos, zc_cur_pos, len);
+                          zc_group_sn, sn, zc_prev_sn, sn_minus(sn, zc_group_sn), pos, zc_cur_pos, len);
                 goto update_sn;
             } else {
-                if (zc_score_uplimit > score)
-                    zc_score_uplimit = score;/* inherit last limit */
+                if (zc_score_uplimit > score) {
+                    zc_score_uplimit = score;    /* inherit last limit */
+                }
 
                 zc_group_sn = sn;//TODO
                 os_printf("%d+%d [%d] %-3x %c %-3x\r\n", zc_group_pos, index, score, sn, flag_tods(tods), len);
@@ -1498,7 +1573,9 @@ pos_unsync:
 
             if (score > pkg_score(pos)) {
                 pkg_score(pos) = score;    //update score first
-                if (equal) continue;
+                if (equal) {
+                    continue;
+                }
                 // not equal
                 zc_replace = 1;
                 package_save((u8 *)pkg(pos), src, dst, tods, len);
@@ -1520,16 +1597,18 @@ pos_unsync:
 
             } else if (tods == res->tods) {//pkg_score(pos) > score
                 if (!equal) {/* data not equal */
-                    if (zc_pos_unsync)
+                    if (zc_pos_unsync) {
                         continue;
+                    }
                     zc_pos_unsync = 1;
                     os_printf("\tenter try_to_sync_pos: data mismatch\r\n");
                     tods = res->tods;
                     goto pos_unsync;
                 } else if (zc_score_uplimit >= score_mid && pkg_score(pos) - score < 10) { /* data equal */
                     u8 uplimit = (zc_score_uplimit + pkg_score(pos)) / 2;
-                    if (zc_score_uplimit != uplimit)
+                    if (zc_score_uplimit != uplimit) {
                         os_printf("\t\t\t uplimit [%d] -> [%d]\r\n", zc_score_uplimit, uplimit);
+                    }
                     zc_score_uplimit = uplimit;
                 }
             }
@@ -1581,7 +1660,7 @@ int zconfig_recv_callback_adha_ssid(struct parser_res *res)
     return PKG_END;
 }
 
-extern struct adha_info * adha_aplist;
+extern struct adha_info *adha_aplist;
 int zconfig_recv_callback_default_ssid(struct parser_res *res)
 {
     u8 tods = res->tods;
@@ -1598,9 +1677,9 @@ int zconfig_recv_callback_default_ssid(struct parser_res *res)
 
 /* return 0 for success, -1 devid not match, otherwise return -2 */
 int (*vendor_decrypt_ssid_passwd)(u8 *ie, u8 ie_len,
-        u8 out_ssid[ZC_MAX_SSID_LEN],
-        u8 out_passwd[ZC_MAX_PASSWD_LEN],
-        u8 out_bssid[6]);
+                                  u8 out_ssid[ZC_MAX_SSID_LEN],
+                                  u8 out_passwd[ZC_MAX_PASSWD_LEN],
+                                  u8 out_bssid[6]);
 
 int zconfig_recv_callback_zero_config(struct parser_res *res)
 {
@@ -1611,15 +1690,18 @@ int zconfig_recv_callback_zero_config(struct parser_res *res)
     u8 ie_len = ie[1];
     int ret;
 
-    if (!vendor_decrypt_ssid_passwd)
+    if (!vendor_decrypt_ssid_passwd) {
         return PKG_INVALID;
+    }
 
-    if (res->u.ie.alink_ie_len < ie_len)
+    if (res->u.ie.alink_ie_len < ie_len) {
         return PKG_INVALID;
+    }
 
     ret = vendor_decrypt_ssid_passwd(ie, ie_len, zc_ssid, zc_passwd, zc_bssid);
-    if (ret)
+    if (ret) {
         return PKG_INVALID;
+    }
 
     zconfig_set_state(STATE_RCV_DONE, tods, channel);
 
@@ -1661,8 +1743,9 @@ void ht40_init(void)
 
 int ht40_lock_channel(u8 channel, u8 filter)
 {
-    if (channel < 1 || channel > 14)
+    if (channel < 1 || channel > 14) {
         return 0;
+    }
 
     if (!ht40_channel[channel]) {  // replace when 0
         ht40_channel[channel] ++;
@@ -1673,8 +1756,9 @@ int ht40_lock_channel(u8 channel, u8 filter)
         ht40_channel[channel] --;  /* decrease */
     }
 
-    if (ht40_channel[channel] >= HIT_FRAME_PER_CHANNEL)
+    if (ht40_channel[channel] >= HIT_FRAME_PER_CHANNEL) {
         return 1;
+    }
 
     return 0;
 }
@@ -1686,13 +1770,15 @@ int ht40_scanning_hint_frame(u8 filter, signed char rssi, u32 length, u8 channel
     int tods = 1;
     int i, j, k;
 
-    if (ht40_state != STATE_CHN_SCANNING)
+    if (ht40_state != STATE_CHN_SCANNING) {
         return -1;
+    }
 
     /* range check, max: 0x4e0 + tkip + qos, min: 0x3e0 + open */
     if (length > START_FRAME + zconfig_fixed_offset[2][0] + 2
-            || length <= GROUP_FRAME + zconfig_fixed_offset[0][0])
+        || length <= GROUP_FRAME + zconfig_fixed_offset[0][0]) {
         return -1;
+    }
 
     for (i = 1; i >= 0; i--) //Qos or not
         for (j = 3; j >= 0; j--) //auth type, without open
@@ -1701,8 +1787,8 @@ int ht40_scanning_hint_frame(u8 filter, signed char rssi, u32 length, u8 channel
                     hint_pos = i * 32 + j * 8 + k;
 #if 1
                     os_printf("\r\nfilter:%x, rssi:%d, len:%d, Qos:%d, auth:%d, group:%d, %s\r\n",
-                            filter, rssi, length, i, j, k,
-                            next_loop ? "DUP" : "");
+                              filter, rssi, length, i, j, k,
+                              next_loop ? "DUP" : "");
 #endif
                     if (!next_loop) {
                         channel_locked = ht40_lock_channel(channel, filter);
@@ -1719,16 +1805,18 @@ int ht40_scanning_hint_frame(u8 filter, signed char rssi, u32 length, u8 channel
 
     if (channel_locked) {
         ht40_rssi_high = rssi + ht40_rssi_range;
-        if (ht40_rssi_high > -1)
+        if (ht40_rssi_high > -1) {
             ht40_rssi_high = -1;
+        }
         ht40_rssi_low = rssi - ht40_rssi_range;
-        if (ht40_rssi_low < -128)
+        if (ht40_rssi_low < -128) {
             ht40_rssi_low = -128;
+        }
 
         ht40_filter = filter;
 
         os_printf("filter:%x, rssi range:[%d, %d]\r\n",
-                filter, ht40_rssi_low, ht40_rssi_high);
+                  filter, ht40_rssi_low, ht40_rssi_high);
     }
 
     return hint_pos;
@@ -1742,8 +1830,9 @@ int ht40_get_qos_auth_group_info(u32 length)
     int i, j, k;
 
     if (zc_state != STATE_CHN_LOCKED_BY_BR ||
-        ht40_state != STATE_CHN_SCANNING)
+        ht40_state != STATE_CHN_SCANNING) {
         return 0;
+    }
 
     for (i = 1; i >= 0; i--) //Qos or not
         for (j = 3; j >= 0; j--) //auth type
@@ -1767,7 +1856,7 @@ int ht40_get_qos_auth_group_info(u32 length)
             }
 
     awss_debug("max_cont:%d, sec_cont:%d, max_count:%d, max_cont_pos:%d, max_count_pos:%d\r\n",
-            max_continues, second_continues, max_count, max_count_pos, max_continues_pos);
+               max_continues, second_continues, max_count, max_count_pos, max_continues_pos);
 
     if (max_continues > second_continues // not >=
         && max_count_pos == max_continues_pos) {
@@ -1786,7 +1875,7 @@ int ht40_get_qos_auth_group_info(u32 length)
 
             ht40_state = STATE_RCV_IN_PROGRESS;
             awss_debug("len:%d, qos:%d, auth:%d, group:%d, offset:%d\r\n",
-                    length, qos, auth, group, zc_frame_offset);
+                       length, qos, auth, group, zc_frame_offset);
         }
     }
 
@@ -1805,8 +1894,9 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
     if (length > IEEE80211_MIN_HDRLEN) {
         length -= IEEE80211_MIN_HDRLEN;
         len = length;
-    } else
+    } else {
         goto drop;
+    }
 
     hint_pos = ht40_scanning_hint_frame(filter, rssi, length, channel);
 
@@ -1816,12 +1906,15 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
     }
 
     if (ht40_state == STATE_RCV_IN_PROGRESS) {
-        if (rssi <= ht40_rssi_low && rssi >= ht40_rssi_high)
+        if (rssi <= ht40_rssi_low && rssi >= ht40_rssi_high) {
             goto drop;
-        if (filter != ht40_filter)
+        }
+        if (filter != ht40_filter) {
             goto drop;
-        if (len <= zc_frame_offset)/* length invalid */
+        }
+        if (len <= zc_frame_offset) { /* length invalid */
             goto drop;
+        }
 
         len -= zc_frame_offset;
 
@@ -1832,7 +1925,7 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
 
             if (now - ht40_timestamp > time_interval) {
                 awss_debug("\t\t\t\t\ttimestamp = %d, pos:%d, len:%x\r\n",
-                        now - ht40_timestamp, pos, len);
+                           now - ht40_timestamp, pos, len);
                 timeout = 1;
                 goto drop;
             }
@@ -1853,14 +1946,14 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
 
             if (pos == zc_cur_pos && len != pkg_len(zc_cur_pos)) {
                 awss_debug("drop: index equal, but len not. prev:%x, cur:%x\n",
-                        pkg_len(pos), len);
+                           pkg_len(pos), len);
                 pkg_score(pos)--;
                 goto drop;
             }
 
             if (pos > zc_cur_pos + 4) {
                 awss_debug("drop: over range too much, prev:%d, cur:%d\n",
-                        zc_cur_pos, pos);
+                           zc_cur_pos, pos);
                 goto drop;
             }
 
@@ -1888,10 +1981,11 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
                     package_save((u8 *)pkg(pos), NULL, NULL, tods, len);
                 }
             } else if (score == pkg_score(pos)) {/* range check ? */
-                if (equal)
+                if (equal) {
                     pkg_score(pos)++;
-                else
+                } else {
                     pkg_score(pos)--;
+                }
             } else {//pkg_score(pos) > score
                 /* do nothing */
             }
@@ -1918,8 +2012,9 @@ int zconfig_recv_callback_ht40_ctrl(u8 filter, signed char rssi, u32 length, u8 
                     zc_group_pos = group;
                     zc_score_uplimit = score_mid;
 
-                    if (zc_cur_pos + 1 == group)
+                    if (zc_cur_pos + 1 == group) {
                         pkg_score(zc_cur_pos) += 1;
+                    }
 
                     zc_cur_pos = group;
 
@@ -1948,22 +2043,26 @@ drop:
  *     zconfig state
  */
 int zconfig_recv_callback(void *pkt_data, u32 pkt_length, u8 channel,
-                               int link_type, int with_fcs, signed char rssi)
+                          int link_type, int with_fcs, signed char rssi)
 {
     int data_type = ALINK_INVALID;
     struct parser_res res;
 
     /* remove FCS filed */
-    if (with_fcs) pkt_length -= 4;
+    if (with_fcs) {
+        pkt_length -= 4;
+    }
 
     /* useless, will be removed */
-    if (is_invalid_pkg(pkt_data, pkt_length))
+    if (is_invalid_pkg(pkt_data, pkt_length)) {
         return PKG_INVALID;
+    }
 
 #ifdef AWSS_SUPPORT_HT40
     if (link_type == AWSS_LINK_TYPE_HT40_CTRL) {
-        if (!g_user_press)
+        if (!g_user_press) {
             return PKG_INVALID;
+        }
         struct ht40_ctrl *ctrl = pkt_data;
         return zconfig_recv_callback_ht40_ctrl(ctrl->filter, ctrl->rssi, pkt_length, channel);
     }
@@ -2012,16 +2111,18 @@ void zconfig_init()
     bug_on(!zconfig_data, "malloc failed!\r\n");
 
     do {
-        if (zconfig_aplist)
+        if (zconfig_aplist) {
             break;
+        }
         zconfig_aplist = (struct ap_info *)os_zalloc(sizeof(struct ap_info) * MAX_APLIST_NUM);
         bug_on(!zconfig_aplist, "malloc failed!\r\n");
         zconfig_aplist_num = 0;
-    } while(0);
+    } while (0);
 
     do {
-        if (adha_aplist)
+        if (adha_aplist) {
             break;
+        }
         adha_aplist = (struct adha_info *)os_zalloc(sizeof(struct adha_info));
         bug_on(!adha_aplist, "malloc failed!\r\n");
     } while (0);

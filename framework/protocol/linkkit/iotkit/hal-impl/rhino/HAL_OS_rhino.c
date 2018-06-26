@@ -391,8 +391,8 @@ static void schedule_timer_cancel(void *p)
         return;
     }
 
-    schedule_timer_t *pdata =p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+    schedule_timer_t *pdata = p;
+    aos_cancel_delayed_action(-1, pdata->cb, pdata->data);
 }
 
 static void schedule_timer_delete(void *p)
@@ -401,8 +401,8 @@ static void schedule_timer_delete(void *p)
         return;
     }
 
-    schedule_timer_t *pdata =p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data); 
+    schedule_timer_t *pdata = p;
+    aos_cancel_delayed_action(-1, pdata->cb, pdata->data);
     aos_free(p);
 }
 
@@ -411,14 +411,14 @@ void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
 {
 #ifdef USE_YLOOP
     schedule_timer_t  *timer = (schedule_timer_t *)aos_malloc(sizeof(schedule_timer_t));
-    if(timer == NULL) {
+    if (timer == NULL) {
         return NULL;
     }
-    
+
     timer->name = name;
     timer->cb = func;
     timer->data = user_data;
-    
+
     return timer;
 #else
     return NULL;
@@ -429,7 +429,7 @@ int HAL_Timer_Start(void *t, int ms)
 {
 #ifdef USE_YLOOP
     int ret;
-    if(t == NULL) {
+    if (t == NULL) {
         return -1;
     }
     schedule_timer_t *timer = t;
@@ -444,7 +444,7 @@ int HAL_Timer_Stop(void *t)
 {
 #ifdef USE_YLOOP
     int ret;
-    if(t == NULL) {
+    if (t == NULL) {
         return -1;
     }
 
@@ -456,11 +456,11 @@ int HAL_Timer_Stop(void *t)
 int HAL_Timer_Delete(void *timer)
 {
 #ifdef USE_YLOOP
-    if(timer == NULL) {
+    if (timer == NULL) {
         return -1;
     }
     return aos_schedule_call(schedule_timer_delete, timer);
 #else
-     return 0;
+    return 0;
 #endif
 }
