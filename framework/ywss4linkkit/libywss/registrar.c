@@ -177,7 +177,7 @@ int awss_enrollee_checkin(char *topic, int topic_len, void *payload, int payload
 
     char reply[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_ZC_CHECKIN_REPLY, reply, TOPIC_LEN_MAX);
-    awss_cmp_mqtt_send(reply, packet, packet_len);
+    awss_cmp_mqtt_send(reply, packet, packet_len, 1);
 
     os_free(dev_name);
     os_free(packet);
@@ -300,7 +300,7 @@ static int awss_request_cipher_key(int i)
     }
 
     awss_build_topic(TOPIC_ZC_CIPHER, topic, TOPIC_LEN_MAX);
-    awss_cmp_mqtt_send(topic, packet, packet_len);
+    awss_cmp_mqtt_send(topic, packet, packet_len, 1);
 
     os_free(packet);
 
@@ -564,7 +564,7 @@ int awss_report_enrollee(unsigned char *payload, int payload_len, signed char rs
     awss_build_topic(TOPIC_ZC_ENROLLEE, topic, TOPIC_LEN_MAX);
     awss_debug("topic:%s, packet:%s, method:%s\r\n", topic, packet, METHOD_EVENT_ZC_ENROLLEE);
 
-    awss_cmp_mqtt_send(topic, packet, packet_len);
+    awss_cmp_mqtt_send(topic, packet, packet_len, 1);
 
     os_free(packet);
     return 0;

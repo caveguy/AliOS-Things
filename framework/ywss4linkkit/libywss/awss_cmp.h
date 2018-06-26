@@ -124,7 +124,7 @@ int awss_cmp_coap_deinit();
 
 int awss_cmp_mqtt_register_cb(char *topic, void *cb);
 int awss_cmp_mqtt_unregister_cb(char *topic);
-int awss_cmp_mqtt_send(char *topic, void *pkt, int pkt_len);
+int awss_cmp_mqtt_send(char *topic, void *pkt, int pkt_len, int qos);
 
 int awss_release_coap_ctx(void *session);
 void *awss_cpy_coap_ctx(void *request, void *remote, char mcast);

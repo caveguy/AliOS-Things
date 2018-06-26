@@ -53,9 +53,9 @@ int awss_cmp_mqtt_unregister_cb(char *topic)
     return mqtt_unsubscribe(topic);
 }
 
-int awss_cmp_mqtt_send(char *topic, void *data, int len)
+int awss_cmp_mqtt_send(char *topic, void *data, int len, int qos)
 {
-    return mqtt_publish(topic, 1, data, len);  // IOTX_MQTT_QOS1
+    return mqtt_publish(topic, qos, data, len);  //IOTX_MQTT_QOS1 or IOTX_MQTT_QOS1
 }
 
 const struct awss_cmp_couple awss_online_couple[] = {

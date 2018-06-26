@@ -122,7 +122,7 @@ int linkkit_ntp_time_request(void (*ntp_reply)(const char *ntp_offset_time_ms))
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_NTP, topic, TOPIC_LEN_MAX);
 
-    int ret = awss_cmp_mqtt_send(topic, packet, final_len);
+    int ret = awss_cmp_mqtt_send(topic, packet, final_len, 0);
     os_free(packet);
 
     return ret;

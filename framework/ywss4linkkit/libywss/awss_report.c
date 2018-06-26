@@ -168,7 +168,7 @@ int awss_online_switchap(char *topic, int topic_len, void *payload, int payload_
     {
         char reply[TOPIC_LEN_MAX] = {0};
         awss_build_topic(TOPIC_SWITCHAP_REPLY, reply, TOPIC_LEN_MAX);
-        awss_cmp_mqtt_send(reply, packet, packet_len);
+        awss_cmp_mqtt_send(reply, packet, packet_len, 1);
         os_free(packet);
     }
 
@@ -245,7 +245,7 @@ static int awss_report_token_to_cloud()
     char topic[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_MATCH_REPORT, topic, TOPIC_LEN_MAX);
 
-    int ret = awss_cmp_mqtt_send(topic, packet, packet_len);
+    int ret = awss_cmp_mqtt_send(topic, packet, packet_len, 1);
     os_free(packet);
 
     return ret;
@@ -301,7 +301,7 @@ static int awss_report_reset_to_cloud()
     awss_debug("report reset:%s\r\n", packet);
 
     awss_build_topic(TOPIC_RESET_REPORT, topic, TOPIC_LEN_MAX);
-    ret = awss_cmp_mqtt_send(topic, packet, packet_len);
+    ret = awss_cmp_mqtt_send(topic, packet, packet_len, 1);
     os_free(packet);
 
     return ret;

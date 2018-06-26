@@ -185,7 +185,7 @@ static int decrypt_ssid_passwd(
 #define REGISTRAR_IE_HDR    (6)
     ie += REGISTRAR_IE_HDR;
     if (ie[0] != DEVICE_TYPE_VERSION) {
-        log_warn("registrar(devtype/ver=%d not supported!", ie[0]);
+        awss_debug("registrar(devtype/ver=%d not supported!", ie[0]);
         return -1;
     }
 
@@ -194,23 +194,23 @@ static int decrypt_ssid_passwd(
 
     if (!g_dev_sign || memcmp(g_dev_sign, p_dev_name_sign + 1, p_dev_name_sign[0])) {
         p_dev_name_sign[p_dev_name_sign[0]] = '\0';
-        log_warn("dev_name not match, expect:");
+        awss_debug("dev_name not match, expect:");
         dump_hex(g_dev_sign, p_dev_name_sign[0], 16);
-        log_warn("\r\nbut recv:");
+        awss_debug("\r\nbut recv:");
         dump_hex(p_dev_name_sign + 1, p_dev_name_sign[0], 16);
         return -2;
     }
     ie += ie[0] + 1; /* eating device name sign length & device name sign[n] */
 
     if (ie[0] != REGISTRAR_FRAME_TYPE) {
-        log_warn("registrar(frametype=%d not supported!", ie[0]);
+        awss_debug("registrar(frametype=%d not supported!", ie[0]);
         return -1;
     }
 
     ie ++;  /* eating frame type */
     p_ssid = ie;
     if (ie[0] >= OS_MAX_SSID_LEN) {
-        log_warn("registrar(ssidlen=%d invalid!", ie[0]);
+        awss_debug("registrar(ssidlen=%d invalid!", ie[0]);
         return -1;
     }
     memcpy(tmp_ssid, &p_ssid[1], p_ssid[0]);
@@ -220,7 +220,7 @@ static int decrypt_ssid_passwd(
 
     p_passwd = ie;
     if (p_passwd[0] >= OS_MAX_PASSWD_LEN) {
-        log_warn("registrar(passwdlen=%d invalid!", p_passwd[0]);
+        awss_debug("registrar(passwdlen=%d invalid!", p_passwd[0]);
         return -1;
     }
 
@@ -231,7 +231,7 @@ static int decrypt_ssid_passwd(
 
     aes_decrypt_string((char *)p_passwd + 1, (char *)tmp_passwd, p_passwd[0], os_get_conn_encrypt_type(), 2); //aes128 cfb
     if (is_utf8((const char *)tmp_passwd, p_passwd[0]) != 1) {
-        log_warn("registrar(passwd invalid!");
+        awss_debug("registrar(passwd invalid!");
         return -1;
     }
     awss_debug("ssid:%s, passwd:%s\n", tmp_ssid, tmp_passwd);
