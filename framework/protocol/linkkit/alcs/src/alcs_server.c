@@ -434,7 +434,7 @@ void recv_msg_handler (CoAPContext *context, const char *path, NetworkAddr *remo
             CoAPObsServer_add (context, path, remote, message);
         }
     }
-
+    session->heart_time = HAL_UptimeMs();
     if (message->payloadlen < 256) {
         char buf[256];
         call_cb (context, path, remote, message, session->sessionKey, buf, node->cb);
