@@ -439,7 +439,7 @@ int wifimgr_process_switch_ap_request(void *ctx, void *resource, void *remote, v
         goto SWITCH_AP_END;
     }
 
-    aplist = zconfig_get_apinfo_by_ssid(ssid);
+    aplist = zconfig_get_apinfo_by_ssid((u8 *)ssid);
     awss_debug("connect '%s' '%s'", ssid, passwd);
     if (aplist) {
         bssid = aplist->mac;

@@ -192,6 +192,7 @@ void do_awss_active()
 {
     LOG("do_awss_active %d\n", awss_running);
     awss_running = 1;
+    extern int awss_config_press();
     awss_config_press();
 }
 

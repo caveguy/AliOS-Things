@@ -160,27 +160,30 @@ int awss_start()
             if (strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID))  // not AHA
                 break;
 
-            awss_open_aha_monitor();
+            if (os_sys_net_is_ready()) {
+                awss_open_aha_monitor();
 
-            awss_cmp_local_init();
-            char dest_ap = 0;
-            while (!aha_is_timeout()) {
-                memset(ssid, 0, sizeof(ssid));
-                os_wifi_get_ap_info(ssid , NULL, NULL);
-                if (os_sys_net_is_ready() &&
-                    strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) {  // not AHA
-                    dest_ap = 1;
-                    break;
+                awss_cmp_local_init();
+                char dest_ap = 0;
+                while (!aha_is_timeout()) {
+                    memset(ssid, 0, sizeof(ssid));
+                    os_wifi_get_ap_info(ssid , NULL, NULL);
+                    if (os_sys_net_is_ready() &&
+                        strlen(ssid) > 0 && strcmp(ssid, DEFAULT_SSID)) {  // not AHA
+                        dest_ap = 1;
+                        break;
+                    }
+                    os_msleep(50);
                 }
-                os_msleep(50);
+
+                awss_cmp_local_deinit();
+
+                if (switch_ap_done || awss_stopped)
+                    break;
+
+                if (dest_ap == 1)
+                    break;
             }
-
-            awss_cmp_local_deinit();
-            if (switch_ap_done || awss_stopped)
-                break;
-
-            if (dest_ap == 1)
-                break;
             __awss_start();
         } while (1);
 
