@@ -81,7 +81,7 @@ static int _calc_hmac_signature(
     int ext_value)
 {
     char                    signature[64];
-    char*                   hmac_source;
+    char                   *hmac_source;
     iotx_device_info_pt     dev;
 
     dev = iotx_device_info_get();
@@ -93,22 +93,22 @@ static int _calc_hmac_signature(
     memset(hmac_source, 0, 512);
     if (is_for_ext) {
         HAL_Snprintf(hmac_source,
-                      512,
-                      "clientId%s" "deviceName%s" "ext%d" "productKey%s" "timestamp%s",
-                      dev->device_id,
-                      dev->device_name,
-					  ext_value,
-                      dev->product_key,
-                      timestamp_str);
+                     512,
+                     "clientId%s" "deviceName%s" "ext%d" "productKey%s" "timestamp%s",
+                     dev->device_id,
+                     dev->device_name,
+                     ext_value,
+                     dev->product_key,
+                     timestamp_str);
     } else {
         HAL_Snprintf(hmac_source,
-                      512,
-                      "clientId%s" "deviceName%s" "productKey%s" "timestamp%s",
-                      dev->device_id,
-                      dev->device_name,
-                      dev->product_key,
-                      timestamp_str);
-	}
+                     512,
+                     "clientId%s" "deviceName%s" "productKey%s" "timestamp%s",
+                     dev->device_id,
+                     dev->device_name,
+                     dev->product_key,
+                     timestamp_str);
+    }
 
     utils_hmac_sha1(hmac_source, strlen(hmac_source),
                     signature,
@@ -116,7 +116,9 @@ static int _calc_hmac_signature(
                     strlen(dev->device_secret));
 
     memcpy(hmac_sigbuf, signature, hmac_buflen);
-    if (hmac_source) LITE_free(hmac_source);
+    if (hmac_source) {
+        LITE_free(hmac_source);
+    }
     return 0;
 }
 
@@ -129,8 +131,8 @@ int _http_response(char *payload,
                    const char *pkey
                   )
 {
-/*#define HTTP_POST_MAX_LEN   (1024)
-#define HTTP_RESP_MAX_LEN   (1024)*/
+    /*#define HTTP_POST_MAX_LEN   (1024)
+    #define HTTP_RESP_MAX_LEN   (1024)*/
 
     int                     len = 0;
     int                     ret = -1;
@@ -170,7 +172,7 @@ int _http_response(char *payload,
 
     httpc_data.post_content_type = "application/x-www-form-urlencoded;charset=utf-8";
     /*httpc_data.post_buf = requ_payload;
-    httpc_data.post_buf_len = strlen(requ_payload);*/    
+    httpc_data.post_buf_len = strlen(requ_payload);*/
     httpc_data.post_buf = request_string;
     httpc_data.post_buf_len = strlen(request_string);
     /*httpc_data.response_buf = resp_payload;*/
@@ -388,7 +390,7 @@ static char *guider_set_auth_req_str(char sign[], char ts[])
 
     rc = sprintf(ret,
                  "productKey=%s&" "deviceName=%s&" "signmethod=%s&" "sign=%s&"
-                 "version=default&" "clientId=%s&" "timestamp=%s&" "resources=mqtt"			 
+                 "version=default&" "clientId=%s&" "timestamp=%s&" "resources=mqtt"
 #ifdef SUPPORT_AUTH_ROUTER
                  "&ext=1"
 #endif
@@ -412,7 +414,7 @@ static int guider_get_iotId_iotToken(
     uint16_t *pport)
 {
     //char                iotx_payload[1024] = {0};
-    char*               iotx_payload = NULL;
+    char               *iotx_payload = NULL;
     int                 iotx_port = 443;
     int                 ret = -1;
     iotx_conn_info_pt   usr = iotx_conn_info_get();
@@ -519,7 +521,7 @@ static int guider_get_iotId_iotToken(
     log_debug("%10s: %d", "Port", *pport);
 
     ret = 0;
-    
+
 do_exit:
     if (iotx_payload) {
         LITE_free(iotx_payload);
@@ -584,7 +586,7 @@ int iotx_guider_authenticate(void)
                                        iotx_conn_host,
                                        &iotx_conn_port)) {
         if (req_str) {
-            	LITE_free(req_str);
+            LITE_free(req_str);
         }
 
         log_err("_iotId_iotToken_http() failed");

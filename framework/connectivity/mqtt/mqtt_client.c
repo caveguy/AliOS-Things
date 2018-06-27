@@ -2067,11 +2067,11 @@ static void cb_recv(int fd, void *arg)
     int ret = iotx_mqtt_recv_callback(pClient, 0);
     if (ret) {
         int fd = -1;
-    #ifdef IOTX_WITHOUT_TLS
+#ifdef IOTX_WITHOUT_TLS
         fd = iotx_net_get_fd(pClient->ipstack, 0);
-    #else /* IOTX_WITHOUT_TLS */
+#else /* IOTX_WITHOUT_TLS */
         fd = iotx_net_get_fd(pClient->ipstack, 1);
-    #endif
+#endif
         HAL_Unregister_Recv_Callback(fd, cb_recv);
         return;
     }
@@ -2138,9 +2138,9 @@ static int iotx_mc_connect(iotx_mc_client_t *pClient)
     fd = iotx_net_get_fd(pClient->ipstack, 1);
 #endif
     HAL_Register_Recv_Callback(fd, cb_recv, pClient);
-    HAL_Timer_Start(pClient->ping_timer, pClient->connect_data.keepAliveInterval * 1000);	
+    HAL_Timer_Start(pClient->ping_timer, pClient->connect_data.keepAliveInterval * 1000);
     /*HAL_Sys_Post_Event(CODE_SYS_ON_MQTT_READ, 0u);*/
-#endif 
+#endif
     log_info("mqtt connect success!");
     return SUCCESS_RETURN;
 }
@@ -2230,11 +2230,11 @@ static int iotx_mc_disconnect(iotx_mc_client_t *pClient)
     }
 
 #ifdef HAL_ASYNC_API
-    #ifdef IOTX_WITHOUT_TLS
-        fd = iotx_net_get_fd(pClient->ipstack, 0);
-    #else /* IOTX_WITHOUT_TLS */
-        fd = iotx_net_get_fd(pClient->ipstack, 1);
-    #endif
+#ifdef IOTX_WITHOUT_TLS
+    fd = iotx_net_get_fd(pClient->ipstack, 0);
+#else /* IOTX_WITHOUT_TLS */
+    fd = iotx_net_get_fd(pClient->ipstack, 1);
+#endif
     if (fd >= 0) {
         HAL_Unregister_Recv_Callback(fd, cb_recv);
     }
@@ -2514,12 +2514,12 @@ void *IOT_MQTT_Construct(iotx_mqtt_param_t *pInitParams)
         return NULL;
     }
     pclient->mqtt_auth = iotx_guider_authenticate;
-	pclient->ping_timer = HAL_Timer_Create("mqtt", cb_recv_timeout, pclient);
-	/*if (NULL == pclient->ping_timer) {
+    pclient->ping_timer = HAL_Timer_Create("mqtt", cb_recv_timeout, pclient);
+    /*if (NULL == pclient->ping_timer) {
         iotx_mc_release(pclient);
         LITE_free(pclient);
         return NULL;
-	}*/
+    }*/
 
     /* report module id */
     err = iotx_mc_report_mid(pclient);
@@ -2566,8 +2566,8 @@ int IOT_MQTT_Destroy(void **phandler)
             handler = next_handler;
         }
     }
-	
-	HAL_Timer_Delete(c->ping_timer);
+
+    HAL_Timer_Delete(c->ping_timer);
 
     iotx_mc_release((iotx_mc_client_t *)(*phandler));
     LITE_free(*phandler);
@@ -2579,7 +2579,7 @@ int IOT_MQTT_Destroy(void **phandler)
 int IOT_MQTT_Yield(void *handle, int timeout_ms)
 {
 #ifdef HAL_ASYNC_API
-	return 0;
+    return 0;
 #else /* HAL_ASYNC_API */
     int                 rc = SUCCESS_RETURN;
     iotx_mc_client_t   *pClient = (iotx_mc_client_t *)handle;

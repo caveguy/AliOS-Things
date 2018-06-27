@@ -1125,8 +1125,9 @@ static void invoke_event_callback_func(void *_cb_usr_ctx, va_list *params)
 
     assert(cm_ctx && cb_usr_ctx && msg);
 
-    if (report_token == 0)
+    if (report_token == 0) {
         iotx_event_post(IOTX_CONN_CLOUD_SUC);
+    }
 
     if (cb_usr_ctx && cm_ctx &&  cb_usr_ctx->event_func) {
         if (IOTX_CM_EVENT_CLOUD_CONNECTED == msg->event_id && report_token == 0) {

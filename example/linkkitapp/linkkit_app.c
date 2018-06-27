@@ -364,7 +364,7 @@ static int post_property_wifi_status_once(sample_context_t *sample_ctx)
 
     if (is_active(sample_ctx) && post_idx < 5) {
         hal_wireless_info_t wireless_info;
-		memset(&wireless_info, 0x0, sizeof(hal_wireless_info_t));
+        memset(&wireless_info, 0x0, sizeof(hal_wireless_info_t));
         HAL_GetWirelessInfo(&wireless_info);
 
         if (post_idx == 0) {
