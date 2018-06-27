@@ -41,12 +41,10 @@ static const char string_type[] __DM_READ_ONLY__ = "type";
 static const char string_identifier[] __DM_READ_ONLY__ = "identifier";
 static const char string_method[] __DM_READ_ONLY__ = "method";
 static const char string_callType[] __DM_READ_ONLY__ = "callType";
-static const char string_name[] __DM_READ_ONLY__ = "name";
 static const char string_specs[] __DM_READ_ONLY__ = "specs";
 static const char string_accessMode[] __DM_READ_ONLY__ = "accessMode";
 static const char string_required[] __DM_READ_ONLY__ = "required";
 static const char string_dataType[] __DM_READ_ONLY__ = "dataType";
-static const char string_desc[] __DM_READ_ONLY__ = "desc";
 static const char string_outputData[] __DM_READ_ONLY__ = "outputData";
 static const char string_inputData[] __DM_READ_ONLY__ = "inputData";
 static const char string_info[] __DM_READ_ONLY__ = "info";
@@ -62,7 +60,13 @@ static const char string_profile_deviceName[] __DM_READ_ONLY__ = "profile.device
 static const char string_input[] __DM_READ_ONLY__ = "input";
 static const char string_output[] __DM_READ_ONLY__ = "output";
 static const char string_false[] __DM_READ_ONLY__ = "false";
+#ifdef LITE_THING_MODEL
+static const char string_name[] __DM_READ_ONLY__ = "name";
+#endif
+#ifdef ENABLE_THING_DEBUG
+static const char string_desc[] __DM_READ_ONLY__ = "desc";
 static const char string_true[] __DM_READ_ONLY__ = "true";
+#endif
 
 #ifdef USING_UTILS_JSON
 #define KEY_BUFF_SIZE 32

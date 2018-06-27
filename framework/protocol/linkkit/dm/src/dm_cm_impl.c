@@ -158,7 +158,6 @@ static int dm_cm_impl_regist(void *_self, char *uri, iotx_cm_register_fp_t regis
     int ret = 0;
     static int time = 0;
 	void* timer = 0;
-	dm_cm_impl_timer_param_t time_para; 
     iotx_cm_register_param_t *para = NULL;
     char *topic = NULL;
     int topic_len = 0;

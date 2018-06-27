@@ -82,7 +82,6 @@ static int _calc_hmac_signature(
 {
     char                    signature[64];
     char*                   hmac_source;
-    int                     rc = -1;
     iotx_device_info_pt     dev;
 
     dev = iotx_device_info_get();
@@ -93,7 +92,7 @@ static int _calc_hmac_signature(
     LITE_ASSERT(hmac_source);
     memset(hmac_source, 0, 512);
     if (is_for_ext) {
-        rc = HAL_Snprintf(hmac_source,
+        HAL_Snprintf(hmac_source,
                       512,
                       "clientId%s" "deviceName%s" "ext%d" "productKey%s" "timestamp%s",
                       dev->device_id,
@@ -102,7 +101,7 @@ static int _calc_hmac_signature(
                       dev->product_key,
                       timestamp_str);
     } else {
-        rc = HAL_Snprintf(hmac_source,
+        HAL_Snprintf(hmac_source,
                       512,
                       "clientId%s" "deviceName%s" "productKey%s" "timestamp%s",
                       dev->device_id,

@@ -1920,7 +1920,6 @@ static void iotx_mc_keepalive(iotx_mc_client_t *pClient)
         if (IOTX_MC_STATE_DISCONNECTED == currentState) {
 #ifdef HAL_ASYNC_API
             int fd = -1;
-            utils_network_pt network = (utils_network_pt)pClient->ipstack;
 #endif
             log_err("network is disconnected!");
             iotx_mc_disconnect_callback(pClient);

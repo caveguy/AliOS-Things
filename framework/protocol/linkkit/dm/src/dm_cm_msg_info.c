@@ -114,11 +114,6 @@ static void dm_cm_msg_info_set_payload(void *_self, char *payload_buf, unsigned 
 static void clear_req_rsp_params(void *_req_rsp_param, va_list *params)
 {
     req_rsp_param_t *req_rsp_param = _req_rsp_param;
-    dm_cm_msg_info_t *cm_message_info;
-
-    cm_message_info = va_arg(*params, void *);
-
-    assert(cm_message_info);
 
     if (req_rsp_param) {
         if (req_rsp_param->key) {

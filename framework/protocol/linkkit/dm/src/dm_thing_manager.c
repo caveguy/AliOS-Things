@@ -47,7 +47,6 @@ static const char string_thing_event_property_post[] __DM_READ_ONLY__ = "thing.e
 static const char string_method_name_thing_enable[] __DM_READ_ONLY__ = METHOD_NAME_THING_ENABLE;
 static const char string_method_name_thing_disable[] __DM_READ_ONLY__ = METHOD_NAME_THING_DISABLE;
 static const char string_method_name_thing_delete[] __DM_READ_ONLY__ = METHOD_NAME_THING_DELETE;
-static const char string_method_name_thing_tsl_post_reply[] __DM_READ_ONLY__ = METHOD_NAME_THING_TSL_POST_REPLY;
 static const char string_method_name_thing_tsl_get[] __DM_READ_ONLY__ = METHOD_NAME_THING_TSL_GET;
 static const char string_method_name_thing_tsl_get_reply[] __DM_READ_ONLY__ = METHOD_NAME_THING_TSL_GET_REPLY;
 static const char string_method_name_down_raw[] __DM_READ_ONLY__ = METHOD_NAME_DOWN_RAW;
@@ -84,12 +83,6 @@ static const char string_method_name_deviceinfo_delete_reply[] __DM_READ_ONLY__ 
 static const char string_method_name_rrpc_request_plus[] __DM_READ_ONLY__ = METHOD_NAME_RRPC_REQUEST_PLUS;
 static const char string_method_name_rrpc_request[] __DM_READ_ONLY__ = METHOD_NAME_RRPC_REQUEST;
 #endif /* RRPC_ENABLED */
-#ifdef LOCAL_CONN_ENABLE
-static const char string_method_name_lan_prefix_get[] __DM_READ_ONLY__ = METHOD_NAME_LAN_PREFIX_GET;
-static const char string_method_name_lan_prefix_get_reply[] __DM_READ_ONLY__ = METHOD_NAME_LAN_PREFIX_GET_REPLY;
-static const char string_method_name_lan_prefix_update[] __DM_READ_ONLY__ = METHOD_NAME_LAN_PREFIX_UPDATE;
-static const char string_method_name_lan_prefix_update_reply[] __DM_READ_ONLY__ = METHOD_NAME_LAN_PREFIX_UPDATE_REPLY;
-#endif /* LOCAL_CONN_ENABLE */
 static const char string_cm_event_handler_prompt_start[] __DM_READ_ONLY__ = "\ncm_event_handler:\n###\n";
 static const char string_cm_event_handler_prompt_end[] __DM_READ_ONLY__ = "\n###\n";
 static const char string_cm_event_type_cloud_connected[] __DM_READ_ONLY__ = "cloud connected";
@@ -113,7 +106,9 @@ static const char string_cm_event_type_new_data_received[] __DM_READ_ONLY__ = "n
 static const char string_local_thing_list[] __DM_READ_ONLY__ = "local thing";
 static const char string_local_thing_name_list[] __DM_READ_ONLY__ = "local thing name";
 static const char string_sub_thing_list[] __DM_READ_ONLY__ = "sub thing";
+#ifdef SUBDEV_ENABLE
 static const char string_sub_thing_name_list[] __DM_READ_ONLY__ = "sub thing name";
+#endif
 static const char string_callback_list[] __DM_READ_ONLY__ = "callback list";
 
 #ifdef SUBDEV_ENABLE
@@ -128,8 +123,9 @@ static const char string_request[] __DM_READ_ONLY__ = "request";
 static const char string_response[] __DM_READ_ONLY__ = "response";
 static const char string_event[] __DM_READ_ONLY__ = "event";
 static const char string_service[] __DM_READ_ONLY__ = "service";
-
+#ifdef SUBDEV_ENABLE
 static const char string_tsl_file_pattern[] __DM_READ_ONLY__ = "%s.%s.txt";
+#endif
 
 static void free_list_string(void *_thing_name, va_list *params);
 static void free_list_thing(void *_thing_name, va_list *params);
