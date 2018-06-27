@@ -288,6 +288,7 @@ static int awss_reboot_system()
 {
     os_reboot();
     while (1);
+    return 0;
 }
 
 static int awss_report_reset_to_cloud()

@@ -48,10 +48,10 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
 #define SERVER_TX_TIME       "serverSendTime"
 
     int len = 0;
+    int res = -1;
     char *elem = NULL;
     char server_rx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
     char server_tx_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
-    char dev_diff_time[NTP_TIME_STR_MAX_LEN + 1] = {0};
 
     memset(g_ntp_time, 0, sizeof(g_ntp_time));
 
@@ -106,16 +106,17 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
     sprintf(elem, "%u", tx);
 
     strncpy(g_ntp_time, server_tx_time, sizeof(g_ntp_time) - 1);
+    res = 0;
 
 NTP_FAIL:
     if (g_ntp_reply_cb != NULL) {
         g_ntp_reply_cb(g_ntp_time);
     }
+    return res;
 }
 
 int linkkit_ntp_time_request(void (*ntp_reply)(const char *ntp_offset_time_ms))
 {
-    char *ntp_req_fmt = "{\"deviceSendTime\":\"%u\"}";
     int packet_len = 64;
     int final_len = 0;
 

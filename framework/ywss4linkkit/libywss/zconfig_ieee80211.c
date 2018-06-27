@@ -33,6 +33,7 @@
 #include "zconfig_utils.h"
 #include "zconfig_ieee80211.h"
 #include "zconfig_protocol.h"
+#include "awss_timer.h"
 
 /*
  * DS bit usage
@@ -621,14 +622,14 @@ static const u8 RSN_SUITE_1X[] =    { 0x00, 0x0f, 0xac, 0x01 };
 static const u8 WPA_CIPHER_SUITE_NONE23A[] =   { 0x00, 0x50, 0xf2, 0 };
 static const u8 WPA_CIPHER_SUITE_WEP4023A[] =  { 0x00, 0x50, 0xf2, 1 };
 static const u8 WPA_CIPHER_SUITE_TKIP23A[] =   { 0x00, 0x50, 0xf2, 2 };
-static const u8 WPA_CIPHER_SUITE_WRAP23A[] =   { 0x00, 0x50, 0xf2, 3 };
+//static const u8 WPA_CIPHER_SUITE_WRAP23A[] =   { 0x00, 0x50, 0xf2, 3 };
 static const u8 WPA_CIPHER_SUITE_CCMP23A[] =   { 0x00, 0x50, 0xf2, 4 };
 static const u8 WPA_CIPHER_SUITE_WEP10423A[] = { 0x00, 0x50, 0xf2, 5 };
 
 static const u8 RSN_CIPHER_SUITE_NONE23A[] =   { 0x00, 0x0f, 0xac, 0 };
 static const u8 RSN_CIPHER_SUITE_WEP4023A[] =  { 0x00, 0x0f, 0xac, 1 };
 static const u8 RSN_CIPHER_SUITE_TKIP23A[] =   { 0x00, 0x0f, 0xac, 2 };
-static const u8 RSN_CIPHER_SUITE_WRAP23A[] =   { 0x00, 0x0f, 0xac, 3 };
+//static const u8 RSN_CIPHER_SUITE_WRAP23A[] =   { 0x00, 0x0f, 0xac, 3 };
 static const u8 RSN_CIPHER_SUITE_CCMP23A[] =   { 0x00, 0x0f, 0xac, 4 };
 static const u8 RSN_CIPHER_SUITE_WEP10423A[] = { 0x00, 0x0f, 0xac, 5 };
 

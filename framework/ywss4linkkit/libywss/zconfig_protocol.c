@@ -450,7 +450,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
             if (ap == NULL || ap->ssid[0] == '\0' ||
                 strncmp(ap->ssid, zc_adha_ssid, ZC_MAX_SSID_LEN) == 0 ||
                 strncmp(ap->ssid, zc_default_ssid, ZC_MAX_SSID_LEN) == 0) {
-                memset(zc_bssid, 0, sizeof(zc_bssid));
+                memset(zc_bssid, 0, ETH_ALEN);
                 break;
             }
             strncpy((char *)zc_ssid, (const char *)ap->ssid, ZC_MAX_SSID_LEN);
@@ -922,6 +922,7 @@ found_match:
         if (channel != ap_info->channel) {
             awss_debug("fix channel from %d to %d\r\n", channel, ap_info->channel);
             zc_channel = ap_info->channel;  // fix by ap_info channel
+            extern void aws_set_dst_chan(int channel);
             aws_set_dst_chan(zc_channel);
         }
     } else {
