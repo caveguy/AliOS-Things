@@ -17,6 +17,7 @@
  */
 
 #include "sdk-impl_internal.h"
+#include "lite-system.h"
 #ifdef MQTT_ID2_AUTH
 #include "id2_crypto.h"
 #endif

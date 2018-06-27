@@ -363,7 +363,8 @@ static int post_property_wifi_status_once(sample_context_t *sample_ctx)
     static char post_idx = 0;
 
     if (is_active(sample_ctx) && post_idx < 5) {
-        hal_wireless_info_t wireless_info = {0};
+        hal_wireless_info_t wireless_info;
+        memset(&wireless_info, 0x0, sizeof(hal_wireless_info_t));
         HAL_GetWirelessInfo(&wireless_info);
 
         if (post_idx == 0) {
@@ -496,17 +497,6 @@ void linkkit_set_post_thread_action(void *params)
 #endif
 
     aos_post_delayed_action(100, linkkit_set_post_thread_action, sample_ctx);
-}
-
-static void *linkkit_set_post_thread(void *params)
-{
-    sample_context_t *sample_ctx = &g_sample_context;
-
-    aos_post_delayed_action(100, linkkit_set_post_thread_action, sample_ctx);
-
-    while (1) {
-        HAL_SleepMs(5000);
-    }
 }
 
 int get_tsl_from_cloud = 0;
