@@ -185,7 +185,7 @@ static int active_gen_update_msg(char *buf, size_t buf_len, int id, const char *
 
 static int get_hex_version(char *str, uint8_t hex[4])
 {
-    //AOS-R-1.3.0
+    //AOS-R-1.3.2
     char *p = NULL;
     char *q = NULL;
     int i = 0;
@@ -241,7 +241,7 @@ int version_report()
     uint8_t random_num[4];
     uint8_t chip_code[4] = {0};
     char output[ACTIVE_INFO_LEN] = {0};
-    //AOS-R-1.3.0
+    //AOS-R-1.3.2
     ret = get_hex_version((char *)aos_get_kernel_version(), version);
     if (ret == -1) {
         ACT_LOGE("get os version failed");
