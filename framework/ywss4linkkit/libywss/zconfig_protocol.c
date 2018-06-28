@@ -279,8 +279,8 @@ static inline int zconfig_recv_completed(u8 tods)
             pkg_len(3) = ssid_len | 0x200;    /* 0x200 is the index 3 */
             pkg_score(3) = SSID_AUTO_COMPLETE_SCORE;
 
-            for (i = 5; i < ssid_len + 5; i++) {
-                pkg_len(i) = (zc_ssid[i - 5] - 32) | (0x80 + 0x80 * (i % GROUP_NUMBER));
+            for (i = 5; i < ssid_len + 5; i ++) {
+                pkg_len(i) = (zc_ssid[i - 5] - 32) | (0x100 + 0x80 * ((i - 1) % GROUP_NUMBER));
                 pkg_score(i) =  SSID_AUTO_COMPLETE_SCORE;
             }
         } else if ((flag & SSID_ENCODE_MASK)) { /* include chinese ssid */
@@ -311,8 +311,8 @@ static inline int zconfig_recv_completed(u8 tods)
             pkg_len(3) = buf_len | 0x200;    /* 0x200 is the index 3 */
             pkg_score(3) =  SSID_AUTO_COMPLETE_SCORE;
 
-            for (i = 5; i < buf_len + 5; i++) {
-                pkg_len(i) = buf[i - 5] | (0x80 + 0x80 * (i % GROUP_NUMBER));
+            for (i = 5; i < buf_len + 5; i ++) {
+                pkg_len(i) = buf[i - 5] | (0x100 + 0x80 * ((i - 1) % GROUP_NUMBER));
                 pkg_score(i) =  SSID_AUTO_COMPLETE_SCORE;
             }
             os_free(buf);

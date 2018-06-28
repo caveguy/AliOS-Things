@@ -268,6 +268,7 @@ static void aws_switch_dst_chan(int channel)
 
     aws_chn_index = i;
     aws_locked_chn = channel;
+    aws_cur_chn = channel;
     aws_chn_timestamp = os_get_time_ms();
     aws_state = AWS_CHN_LOCKED;
     os_awss_switch_channel(channel, 0, NULL);

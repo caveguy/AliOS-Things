@@ -391,6 +391,7 @@ int32_t HAL_SSL_Write(_IN_ uintptr_t handle, _IN_ const char *buf, _IN_ int len,
  * @retval  (0, len] : 在指定的'timeout_ms'时间间隔内, 被成功接收的数据长度, 单位是字节(Byte)
  */
 int32_t HAL_SSL_Read(_IN_ uintptr_t handle, _OU_ char *buf, _OU_ int len, _IN_ int timeout_ms);
+int32_t HAL_SSL_GetFd(uintptr_t handle);
 
 #define NETWORK_ADDR_LEN        (16)    /* UDP网络地址的长度 */
 

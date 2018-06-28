@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "utils_epoch_time.h"
+#include "iot_import.h"
 #include "lite-log.h"
 
 #define HTTP_RESP_CONTENT_LEN   (64)
