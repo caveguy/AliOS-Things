@@ -20,14 +20,19 @@
 #include "CoAPExport.h"
 #include "CoAPServer.h"
 
-
+#define COAP_INIT_TOKEN             (0x01020304)
+#ifndef COAP_SERV_SENDLIST_MAXCOUNT
 #define COAP_SERV_SENDLIST_MAXCOUNT COAP_DEFAULT_SENDLIST_MAXCOUNT
+#endif
+#ifndef COAP_SERV_RES_MAXCOUNT
 #define COAP_SERV_RES_MAXCOUNT      COAP_DEFAULT_RES_MAXCOUNT
+#endif
+#ifndef COAP_SERV_OBS_MAXCOUNT
 #define COAP_SERV_OBS_MAXCOUNT      COAP_DEFAULT_OBS_MAXCOUNT
+#endif
+#ifndef COAP_SERV_WAIT_TIME_MS
 #define COAP_SERV_WAIT_TIME_MS      COAP_DEFAULT_WAIT_TIME_MS
-
-
-#define COAP_INIT_TOKEN     (0x01020304)
+#endif
 
 static unsigned int g_coap_running = 0;
 #ifdef COAP_SERV_MULTITHREAD

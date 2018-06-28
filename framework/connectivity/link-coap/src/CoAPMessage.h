@@ -87,6 +87,8 @@ int CoAPMessage_recv(CoAPContext *context, unsigned int timeout, int readcount);
 
 int CoAPMessage_retransmit(CoAPContext *context);
 
+int CoAPMessage_process(CoAPContext *context, unsigned int timeout);
+
 int CoAPMessage_cycle(CoAPContext *context);
 
 int CoAPMessage_cancel(CoAPContext *context, CoAPMessage *message);

@@ -273,6 +273,8 @@ extern int CoAPMessage_destory(CoAPMessage *message);
 
 extern int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *message);
 
+extern int CoAPMessage_process(CoAPContext *context, unsigned int timeout);
+
 extern int CoAPMessage_retransmit(CoAPContext *context);
 
 extern int CoAPMessage_cycle(CoAPContext *context);
