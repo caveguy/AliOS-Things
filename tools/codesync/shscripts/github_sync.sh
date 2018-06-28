@@ -50,9 +50,9 @@ else
 fi
 cd ${githubdir}
 if [ "$(git remote | grep gitlab)" = "" ]; then
-    git remote add review git@code.aliyun.com:alios-things/aos_github_sync.git
+    git remote add review git@gitlab.alibaba-inc.com:lc122798/aos_github_sync.git
 else
-    git remote set-url review git@code.aliyun.com:alios-things/aos_github_sync.git
+    git remote set-url review git@gitlab.alibaba-inc.com:lc122798/aos_github_sync.git
 fi
 
 cd ~/githubsync
