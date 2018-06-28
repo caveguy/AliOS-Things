@@ -103,7 +103,7 @@ void CoAPServer_retransmit(void *data)
 {
     CoAPContext *context = (CoAPContext *)data;
 
-    if(NULL == context){
+    if (NULL == context) {
         return;
     }
 
@@ -117,7 +117,7 @@ void CoAPServer_recv(intptr_t fd, void *data)
 {
     CoAPContext *context  = NULL;
 
-    if(NULL == data){
+    if (NULL == data) {
         return;
     }
 
@@ -150,7 +150,7 @@ CoAPContext *CoAPServer_init()
         param.waittime = COAP_SERV_WAIT_TIME_MS;
 
         g_coap_serv_mutex = HAL_MutexCreate();
-        if(NULL == g_coap_serv_mutex){
+        if (NULL == g_coap_serv_mutex) {
             COAP_ERR("Mutex Create failed");
             return NULL;
         }
@@ -158,8 +158,8 @@ CoAPContext *CoAPServer_init()
         /* Mutil-thread support */
 #ifdef COAP_SERV_MULTITHREAD
         g_semphore  = HAL_SemaphoreCreate();
-        if(NULL == g_semphore){
-            if(NULL != g_coap_serv_mutex){
+        if (NULL == g_semphore) {
+            if (NULL != g_coap_serv_mutex) {
                 HAL_MutexDestroy(g_coap_serv_mutex);
                 g_coap_serv_mutex = NULL;
             }
@@ -170,13 +170,13 @@ CoAPContext *CoAPServer_init()
 
 
         g_context = CoAPContext_create(&param);
-        if(NULL == g_context){
+        if (NULL == g_context) {
             COAP_ERR("CoAP Context Create failed");
 #ifdef COAP_SERV_MULTITHREAD
             HAL_SemaphoreDestroy(g_semphore);
             g_semphore = NULL;
 #endif
-            if(NULL != g_coap_serv_mutex){
+            if (NULL != g_coap_serv_mutex) {
                 HAL_MutexDestroy(g_coap_serv_mutex);
                 g_coap_serv_mutex = NULL;
             }
@@ -192,12 +192,11 @@ CoAPContext *CoAPServer_init()
         fd = CoAPContextFd_get(g_context);
         HAL_Register_Recv_Callback(fd, CoAPServer_recv, (void *)g_context);
         g_retrans_timer  = HAL_Timer_Create("retrans", CoAPServer_retransmit, (void *)g_context);
-        if(NULL != g_retrans_timer){
+        if (NULL != g_retrans_timer) {
             HAL_Timer_Start(g_retrans_timer, COAP_SERV_WAIT_TIME_MS);
         }
 #endif
-    }
-    else {
+    } else {
         COAP_INFO("The CoAP Server already init");
     }
 
@@ -263,12 +262,12 @@ void CoAPServer_deinit0(CoAPContext *context)
 #ifdef HAL_ASYNC_API
     fd = CoAPContextFd_get(context);
     HAL_Unregister_Recv_Callback(fd, CoAPServer_recv);
-    if(NULL != g_retrans_timer){
+    if (NULL != g_retrans_timer) {
         HAL_Timer_Stop(g_retrans_timer);
         HAL_Timer_Delete(g_retrans_timer);
         g_retrans_timer = NULL;
     }
-    if(NULL != g_deinit_timer){
+    if (NULL != g_deinit_timer) {
         HAL_Timer_Stop(g_deinit_timer);
         HAL_Timer_Delete(g_deinit_timer);
         g_deinit_timer = NULL;
@@ -287,17 +286,16 @@ void CoAPServer_deinit0(CoAPContext *context)
 void CoAPServer_deinit(CoAPContext *context)
 {
     HAL_MutexLock(g_coap_serv_mutex);
-    if(0 == g_call_num){
-    HAL_MutexUnlock(g_coap_serv_mutex);
+    if (0 == g_call_num) {
+        HAL_MutexUnlock(g_coap_serv_mutex);
 #ifdef HAL_ASYNC_API
-    g_deinit_timer  = HAL_Timer_Create("CoAPDeinit", CoAPServer_deinit0, (void *)context);
-    HAL_Timer_Start(g_deinit_timer, 0);
+        g_deinit_timer  = HAL_Timer_Create("CoAPDeinit", CoAPServer_deinit0, (void *)context);
+        HAL_Timer_Start(g_deinit_timer, 0);
 #else
-    CoAPServer_deinit0(context);
-    HAL_SleepMs(1000);
+        CoAPServer_deinit0(context);
+        HAL_SleepMs(1000);
 #endif
-    }
-    else{
+    } else {
         g_call_num --;
         HAL_MutexUnlock(g_coap_serv_mutex);
     }
@@ -306,7 +304,7 @@ void CoAPServer_deinit(CoAPContext *context)
 
 int CoAPServer_register(CoAPContext *context, const char *uri, CoAPRecvMsgHandler callback)
 {
-    if(NULL == context || g_context != context){
+    if (NULL == context || g_context != context) {
         return COAP_ERROR_INVALID_PARAM;
     }
 
@@ -317,13 +315,13 @@ int CoAPServerMultiCast_send(CoAPContext *context, NetworkAddr *remote, const ch
                              unsigned short len, CoAPSendMsgHandler callback, unsigned short *msgid)
 {
     int ret = COAP_SUCCESS;
- #if 1
+#if 1
     CoAPMessage message;
     unsigned char tokenlen;
     unsigned char token[COAP_MSG_MAX_TOKEN_LEN] = {0};
 
-    if(NULL == context || g_context != context || NULL == remote
-        || NULL == uri || NULL == buff || NULL == msgid){
+    if (NULL == context || g_context != context || NULL == remote
+        || NULL == uri || NULL == buff || NULL == msgid) {
         return COAP_ERROR_INVALID_PARAM;
     }
 
@@ -355,8 +353,8 @@ int CoAPServerResp_send(CoAPContext *context, NetworkAddr *remote, unsigned char
     unsigned int observe = 0;
     CoAPMessage *request = (CoAPMessage *)req;
 
-    if(NULL == context || g_context != context || NULL == remote
-        || NULL == buff || NULL == paths || NULL == req){
+    if (NULL == context || g_context != context || NULL == remote
+        || NULL == buff || NULL == paths || NULL == req) {
         return COAP_ERROR_INVALID_PARAM;
     }
 
@@ -384,7 +382,7 @@ int CoAPServerResp_send(CoAPContext *context, NetworkAddr *remote, unsigned char
 
 void CoAPServer_loop(CoAPContext *context)
 {
-    if(g_context != context  || 1 == g_coap_running){
+    if (g_context != context  || 1 == g_coap_running) {
         COAP_INFO("The CoAP Server is already running");
         return;
     }
