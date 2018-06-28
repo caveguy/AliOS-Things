@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
+#include "aos/aos.h"
 
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"

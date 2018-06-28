@@ -110,9 +110,7 @@ void syscall_error_label(void)
 
 void unlock_spin(void)
 {
-    int ret;
-    ret = pthread_mutex_unlock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_unlock(&spin_lock);
 }
 
 #if (RHINO_CONFIG_CPU_NUM > 1)
@@ -126,8 +124,7 @@ uint8_t cpu_cur_get(void)
             return i;
         }
     }
-
-    assert(0);
+    return -1;
 }
 
 void cpu_signal(uint8_t cpu_num)
@@ -154,24 +151,17 @@ void *cpu_entry(void *arg)
     task_ext_t *tcb_ext = (task_ext_t *)tcb->task_stack;
 
     setcontext(tcb_ext->uctx);
-
-    assert(0);
+    return NULL;
 }
 
 void cpu_spin_lock(kspinlock_t *lock)
 {
-    int ret;
-
-    ret = pthread_mutex_lock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_lock(&spin_lock);
 }
 
 void cpu_spin_unlock(kspinlock_t *lock)
 {
-    int ret;
-
-    ret = pthread_mutex_unlock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_unlock(&spin_lock);
 }
 #endif
 
@@ -201,13 +191,11 @@ static inline int in_signal(void)
 sigset_t cpu_intrpt_save(void)
 {
     sigset_t    oldset = {};
-    int ret;
 
     sigprocmask(SIG_BLOCK, &cpu_sig_set, &oldset);
 
     if (in_signal()) {
-        ret = pthread_mutex_lock(&spin_lock);
-        assert(ret == 0);
+        pthread_mutex_lock(&spin_lock);
         lock++;
         return oldset;
     }
@@ -219,8 +207,7 @@ sigset_t cpu_intrpt_save(void)
             return oldset;
     }
 
-    ret = pthread_mutex_lock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_lock(&spin_lock);
 
     lock++;
     return oldset;
@@ -228,12 +215,9 @@ sigset_t cpu_intrpt_save(void)
 
 void cpu_intrpt_restore(sigset_t cpsr)
 {
-    int ret;
-
     if (in_signal()) {
         lock--;
-        ret = pthread_mutex_unlock(&spin_lock);
-        assert(ret == 0);
+        pthread_mutex_unlock(&spin_lock);
         return;
     }
 
@@ -248,18 +232,15 @@ void cpu_intrpt_restore(sigset_t cpsr)
 
 out:
     lock--;
-    ret = pthread_mutex_unlock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_unlock(&spin_lock);
     sigprocmask(SIG_UNBLOCK, &cpu_sig_set, NULL);
 }
 
 
 void cpu_task_switch(void)
 {
-    task_ext_t *tcb_ext = (task_ext_t *)g_active_task[cpu_cur_get()]->task_stack;
     _cpu_task_switch();
     assert(!in_signal());
-    assert((void *)&tcb_ext >= tcb_ext->real_stack && (void *)&tcb_ext < tcb_ext->real_stack_end);
 }
 
 void cpu_intrpt_switch(void)
@@ -276,7 +257,6 @@ void cpu_tmr_sync(void)
     struct itimerspec ts;
     int     i    = 1;
     uint8_t loop = 1;
-    int     ret  = 0;
 
     (void)i;
     (void)loop;
@@ -316,16 +296,14 @@ void cpu_tmr_sync(void)
     sevp.sigev_notify = SIGEV_SIGNAL | SIGEV_THREAD_ID;
     sevp.sigev_signo = SIGUSR1;
     sevp._sigev_un._tid = gettid();
-    ret = timer_create(CLOCK_REALTIME, &sevp, &timerid);
-    assert(ret == 0);
+    timer_create(CLOCK_REALTIME, &sevp, &timerid);
 
     ts.it_interval.tv_sec = 0;
     ts.it_interval.tv_nsec = 1000000000u / RHINO_CONFIG_TICKS_PER_SECOND;
     ts.it_value.tv_sec = 1;
     ts.it_value.tv_nsec = 0;
 
-    ret = timer_settime(timerid, CLOCK_REALTIME, &ts, NULL);
-    assert(ret == 0);
+    timer_settime(timerid, CLOCK_REALTIME, &ts, NULL);
 }
 
 void cpu_first_task_start(void)
@@ -412,7 +390,6 @@ void cpu_task_create_hook(ktask_t *tcb)
 
 void cpu_task_del_hook(ktask_t *tcb, res_free_t *arg)
 {
-    kstat_t ret;
     res_free_t *res = arg;
 
     task_ext_t *tcb_ext = (task_ext_t *)tcb->task_stack;
@@ -441,14 +418,12 @@ void cpu_task_del_hook(ktask_t *tcb, res_free_t *arg)
     if (tcb->mm_alloc_flag == K_OBJ_DYN_ALLOC) {
         res->res[res->cnt] = tcb_ext->orig_stack;
         res->cnt++;
-        ret = krhino_sem_give(&g_res_sem);
-        assert(ret == 0);
+        krhino_sem_give(&g_res_sem);
     }
     else {
         res->res[res->cnt] = tcb_ext->real_stack;
         res->cnt++;
-        ret = krhino_sem_give(&g_res_sem);
-        assert(ret == 0);
+        krhino_sem_give(&g_res_sem);
     }
 
     g_sched_lock[cpu_cur_get()]--;
@@ -491,7 +466,6 @@ static void _cpu_task_switch(void)
     task_ext_t  *from_tcb_ext;
     task_ext_t  *to_tcb_ext;
     uint8_t      cur_cpu_num;
-    int          ret;
 
     cur_cpu_num = cpu_cur_get();
 
@@ -519,8 +493,7 @@ static void _cpu_task_switch(void)
     swapcontext(from_tcb_ext->uctx, to_tcb_ext->uctx);
     #endif
 
-    ret = pthread_mutex_lock(&spin_lock);
-    assert(ret == 0);
+    pthread_mutex_lock(&spin_lock);
     lock++;
 
     /* restore errno */

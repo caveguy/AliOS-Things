@@ -368,7 +368,7 @@ static int post_property_wifi_status_once(sample_context_t *sample_ctx)
         HAL_GetWirelessInfo(&wireless_info);
 
         if (post_idx == 0) {
-            char i = 0;
+            int i = 0;
             uint8_t bssid[6] = {0};
             char val_buf[20] = {0};
             char *band = NULL;

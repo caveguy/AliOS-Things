@@ -428,7 +428,6 @@ void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
 int HAL_Timer_Start(void *t, int ms)
 {
 #ifdef USE_YLOOP
-    int ret;
     if (t == NULL) {
         return -1;
     }
@@ -443,7 +442,6 @@ int HAL_Timer_Start(void *t, int ms)
 int HAL_Timer_Stop(void *t)
 {
 #ifdef USE_YLOOP
-    int ret;
     if (t == NULL) {
         return -1;
     }
