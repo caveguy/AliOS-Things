@@ -141,8 +141,10 @@ void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
                    channel);
     }
 
-    memcpy(aws_result_ssid, ssid, ZC_MAX_SSID_LEN);
-    memcpy(aws_result_passwd, passwd, ZC_MAX_PASSWD_LEN);
+    memset(aws_result_ssid, 0, sizeof(aws_result_ssid));
+    memset(aws_result_passwd, 0, sizeof(aws_result_passwd));
+    strncpy(aws_result_ssid, ssid, ZC_MAX_SSID_LEN - 1);
+    strncpy(aws_result_passwd, passwd, ZC_MAX_PASSWD_LEN - 1);
 
     if (bssid) {
         memcpy(aws_result_bssid, bssid, ETH_ALEN);
@@ -459,7 +461,6 @@ timeout_recving:
     goto rescanning;
 
 success:
-    os_awss_close_monitor();
     awss_stop_timer(rescan_timer);
     rescan_timer = NULL;
     /*

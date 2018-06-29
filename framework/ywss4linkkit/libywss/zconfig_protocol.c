@@ -264,6 +264,9 @@ static inline int zconfig_recv_completed(u8 tods)
 
         /* over-written ssid_len here */
         ssid_len = strlen((char const *)zc_ssid);
+        if (ssid_len > ZC_MAX_SSID_LEN - 1) {
+            ssid_len = ZC_MAX_SSID_LEN - 1;
+        }
 
         if (!(flag & SSID_ENCODE_MASK)) {/* ASCLL ssid */
             if ((ssid_len | 0x200) != pkg_len(3)) {
@@ -715,7 +718,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bss
     awss_debug("ssid:%s, passwd:%s, tlen:%d\r\n", tmp_ssid, tmp_passwd, total_len);
     if (passwd_len && !memcmp(tmp_passwd, magic_p_w_d, passwd_len)) {
         //Note: when v2 rollback to v1, zc_preapre_ssid will useless
-        strcpy((char *)zc_pre_ssid, (char const *)tmp_ssid);
+        strncpy((char *)zc_pre_ssid, (char const *)tmp_ssid, ZC_MAX_SSID_LEN - 1);
         return GOT_CHN_LOCK;
     }
 
@@ -749,7 +752,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bss
         ap_info = zconfig_get_apinfo_by_ssid_suffix(best_ssid);
         if (ap_info) {
             awss_debug("ssid truncated, got ssid from aplist:%s\r\n", best_ssid);
-            strncpy((char *)zc_ssid, ap_info->ssid, ZC_MAX_SSID_LEN);
+            strncpy((char *)zc_ssid, ap_info->ssid, ZC_MAX_SSID_LEN - 1);
             memcpy(zc_bssid, ap_info->mac, ETH_ALEN);
         } else {
             if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN)) {
@@ -771,17 +774,17 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bss
                 return GOT_NOTHING;
             }
 
-            strncpy((char *)zc_ssid, (char *)zc_android_ssid, ZC_MAX_SSID_LEN);
+            strncpy((char *)zc_ssid, (char *)zc_android_ssid, ZC_MAX_SSID_LEN - 1);
             memcpy(zc_bssid, zc_android_bssid, ETH_ALEN);
         }
     } else {
-        strcpy((char *)zc_ssid, (char const *)tmp_ssid);
+        strncpy((char *)zc_ssid, (char const *)tmp_ssid, ZC_MAX_SSID_LEN - 1);
         if (memcmp(bssid, zero_mac, ETH_ALEN) && memcmp(bssid, br_mac, ETH_ALEN)) {
             memcpy(zc_bssid, bssid, ETH_ALEN);
         }
     }
 
-    strcpy((char *)zc_passwd, (char const *)tmp_passwd);
+    strncpy((char *)zc_passwd, (char const *)tmp_passwd, ZC_MAX_PASSWD_LEN - 1);
     start_time = 0;
 
     return GOT_SSID_PASSWD;
@@ -930,7 +933,7 @@ found_match:
     };
 
     if (ap_info) { /* save ssid */
-        strcpy((char *)zc_ssid, ap_info->ssid);
+        strncpy((char *)zc_ssid, ap_info->ssid, ZC_MAX_SSID_LEN - 1);
     } else { /* in case of zc_ssid is dirty by v2 */
         memset(zc_ssid, 0, ZC_MAX_SSID_LEN);
     }
@@ -1134,8 +1137,9 @@ replace:
             os_printf("\t match from [1-%d]\r\n", match_end);
         }
         for (i = final_pos + 1, j = 1; i <= final_pos + match_end; i++, j++) {
-            if (j > GROUP_NUMBER || i >= MAX_PKG_NUMS)
+            if (j > GROUP_NUMBER || i >= MAX_PKG_NUMS) {
                 break;
+            }
             if (pkg_score(i) < match_score && tmp_score(j)) {
                 pkg_len(i) = tmp_len(j);
                 pkg_score(i) = (match_score > tmp_score(j) - 1) ?
@@ -1468,8 +1472,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
             index = get_data_index(len);
             pos = zc_group_pos + index;
 
-            if (index > GROUP_NUMBER || pos >= MAX_PKG_NUMS)
+            if (index > GROUP_NUMBER || pos >= MAX_PKG_NUMS) {
                 goto drop;
+            }
             /*
              * pos_unsync: 进入条件,任一条
              *     case1: index rollback
@@ -1658,8 +1663,8 @@ int zconfig_recv_callback_adha_ssid(struct parser_res *res)
 
     awss_debug("found adha ssid: %s %s\r\n", zc_adha_ssid, zc_adha_passwd);
 
-    strcpy((char *)zc_ssid, zc_adha_ssid);
-    strcpy((char *)zc_passwd, zc_adha_passwd);
+    strncpy((char *)zc_ssid, zc_adha_ssid, ZC_MAX_SSID_LEN - 1);
+    strncpy((char *)zc_passwd, zc_adha_passwd, ZC_MAX_PASSWD_LEN - 1);
 
     zconfig_set_state(STATE_RCV_DONE, tods, channel);
     return PKG_END;
@@ -1673,8 +1678,8 @@ int zconfig_recv_callback_default_ssid(struct parser_res *res)
 
     awss_debug("found default ssid: %s %s\r\n", zc_default_ssid, zc_default_passwd);
 
-    strcpy((char *)zc_ssid, zc_default_ssid);
-    strcpy((char *)zc_passwd, zc_default_passwd);
+    strncpy((char *)zc_ssid, zc_default_ssid, ZC_MAX_SSID_LEN - 1);
+    strncpy((char *)zc_passwd, zc_default_passwd, ZC_MAX_PASSWD_LEN - 1);
 
     zconfig_set_state(STATE_RCV_DONE, tods, channel);
     return PKG_END;
