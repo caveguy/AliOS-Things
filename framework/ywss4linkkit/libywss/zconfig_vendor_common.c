@@ -458,8 +458,6 @@ timeout_recving:
     aws_start_timestamp = os_get_time_ms();
     goto rescanning;
 
-    //os_softap_setup();
-
 success:
     os_awss_close_monitor();
     awss_stop_timer(rescan_timer);
