@@ -300,7 +300,7 @@ static inline int zconfig_recv_completed(u8 tods)
                 zc_ssid_is_gbk = 0;
             }
 
-            buf = os_zalloc(256);
+            buf = os_zalloc(ssid_encode_len + 1);
             bug_on(!buf, "malloc failed!\r\n");
 
             os_printf("chinese ssid auto-complete: %s\r\n", zc_ssid);
@@ -1037,8 +1037,7 @@ static inline int try_to_sync_pos(u8 tods, u16 last_sn, u8 sn, int last_group_po
 
 retry:
     for (i = 0; i <= zconfig_get_data_len(); i += GROUP_NUMBER) {
-        for (match = 0, score = score_max, j = 1;
-             j <= GROUP_NUMBER; j++) {
+        for (match = 0, score = score_max, j = 1; j <= GROUP_NUMBER; j ++) {
             if (!tmp_score(j)) {
                 continue;
             }
@@ -1135,6 +1134,8 @@ replace:
             os_printf("\t match from [1-%d]\r\n", match_end);
         }
         for (i = final_pos + 1, j = 1; i <= final_pos + match_end; i++, j++) {
+            if (j > GROUP_NUMBER || i >= MAX_PKG_NUMS)
+                break;
             if (pkg_score(i) < match_score && tmp_score(j)) {
                 pkg_len(i) = tmp_len(j);
                 pkg_score(i) = (match_score > tmp_score(j) - 1) ?
@@ -1466,6 +1467,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
             pkg_type = PKG_DATA_FRAME;
             index = get_data_index(len);
             pos = zc_group_pos + index;
+
+            if (index > GROUP_NUMBER || pos >= MAX_PKG_NUMS)
+                goto drop;
             /*
              * pos_unsync: 进入条件,任一条
              *     case1: index rollback

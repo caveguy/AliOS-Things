@@ -98,7 +98,7 @@ enum p2p_encode_type {
 
 /* global data */
 /* max: 48(ssid gbk encode) + 64 (passwd) + 6 (1(tlen) + 1(flag) + 1(ssid_len) + 1(passwd_len) + 2(crc)) */
-#define MAX_PKG_NUMS              (120)
+#define MAX_PKG_NUMS              (128)
 
 /* zconfig protocol */
 #define START_FRAME               (0x4E0) /* 0x4E0 is group 0 */
