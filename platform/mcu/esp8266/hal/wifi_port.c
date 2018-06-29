@@ -675,6 +675,7 @@ static void start_monitor(hal_wifi_module_t *m)
 
 static void stop_monitor(hal_wifi_module_t *m)
 {
+    wifi_set_mode(STATION_MODE);
     wifi_promiscuous_enable(0);
     data_cb = NULL;
 }
