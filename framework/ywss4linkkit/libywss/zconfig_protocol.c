@@ -264,8 +264,9 @@ static inline int zconfig_recv_completed(u8 tods)
 
         /* over-written ssid_len here */
         ssid_len = strlen((char const *)zc_ssid);
-        if (ssid_len > ZC_MAX_SSID_LEN - 1)
+        if (ssid_len > ZC_MAX_SSID_LEN - 1) {
             ssid_len = ZC_MAX_SSID_LEN - 1;
+        }
 
         if (!(flag & SSID_ENCODE_MASK)) {/* ASCLL ssid */
             if ((ssid_len | 0x200) != pkg_len(3)) {
@@ -1136,8 +1137,9 @@ replace:
             os_printf("\t match from [1-%d]\r\n", match_end);
         }
         for (i = final_pos + 1, j = 1; i <= final_pos + match_end; i++, j++) {
-            if (j > GROUP_NUMBER || i >= MAX_PKG_NUMS)
+            if (j > GROUP_NUMBER || i >= MAX_PKG_NUMS) {
                 break;
+            }
             if (pkg_score(i) < match_score && tmp_score(j)) {
                 pkg_len(i) = tmp_len(j);
                 pkg_score(i) = (match_score > tmp_score(j) - 1) ?
@@ -1470,8 +1472,9 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
             index = get_data_index(len);
             pos = zc_group_pos + index;
 
-            if (index > GROUP_NUMBER || pos >= MAX_PKG_NUMS)
+            if (index > GROUP_NUMBER || pos >= MAX_PKG_NUMS) {
                 goto drop;
+            }
             /*
              * pos_unsync: 进入条件,任一条
              *     case1: index rollback
