@@ -189,7 +189,7 @@ void alcs_rec_auth (CoAPContext *ctx, const char *paths, NetworkAddr *from, CoAP
         int tokenlen = sizeof(accessToken);
         utils_hmac_sha1_base64 (accesskey, tmplen, item->secret, strlen(item->secret), accessToken, &tokenlen);
 
-        COAP_INFO ("accessToken:%.*s", tokenlen, accessToken);
+        //COAP_INFO ("accessToken:%.*s", tokenlen, accessToken);
 
         int randomkeylen;
         randomkey = json_get_value_by_name(data, datalen, "randomKey", &randomkeylen, NULL);
