@@ -16,7 +16,7 @@
 #include "hal/wifi.h"
 #include "activation.h"
 
-#define ACTIVE_TOPIC_LEN        (96)
+#define ACTIVE_TOPIC_LEN        IOTX_URI_MAX_LEN
 #define ACTIVE_KEY_LEN          (32)
 #define ACTIVE_INFO_LEN         (100)
 
@@ -81,9 +81,9 @@ static int active_publish(const char *topic_type, const char *msg)
 {
     int ret;
     char topic_name[ACTIVE_TOPIC_LEN] = {0};
+    char product_key[PRODUCT_KEY_MAXLEN] = {0};
+    char device_name[DEVICE_NAME_MAXLEN] = {0};
 
-    char product_key[ACTIVE_KEY_LEN] = {0};
-    char device_name[ACTIVE_KEY_LEN] = {0};
     HAL_GetProductKey(product_key);
     HAL_GetDeviceName(device_name);
 
