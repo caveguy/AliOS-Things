@@ -1872,7 +1872,7 @@ static void *dm_thing_manager_ctor(void *_self, va_list *params)
 #ifdef LOCAL_CONN_ENABLE
         (*cm)->add_service(cm, (char *)string_dev_core_service_dev, self->_cm_local_conn_register_func_fp, self, 0);
 #endif
-	}
+    }
 
     cJSON_Hooks hook = {
         dm_lite_malloc,
