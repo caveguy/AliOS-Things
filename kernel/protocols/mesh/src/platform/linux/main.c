@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
     umesh_pal_task_init();
     umesh_init(MODE_RX_ON);
-    umesh_start();
+    umesh_start(NULL);
     umesh_pal_task_entry();
     return 0;
 }
@@ -27,16 +27,16 @@ static int linux_80211_mesh_init(umesh_hal_module_t *module, void *something)
 }
 
 static int linux_80211_mesh_send_ucast(umesh_hal_module_t *module, frame_t *frame,
-                                   mac_address_t *dest,
-                                   umesh_handle_sent_ucast_t sent,
-                                   void *context)
+                                       mac_address_t *dest,
+                                       umesh_handle_sent_ucast_t sent,
+                                       void *context)
 {
     return 0;
 }
 
 static int linux_80211_mesh_send_bcast(umesh_hal_module_t *module, frame_t *frame,
-                                   umesh_handle_sent_bcast_t sent,
-                                   void *context)
+                                       umesh_handle_sent_bcast_t sent,
+                                       void *context)
 {
     return 0;
 }
@@ -52,13 +52,13 @@ static int linux_80211_mesh_get_b_mtu(umesh_hal_module_t *module)
 }
 
 static int linux_80211_mesh_set_rxcb(umesh_hal_module_t *module,
-                          umesh_handle_received_frame_t received, void *context)
+                                     umesh_handle_received_frame_t received, void *context)
 {
     return 0;
 }
 
 static const mac_address_t *linux_80211_mesh_get_mac_address(
-                                        umesh_hal_module_t *module)
+    umesh_hal_module_t *module)
 {
     static mac_address_t addr;
 
@@ -68,7 +68,7 @@ static const mac_address_t *linux_80211_mesh_get_mac_address(
 }
 
 static int linux_80211_mesh_set_key(struct umesh_hal_module_s *module,
-                                uint8_t index, uint8_t *key, uint8_t length)
+                                    uint8_t index, uint8_t *key, uint8_t length)
 {
     return 0;
 }
@@ -102,13 +102,13 @@ static const frame_stats_t *linux_80211_mesh_get_stats(struct umesh_hal_module_s
 }
 
 static int linux_80211_wifi_mesh_set_extnetid(umesh_hal_module_t *module,
-                                 const umesh_extnetid_t *extnetid)
+                                              const umesh_extnetid_t *extnetid)
 {
     return 0;
 }
 
 static void linux_80211_wifi_mesh_get_extnetid(umesh_hal_module_t *module,
-                                  umesh_extnetid_t *extnetid)
+                                               umesh_extnetid_t *extnetid)
 {
     if (extnetid == NULL) {
         return;

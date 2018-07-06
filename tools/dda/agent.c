@@ -119,8 +119,9 @@ static int create_socket(void)
     int sockfd;
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0)
+    if (sockfd < 0) {
         goto out;
+    }
 
     bzero(&my_addr, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
@@ -129,12 +130,14 @@ static int create_socket(void)
     my_addr.sin_port = htons(DFL_PORT_AGENT);
 #endif
     ret = bind(sockfd, (struct sockaddr *)&my_addr, sizeof(my_addr));
-    if (ret < 0)
+    if (ret < 0) {
         goto out1;
+    }
 
     ret = setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
-    if (ret < 0)
+    if (ret < 0) {
         goto out1;
+    }
 
     socklen_t len = sizeof(my_addr);
     getsockname(sockfd, (struct sockaddr *)&my_addr, &len);
@@ -159,18 +162,20 @@ static void check_sending_queue(void *d1, void *d2)
     agent_info_t *agent = (agent_info_t *)d2;
     bool is_empty = dlist_empty(&agent->sending_queue);
 
-    if (is_empty)
+    if (is_empty) {
         return;
+    }
 
     do {
         sending_ent_t *ent = dlist_first_entry(&agent->sending_queue, sending_ent_t, next);
         ipc_msg_t *cmsg = (ipc_msg_t *)ent->buf;
         struct sockaddr_in *paddrto = &agent->master_addr;
 
-        sendto(agent->sockfd, ent->buf, ent->size, 0, (struct sockaddr*)paddrto, sizeof(*paddrto));
+        sendto(agent->sockfd, ent->buf, ent->size, 0, (struct sockaddr *)paddrto, sizeof(*paddrto));
 
-        if (cmsg->cmd & CMD_NEED_ACK_FLAG)
+        if (cmsg->cmd & CMD_NEED_ACK_FLAG) {
             break;
+        }
 
         dlist_del(&ent->next);
         free(ent->buf);
@@ -182,11 +187,13 @@ static void check_sending_queue(void *d1, void *d2)
 
 static void check_ack_cmd(agent_info_t *agent, uint16_t cmd)
 {
-    if (!(cmd & CMD_ACK_FLAG))
+    if (!(cmd & CMD_ACK_FLAG)) {
         return;
+    }
 
-    if (dlist_empty(&agent->sending_queue))
+    if (dlist_empty(&agent->sending_queue)) {
         return;
+    }
 
     sending_ent_t *ent = dlist_first_entry(&agent->sending_queue, sending_ent_t, next);
     ipc_msg_t *cmsg = (ipc_msg_t *)ent->buf;
@@ -211,8 +218,9 @@ static void push_to_queue(agent_info_t *agent, void *buf, int size)
     ent->size = size;
     dlist_add_tail(&ent->next, &agent->sending_queue);
 
-    if (need_timer)
+    if (need_timer) {
         eloop_register_timeout(0, QUEUE_CHECK_TIMER, check_sending_queue, 0, agent);
+    }
 }
 
 static int send_master(agent_info_t *agent, void *buf, int size)
@@ -220,7 +228,7 @@ static int send_master(agent_info_t *agent, void *buf, int size)
     struct sockaddr_in *paddrto = &agent->master_addr;
 
     if (dlist_empty(&agent->sending_queue)) {
-        sendto(agent->sockfd, buf, size, 0, (struct sockaddr*)paddrto, sizeof(*paddrto));
+        sendto(agent->sockfd, buf, size, 0, (struct sockaddr *)paddrto, sizeof(*paddrto));
         return size;
     }
 
@@ -262,8 +270,9 @@ static int connect_master(agent_info_t *agent)
 {
     if (!agent->agent_id) {
         umesh_hal_module_t *m = hal_umesh_get_default_module();
-        if (!m)
+        if (!m) {
             return 0;
+        }
 
         const mac_address_t *mac;
         mac = hal_umesh_get_mac_address(m);
@@ -285,20 +294,20 @@ static int connect_master(agent_info_t *agent)
 static void aos_loop(void *arg)
 {
     umesh_init(MODE_RX_ON);
-    umesh_start();
+    umesh_start(NULL);
     aos_loop_run();
     aos_task_exit(0);
 }
 #else
 #define cpu_event_malloc malloc
 #define cpu_event_free free
-static void cpu_call_handler(void (*f)(const void*), const void *arg)
+static void cpu_call_handler(void (*f)(const void *), const void *arg)
 {
     f(arg);
 }
 #endif
 
-static void run_aos_loop(const void* arg)
+static void run_aos_loop(const void *arg)
 {
     aos_post_event(EV_DDA, CODE_DDA_ON_CONNECTED, 0u);
 
@@ -317,14 +326,15 @@ typedef struct {
     uint64_t cmd_private;
 } compound_msg_t;
 
-static void pass_to_urmesh(const void* arg)
+static void pass_to_urmesh(const void *arg)
 {
     compound_msg_t *cmsg = (compound_msg_t *)arg;
     mesh_cb_t *mesh_cb;
 
     dlist_for_each_entry(&agent_info.mesh_cbs, mesh_cb, mesh_cb_t, next) {
-        if (mesh_cb->media_type != cmsg->media_type)
+        if (mesh_cb->media_type != cmsg->media_type) {
             continue;
+        }
         mesh_cb->cb(&cmsg->frm, &cmsg->fino, mesh_cb->cb_data);
     }
 
@@ -333,8 +343,9 @@ static void pass_to_urmesh(const void* arg)
 
 static void handle_data(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr *paddr)
 {
-    if (dlist_empty(&agent->mesh_cbs))
+    if (dlist_empty(&agent->mesh_cbs)) {
         return;
+    }
 
     uint8_t chn = msg->cmd_priv.mesh.channel;
     uint8_t rssi = msg->cmd_priv.mesh.rssi;
@@ -351,7 +362,7 @@ static void handle_data(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr *pa
 
     cmsg->frm.data = (void *)(cmsg + 1);
     cmsg->frm.len = msg->payload_len;
-    memcpy(cmsg->frm.data, msg+1, cmsg->frm.len);
+    memcpy(cmsg->frm.data, msg + 1, cmsg->frm.len);
 
     cmsg->media_type = media;
     cpu_call_handler(pass_to_urmesh, cmsg);
@@ -359,8 +370,9 @@ static void handle_data(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr *pa
 
 static void handle_mesh(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr *paddr)
 {
-    if (msg->cmd == CMD_MESH_DATA)
+    if (msg->cmd == CMD_MESH_DATA) {
         handle_data(agent, msg, paddr);
+    }
 }
 
 #ifdef CONFIG_AOS_MESH
@@ -374,13 +386,14 @@ static void handle_cli_response(char *buf, int len, void *priv)
         return;
     }
 
-    if (!len)
+    if (!len) {
         return;
+    }
 
     strncat(priv, buf, CLI_RES_SIZE - strlen(priv));
 }
 
-static void pass_to_urcli(const void* arg)
+static void pass_to_urcli(const void *arg)
 {
     compound_msg_t *cmsg = (compound_msg_t *)arg;
     char *buf = cpu_event_malloc(CLI_RES_SIZE);
@@ -412,18 +425,19 @@ static void handle_cmd_response(char *buf, int len, void *priv)
     if (!buf && !len) {
         send_data_ext(&agent_info, TYPE_P2P, CMD_P2P_RES,
                       res->cmd_private, res->cmd_src,
-                      res->buf, strlen(res->buf)+1);
+                      res->buf, strlen(res->buf) + 1);
         cpu_event_free(priv);
         return;
     }
 
-    if (!len)
+    if (!len) {
         return;
+    }
 
     strncat(res->buf, buf, CLI_RES_SIZE - strlen(res->buf));
 }
 
-static void got_p2p_request(const void* arg)
+static void got_p2p_request(const void *arg)
 {
     compound_msg_t *cmsg = (compound_msg_t *)arg;
     struct cmd_res *res = (struct cmd_res *)cpu_event_malloc(sizeof(*res) + CLI_RES_SIZE);
@@ -449,14 +463,15 @@ static void handle_p2p_request(ipc_msg_t *req)
     cpu_call_handler(got_p2p_request, cmsg);
 }
 
-static void got_p2p_response(const void* arg)
+static void got_p2p_response(const void *arg)
 {
     compound_msg_t *cmsg = (compound_msg_t *)arg;
     dda_p2p_t *req;
 
     dlist_for_each_entry(&agent_info.p2p_queue, req, dda_p2p_t, next) {
-        if (req->seqno != (int)cmsg->cmd_private)
+        if (req->seqno != (int)cmsg->cmd_private) {
             continue;
+        }
 
         dlist_del(&req->next);
         req->cb(cmsg->buf, cmsg->len, req->cb_data);
@@ -482,10 +497,11 @@ static void handle_p2p_response(ipc_msg_t *req)
 
 static void handle_p2p(ipc_msg_t *req)
 {
-    if (req->cmd == CMD_P2P_REQ)
+    if (req->cmd == CMD_P2P_REQ) {
         handle_p2p_request(req);
-    else if (req->cmd == CMD_P2P_RES)
+    } else if (req->cmd == CMD_P2P_RES) {
         handle_p2p_response(req);
+    }
 }
 #else
 static void handle_input(char *buf, int len)
@@ -520,18 +536,16 @@ static void handle_event(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr *p
         eloop_register_timeout(5, 0, report_agent_status, 0, agent);
         agent->acked = 1;
         req_cmd_mgmt_device_up_t req;
-        memcpy(&req, msg+1, sizeof req);
+        memcpy(&req, msg + 1, sizeof req);
         memcpy(&agent->master_addr, paddr, sizeof(*paddr));
         agent->agent_id = req.agent_id;
         agent->mac_addr = req.mac_addr;
         LOGD(MYTAG, "ack from master %s\n", inet_ntoa(agent->master_addr.sin_addr));
 
         cpu_call_handler(run_aos_loop, NULL);
-    }
-    else if (cmd == CMD_MGMT_ATTACH) {
+    } else if (cmd == CMD_MGMT_ATTACH) {
         memcpy(&agent->master_addr, paddr, sizeof(*paddr));
-    }
-    else {
+    } else {
         LOGE(MYTAG, "unknow cmd %x\n", msg->cmd);
     }
 }
@@ -543,16 +557,17 @@ static void handle_message(agent_info_t *agent, ipc_msg_t *msg, struct sockaddr 
     msg->cmd &= ~CMD_ACK_FLAG;
     check_ack_cmd(agent, cmd);
 
-    if (msg->type == TYPE_MGMT)
+    if (msg->type == TYPE_MGMT) {
         handle_event(agent, msg, paddr);
-    else if (msg->type == TYPE_MESH)
+    } else if (msg->type == TYPE_MESH) {
         handle_mesh(agent, msg, paddr);
-    else if (msg->type == TYPE_MISC && cmd == CMD_MISC_INPUT)
-        handle_input((char *)(msg+1), msg->payload_len);
-    else if (msg->type == TYPE_P2P)
+    } else if (msg->type == TYPE_MISC && cmd == CMD_MISC_INPUT) {
+        handle_input((char *)(msg + 1), msg->payload_len);
+    } else if (msg->type == TYPE_P2P) {
         handle_p2p(msg);
-    else
+    } else {
         dda_handle_message(msg);
+    }
 }
 
 static void agent_recv_data(int fd, void *d1, void *d2)
@@ -565,10 +580,11 @@ static void agent_recv_data(int fd, void *d1, void *d2)
 
     memset(&addr, 0, sizeof(addr));
     ret = recvfrom(agent->sockfd, buf, 2048, 0, &addr, &addr_len);
-    if (ret < 0)
+    if (ret < 0) {
         perror("recv_data");
-    else
+    } else {
         handle_message(agent, (ipc_msg_t *)buf, &addr);
+    }
 
     free(buf);
 }
@@ -602,26 +618,29 @@ void dda_log(char *buf, ...)
     va_start(args, buf);
     vsnprintf(buffer, MAX_LOG_SIZE, buf, args);
     va_end(args);
-    send_data(&agent_info, TYPE_MISC, CMD_MISC_LOG, 0, buffer, strlen(buffer)+1);
+    send_data(&agent_info, TYPE_MISC, CMD_MISC_LOG, 0, buffer, strlen(buffer) + 1);
     aos_free(buffer);
 }
 
 void dda_cli_log(char *buf)
 {
-    send_data(&agent_info, TYPE_MISC, CMD_MISC_CLI, 0, buf, strlen(buf)+1);
+    send_data(&agent_info, TYPE_MISC, CMD_MISC_CLI, 0, buf, strlen(buf) + 1);
 }
 
 extern void linuxhost_hal_urmesh_register(void);
-int dda_service_init(void) {
-    if (agent_info.agent_id == -1ULL)
+int dda_service_init(void)
+{
+    if (agent_info.agent_id == -1ULL) {
         return 0;
+    }
 
     linuxhost_hal_urmesh_register();
 
     int ret;
     ret = create_socket();
-    if (ret < 0)
+    if (ret < 0) {
         goto out;
+    }
     eloop_init(0);
 out:
     return ret;
@@ -640,20 +659,24 @@ static void dda_entry(void *arg)
     LOGI(MYTAG, "dda quit");
 }
 
-int dda_service_start(void) {
-    if (agent_info.agent_id == -1ULL)
+int dda_service_start(void)
+{
+    if (agent_info.agent_id == -1ULL) {
         return 0;
+    }
 
     dda_task_new("dda", dda_entry, &agent_info, 2048);
     return 0;
 }
 
-void dda_service_stop(void) {
+void dda_service_stop(void)
+{
     close(agent_info.sockfd);
     agent_info.sockfd = -1;
 }
 
-void dda_service_deinit(void) {
+void dda_service_deinit(void)
+{
 }
 
 /* called from YoC context, so need to use aos_mm_{alloc,free} */
@@ -665,7 +688,7 @@ void dda_p2p_request(int dst_id, const char *cmd, dda_p2p_cb cb, void *cb_data)
     req->cb_data = cb_data;
     dlist_add(&req->next, &agent_info.p2p_queue);
 
-    send_data_ext(&agent_info, TYPE_P2P, CMD_P2P_REQ, req->seqno, dst_id, cmd, strlen(cmd)+1);
+    send_data_ext(&agent_info, TYPE_P2P, CMD_P2P_REQ, req->seqno, dst_id, cmd, strlen(cmd) + 1);
 }
 
 void dda_p2p_remove_request(dda_p2p_cb cb, void *cb_data)
@@ -673,10 +696,12 @@ void dda_p2p_remove_request(dda_p2p_cb cb, void *cb_data)
     dda_p2p_t *req;
 
     dlist_for_each_entry(&agent_info.p2p_queue, req, dda_p2p_t, next) {
-        if (req->cb != cb)
+        if (req->cb != cb) {
             continue;
-        if (req->cb_data != cb_data)
+        }
+        if (req->cb_data != cb_data) {
             continue;
+        }
 
         dlist_del(&req->next);
         aos_free(req);
@@ -685,7 +710,7 @@ void dda_p2p_remove_request(dda_p2p_cb cb, void *cb_data)
 }
 
 void dda_mesh_send_data(int type, int cmd, uint64_t cmd_pri,
-                         int dst_id, const void *buf, int len)
+                        int dst_id, const void *buf, int len)
 {
     send_data_ext(&agent_info, type, cmd, cmd_pri, dst_id, buf, len);
 }

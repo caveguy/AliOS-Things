@@ -28,6 +28,8 @@
 #include "hal/interfaces.h"
 #include "hal/hals.h"
 
+extern mesh_start_complete_t g_mesh_start_complete_callback;
+
 typedef struct mm_device_s {
     node_state_t state;
     node_mode_t mode;
@@ -88,7 +90,7 @@ static uint16_t compute_network_metric(uint16_t size, uint16_t path_cost);
 void nbr_authed_handler(neighbor_t *nbr, bool result)
 {
     MESH_LOG_INFO("authentication completed");
- 
+
     if (result) {
         if (nbr) {
             set_auth_state(AUTH_DONE);
@@ -120,7 +122,7 @@ void nbr_discovered_handler(neighbor_t *nbr)
 
 static bool is_in_attaching(attach_state_t state)
 {
-    return (state == ATTACH_IDLE || state == ATTACH_DONE)? false: true;
+    return (state == ATTACH_IDLE || state == ATTACH_DONE) ? false : true;
 }
 
 static void update_channel(hal_context_t *hal, uint8_t channel)
@@ -230,7 +232,7 @@ static void set_attach_context(uint16_t sid, bool init_allocator)
             (~(NBR_SID_CHANGED | NBR_DISCOVERY_REQUEST | NBR_NETID_CHANGED));
         g_mm_state.attach_context.attach_node = g_mm_state.attach_context.attach_candidate;
         g_mm_state.attach_context.path_cost = g_mm_state.attach_context.attach_node->path_cost +
-                                       g_mm_state.attach_context.attach_node->stats.link_cost;
+                                              g_mm_state.attach_context.attach_node->stats.link_cost;
         g_mm_state.attach_context.attach_node->state = STATE_PARENT;
     }
     g_mm_state.attach_context.attach_candidate = NULL;
@@ -313,6 +315,9 @@ static ur_error_t sid_allocated_handler(message_info_t *info,
     umesh_mm_set_prev_channel();
     MESH_LOG_INFO("allocate sid 0x%04x, become %d in net %04x",
                   g_mm_state.attach_context.sid, g_mm_state.device.state, network->meshnetid);
+    if (g_mesh_start_complete_callback) {
+        g_mesh_start_complete_callback();
+    }
     return UR_ERROR_NONE;
 }
 
@@ -341,6 +346,9 @@ void become_leader(void)
     mesh_interface_state_callback(INTERFACE_UP);
     calculate_network_key();
     MESH_LOG_INFO("become leader");
+    if (g_mesh_start_complete_callback) {
+        g_mesh_start_complete_callback();
+    }
 }
 
 void umesh_mm_init_tlv_base(mm_tlv_t *tlv, uint8_t type, uint8_t length)
@@ -1074,10 +1082,10 @@ static ur_error_t handle_sid_request(message_t *message)
     }
     memcpy(node_id.uuid, uuid->uuid, sizeof(node_id.uuid));
     neighbor_t *node = get_neighbor_by_mac_addr(node_id.uuid, NULL);
-    node_id.sid = (node? node_id.sid: INVALID_SID);
+    node_id.sid = (node ? node_id.sid : INVALID_SID);
     if (attach_node_id) {
 #ifdef CONFIG_AOS_MESH_SUPER
-        node_id.attach_sid = (attach_node_id->mode & MODE_SUPER)? SUPER_ROUTER_SID: attach_node_id->sid;
+        node_id.attach_sid = (attach_node_id->mode & MODE_SUPER) ? SUPER_ROUTER_SID : attach_node_id->sid;
 #else
         node_id.attach_sid = attach_node_id->sid;
 #endif
@@ -1125,7 +1133,7 @@ static void mesh_interface_state_callback(interface_state_t state)
     mm_cb_t *callback;
 
     slist_for_each_entry(&g_mm_state.interface_callback, callback, mm_cb_t, next) {
-        state == INTERFACE_UP? callback->interface_up(): callback->interface_down(state);
+        state == INTERFACE_UP ? callback->interface_up() : callback->interface_down(state);
     }
 }
 
@@ -1226,7 +1234,7 @@ static neighbor_t *choose_attach_candidate(neighbor_t *nbr)
     uint16_t new_metric;
     hal_context_t *hal = get_default_hal_context();
     network_context_t *network = get_default_network_context();
-    uint16_t netid = (nbr? nbr->netid: INVALID_NETID);
+    uint16_t netid = (nbr ? nbr->netid : INVALID_NETID);
 
     if (nbr && nbr->attach_candidate_timeout == 0 &&
         (network->router->sid_type != STRUCTURED_SID || nbr->ssid_info.free_slots > 0)) {
@@ -1373,7 +1381,7 @@ static ur_error_t handle_advertisement(message_t *message)
     if (g_mm_state.device.state < DEVICE_STATE_DETACHED) {
         return UR_ERROR_NONE;
     }
- 
+
     MESH_LOG_DEBUG("handle advertisement");
 
     info = message->info;
@@ -1560,7 +1568,7 @@ ur_error_t umesh_mm_stop(void)
 
 uint16_t umesh_mm_get_meshnetid(network_context_t *network)
 {
-    network = (network? network: get_default_network_context());
+    network = (network ? network : get_default_network_context());
     if (network == NULL) {
         return BCAST_NETID;
     } else if (network != get_default_network_context() ||

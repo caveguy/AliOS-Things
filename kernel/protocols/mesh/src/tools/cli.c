@@ -519,7 +519,7 @@ void process_nbrs(int argc, char *argv[])
                             EXT_ADDR_DATA(nbr->mac), nbrstate2str(nbr->state), \
                             nbr->netid, nbr->sid, nbr->stats.link_cost, nbr->ssid_info.child_num, \
                             nbr->channel, nbr->stats.reverse_rssi, nbr->stats.forward_rssi, \
-                            nbr->last_heard, (nbr->flags & NBR_WAKEUP)? 1: 0);
+                            nbr->last_heard, (nbr->flags & NBR_WAKEUP) ? 1 : 0);
             num++;
         }
         response_append("\tnum=%d\r\n", num);
@@ -543,7 +543,7 @@ const char *routerid2str(uint8_t id)
 
 void process_start(int argc, char *argv[])
 {
-    umesh_start();
+    umesh_start(NULL);
     response_append("done\r\n");
 }
 
@@ -638,7 +638,7 @@ static void process_status(int argc, char *argv[])
     response_append("uptime\t%d\r\n", umesh_now_ms());
 #ifdef CONFIG_AOS_MESH_LOWPOWER
     response_append("sleetime\t%d, ratio %d\%\r\n",
-            lowpower_get_sleep_time(), (lowpower_get_sleep_time() * 100) / umesh_now_ms());
+                    lowpower_get_sleep_time(), (lowpower_get_sleep_time() * 100) / umesh_now_ms());
 #endif
     get_channel(&channel);
     response_append("channel\t%d\r\n", channel.channel);
@@ -723,8 +723,9 @@ static void do_cli(void *arg)
     g_cur_cmd_priv = buf->priv;
 
     cmd = strtok_r(buf->data, " ", &last);
-    if (!cmd)
+    if (!cmd) {
         goto out;
+    }
 
     for (argc = 0; argc < MAX_ARGS_NUM; ++argc) {
         if ((argv[argc] = strtok_r(NULL, " ", &last)) == NULL) {
@@ -776,16 +777,18 @@ void umesh_cli_cmd(char *buf, int length, cmd_cb_t cb, void *priv)
     input_cli->cb = cb;
     input_cli->priv = priv;
 
-    if (umesh_task_schedule_call(do_cli, input_cli) == 0)
+    if (umesh_task_schedule_call(do_cli, input_cli) == 0) {
         return;
+    }
 
 err_out:
     if (cb) {
         cb(NULL, 0, priv);
     }
 
-    if (input_cli == NULL)
+    if (input_cli == NULL) {
         return;
+    }
 
     if (input_cli->data) {
         ur_mem_free(input_cli->data, input_cli->length);

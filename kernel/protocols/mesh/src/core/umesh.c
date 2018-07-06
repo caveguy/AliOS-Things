@@ -30,6 +30,8 @@
 #include "hal/interfaces.h"
 #include "tools/cli.h"
 
+mesh_start_complete_t g_mesh_start_complete_callback;
+
 typedef struct transmit_frame_s {
     struct pbuf *buf;
     ur_addr_t dest;
@@ -335,7 +337,7 @@ bool umesh_is_initialized(void)
     return g_um_state.initialized;
 }
 
-ur_error_t umesh_start(void)
+ur_error_t umesh_start(mesh_start_complete_t callback)
 {
     umesh_hal_module_t *hal = NULL;
     umesh_extnetid_t extnetid;
@@ -359,6 +361,10 @@ ur_error_t umesh_start(void)
     assert(hal);
     hal_umesh_enable(hal);
 
+    if (callback) {
+        g_mesh_start_complete_callback = callback;
+    }
+
     umesh_post_event(CODE_MESH_STARTED, 0);
     return UR_ERROR_NONE;
 }
@@ -378,6 +384,9 @@ ur_error_t umesh_stop(void)
     hal = hal_umesh_get_default_module();
     assert(hal);
     hal_umesh_disable(hal);
+    if (g_mesh_start_complete_callback) {
+        g_mesh_start_complete_callback = NULL;
+    }
     return UR_ERROR_NONE;
 }
 

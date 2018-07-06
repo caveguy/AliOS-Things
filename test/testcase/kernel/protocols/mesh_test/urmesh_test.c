@@ -22,7 +22,7 @@ void test_uradar_urmesh_case(void)
     num = mem_stats->num;
 
     YUNIT_ASSERT(BCAST_SID == umesh_get_sid());
-    YUNIT_ASSERT(UR_ERROR_NONE == umesh_start());
+    YUNIT_ASSERT(UR_ERROR_NONE == umesh_start(NULL));
     check_cond_wait(umesh_get_device_state() == DEVICE_STATE_LEADER, 5);
 
     YUNIT_ASSERT(UR_ERROR_NONE == umesh_stop());
@@ -31,7 +31,7 @@ void test_uradar_urmesh_case(void)
     YUNIT_ASSERT(NULL != umesh_get_mac_address(MEDIA_TYPE_DFL));
     umesh_set_mode(MODE_RX_ON);
     YUNIT_ASSERT(MODE_RX_ON == umesh_get_mode());
-    YUNIT_ASSERT(UR_ERROR_NONE == umesh_start());
+    YUNIT_ASSERT(UR_ERROR_NONE == umesh_start(NULL));
     check_cond_wait(umesh_get_device_state() >= DEVICE_STATE_LEAF, 10);
 
     memset(ip6addr.m8, 0x00, sizeof(ip6addr.m8));
