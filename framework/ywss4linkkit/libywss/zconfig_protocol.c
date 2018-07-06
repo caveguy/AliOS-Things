@@ -1452,10 +1452,10 @@ int zconfig_recv_callback_broadcast(struct parser_res *res)
             zc_timestamp = timestamp;
         }
         if (ret == 0) {
-            os_printf("drop: %3x == %3x\r\n", sn, zc_prev_sn);//log level, too many retry pkg
+            awss_debug("drop: %3x == %3x\r\n", sn, zc_prev_sn);//log level, too many retry pkg
             goto drop;
         } else if (ret < 0 && !timeout) {//if timeout, goto pos_unsync
-            os_printf("drop: %3x < %3x\r\n", sn, zc_prev_sn);//TODO: better not drop
+            awss_debug("drop: %3x < %3x\r\n", sn, zc_prev_sn);//TODO: better not drop
             goto update_sn;//FIXME: update sn???
         }
 
@@ -1561,7 +1561,7 @@ pos_unsync:
 
         /* start from pkg(1), leave pkg(0) for start frame */
         if (pos >= MAX_PKG_NUMS || pos <= 0) {
-            os_printf("msg index(%d) out of range!\r\n", pos);
+            awss_debug("msg index(%d) out of range!\r\n", pos);
             goto drop;
         }
 
