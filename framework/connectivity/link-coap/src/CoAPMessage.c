@@ -412,6 +412,7 @@ void CoAPMessageToken_dump(unsigned char *token, unsigned char tokenlen)
 
 void CoAPMessage_dump(NetworkAddr *remote, CoAPMessage *message)
 {
+#if 0
     int ret = COAP_SUCCESS;
     unsigned int ctype;
     unsigned char code, msgclass, detail;
@@ -440,7 +441,7 @@ void CoAPMessage_dump(NetworkAddr *remote, CoAPMessage *message)
     }
 
     COAP_DEBUG("********************************");
-
+#endif
 }
 
 int CoAPMessage_send(CoAPContext *context, NetworkAddr *remote, CoAPMessage *message)
