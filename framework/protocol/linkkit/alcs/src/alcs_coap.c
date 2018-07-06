@@ -188,7 +188,7 @@ typedef struct {
 } ALCSContext;
 
 #ifdef SUPPORT_MULTI_DEVICES
-struct list_head context_head;
+LIST_HEAD(context_head);
 
 ALCSContext *get_context (CoAPContext *ctx)
 {
