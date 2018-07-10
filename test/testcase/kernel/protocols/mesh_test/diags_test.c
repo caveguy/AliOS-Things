@@ -47,6 +47,10 @@ void test_diags_case(void)
 
     message = mf_build_message(MESH_FRAME_TYPE_CMD, COMMAND_TRACE_ROUTE_RESPONSE,
                                data_orig, length, UT_MSG);
+    if (message == NULL) {
+        ur_mem_free(data_orig, length);
+        return;
+    }
     info = message->info;
     info->network = network;
     memcpy(&info->dest, &dest, sizeof(info->dest));
@@ -66,7 +70,10 @@ void test_diags_case(void)
 
     message = mf_build_message(MESH_FRAME_TYPE_CMD, COMMAND_TRACE_ROUTE_REQUEST,
                                data_orig, length, UT_MSG);
-
+    if (message == NULL) {
+        ur_mem_free(data_orig, length);
+        return;
+    }
     info = message->info;
     info->network = network;
     memcpy(&info->dest, &dest, sizeof(info->dest));

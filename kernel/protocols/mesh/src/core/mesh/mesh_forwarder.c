@@ -469,7 +469,14 @@ static ur_error_t send_fragment(network_context_t *network, message_t *message)
     } else {
         mtu = hal_umesh_get_ucast_mtu(network->hal->module);
     }
-    bzero(network->hal->frame.data, mtu);
+
+    if (mtu > 0) {
+        bzero(network->hal->frame.data, mtu);
+    } else {
+        // mtu equals -1 or 0
+        umesh_error = UR_ERROR_MEM;
+        goto exit;
+    }
 
     if (info->dest.addr.len == EXT_ADDR_SIZE ||
         info->dest.addr.short_addr != BCAST_SID) {

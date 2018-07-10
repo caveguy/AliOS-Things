@@ -885,7 +885,8 @@ static ur_error_t handle_attach_response(message_t *message)
 
     if (info->src.netid == g_mm_state.attach_context.prev_netid &&
         (g_mm_state.attach_context.prev_path_cost < (path_cost->cost + nbr->stats.link_cost))) {
-        return UR_ERROR_NONE;
+        error = UR_ERROR_NONE;
+        goto exit;
     }
     update_mm_timestamp(tlvs, tlvs_length);
     nbr->attach_candidate_timeout = 0;
