@@ -169,8 +169,9 @@ static void update_neighbors_link_cost(hal_context_t *hal)
 {
     ur_error_t error;
     neighbor_t *nbr;
+    slist_t *list_tmp;
 
-    slist_for_each_entry(&hal->neighbors_list, nbr, neighbor_t, next) {
+    slist_for_each_entry_safe(&hal->neighbors_list, list_tmp, nbr, neighbor_t, next) {
         error = update_link_cost(&nbr->stats);
         if (error != UR_ERROR_NONE || nbr->stats.reverse_rssi < RSSI_THRESHOLD ||
             (umesh_now_ms() - nbr->last_heard) > (hal->neighbor_alive_interval / 2)) {
@@ -278,6 +279,7 @@ static void start_update_nbr_timer(hal_context_t *hal)
 static void handle_update_nbr_timer(void *args)
 {
     neighbor_t *node;
+    slist_t *list_tmp;
     hal_context_t *hal = (hal_context_t *)args;
     uint16_t sid = umesh_mm_get_local_sid();
     network_context_t *network = NULL;
@@ -285,7 +287,7 @@ static void handle_update_nbr_timer(void *args)
 
     hal->update_nbr_timer = NULL;
     start_update_nbr_timer(hal);
-    slist_for_each_entry(&hal->neighbors_list, node, neighbor_t, next) {
+    slist_for_each_entry_safe(&hal->neighbors_list, list_tmp, node, neighbor_t, next) {
         if (node->state < STATE_NEIGHBOR) {
             continue;
         }

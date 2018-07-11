@@ -188,7 +188,7 @@ void interface_stop(void)
             remove_neighbor(hal, node);
         }
         slist_init(&hal->neighbors_list);
-        hal->neighbors_num  = 0;
+        hal->neighbors_num = 0;
     }
 
     while (!slist_empty(&g_networks_list)) {
