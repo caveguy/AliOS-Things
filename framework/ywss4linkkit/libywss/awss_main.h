@@ -45,9 +45,9 @@ extern "C"
 {
 #endif
 
-#define AWSS_DEBUG 0
+#define AWSS_DEBUG 1
 #if (AWSS_DEBUG == 1)
-#define awss_debug(fmt, args...) log_debug(fmt, ##args)
+#define awss_debug(fmt, args...) os_printf(fmt, ##args)
 #else
 #define awss_debug(fmt, args...)
 #endif

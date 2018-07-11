@@ -40,6 +40,7 @@ extern "C"
 #endif
 
 #define AWSS_REPORT_LEN_MAX       (256)
+#define AWSS_TOKEN_TIMEOUT_MS     (45 * 1000)
 #define MATCH_MONITOR_TIMEOUT_MS  (30 * 1000)
 #define MATCH_REPORT_CNT_MAX      (2)
 
@@ -47,9 +48,11 @@ volatile char awss_report_token_suc = 0;
 volatile char awss_report_token_cnt = 0;
 static char awss_report_reset_suc = 0;
 static char awss_report_id = 0;
-static char switchap_ssid[OS_MAX_SSID_LEN + 1] = {0};
+static char switchap_ssid[OS_MAX_SSID_LEN] = {0};
 static char switchap_passwd[OS_MAX_PASSWD_LEN] = {0};
 static uint8_t switchap_bssid[ETH_ALEN] = {0};
+
+static uint32_t awss_report_token_time = 0;
 
 static void *report_reset_timer = NULL;
 static void *report_token_timer = NULL;
@@ -59,6 +62,41 @@ static int awss_report_token_to_cloud();
 static int awss_report_reset_to_cloud();
 static int awss_switch_ap_online();
 static int awss_reboot_system();
+
+int awss_token_remain_time()
+{
+    int remain = 0;
+    uint32_t cur = os_get_time_ms();
+    uint32_t diff = (uint32_t)(cur - awss_report_token_time);
+    if (diff < AWSS_TOKEN_TIMEOUT_MS)
+        remain = AWSS_TOKEN_TIMEOUT_MS - diff;
+    return remain;
+}
+
+int awss_update_token()
+{
+    awss_report_token_time = 0;
+    awss_report_token_cnt = 0;
+    awss_report_token_suc = 0;
+
+    if (report_token_timer == NULL) {
+        report_token_timer = HAL_Timer_Create("rp_token", (void (*)(void *))awss_report_token_to_cloud, NULL);
+    }
+    HAL_Timer_Stop(report_token_timer);
+    HAL_Timer_Start(report_token_timer, 10);
+    produce_random(aes_random, sizeof(aes_random));
+    return 0;
+}
+
+int awss_token_timeout()
+{
+    if (awss_report_token_time == 0)
+        return 1;
+    uint32_t cur = os_get_time_ms();
+    if ((uint32_t)(cur - awss_report_token_time) > AWSS_TOKEN_TIMEOUT_MS)
+        return 1;
+    return 0;
+}
 
 int awss_report_token_reply(char *topic, int topic_len, void *payload, int payload_len, void *ctx)
 {
@@ -251,6 +289,8 @@ static int awss_report_token_to_cloud()
         if (i >= sizeof(aes_random)) {
             produce_random(aes_random, sizeof(aes_random));
         }
+
+        awss_report_token_time = os_get_time_ms();
 
         snprintf(id_str, MSG_REQ_ID_LEN - 1, "\"%u\"", awss_report_id ++);
         utils_hex_to_str(aes_random, RANDOM_MAX_LEN, token_str, sizeof(token_str) - 1);

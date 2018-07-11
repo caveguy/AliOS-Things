@@ -93,7 +93,10 @@ static const struct notify_map_t notify_map[] = {
  */
 static inline int awss_connectap_notify_resp(void *context, int result, void *userdata, void *remote, void *message)
 {
-    return awss_notify_response(AWSS_NOTIFY_DEV_TOKEN, result, message);
+    int res = awss_notify_response(AWSS_NOTIFY_DEV_TOKEN, result, message);
+    if (res == 1)
+        awss_update_token();
+    return res;
 }
 
 static inline int awss_devinfo_notify_resp(void *context, int result, void *userdata, void *remote, void *message)
@@ -155,7 +158,7 @@ static int awss_notify_response(int type, int result, void *message)
         break;
     }
 
-    return 0;
+    return awss_notify_resp[type];
 }
 
 int awss_notify_dev_info(int type, int count)
@@ -263,7 +266,6 @@ static int awss_process_get_devinfo()
 
     awss_build_dev_info(AWSS_NOTIFY_DEV_TOKEN, buf, DEV_INFO_LEN_MAX);
     snprintf(dev_info, DEV_INFO_LEN_MAX - 1, "{%s}", buf);
-    awss_debug("dev_info:%s\r\n", dev_info);
     memset(buf, 0x00, DEV_INFO_LEN_MAX);
     snprintf(buf, DEV_INFO_LEN_MAX - 1, AWSS_ACK_FMT, req_msg_id, 200, dev_info);
     os_free(dev_info);
@@ -275,7 +277,7 @@ static int awss_process_get_devinfo()
     } else {
         awss_build_topic((const char *)TOPIC_GETDEVICEINFO_UCAST, topic, TOPIC_LEN_MAX);
     }
-    if (0 > awss_cmp_coap_send_resp(buf, strlen(buf), ctx->remote, topic, ctx->request)) {
+    if (0 != awss_cmp_coap_send_resp(buf, strlen(buf), ctx->remote, topic, ctx->request)) {
         awss_debug("sending failed.");
     }
     os_free(buf);
@@ -283,6 +285,7 @@ static int awss_process_get_devinfo()
     coap_session_ctx = NULL;
     awss_stop_timer(get_devinfo_timer);
     get_devinfo_timer = NULL;
+    awss_update_token();
     return 0;
 
 GET_DEV_INFO_ERR:
@@ -301,6 +304,7 @@ GET_DEV_INFO_ERR:
 
 static int online_get_device_info(void *ctx, void *resource, void *remote, void *request, char is_mcast)
 {
+    int timeout = 0;
     /*
      * if cloud is not ready, don't response token
      */
@@ -321,13 +325,16 @@ static int online_get_device_info(void *ctx, void *resource, void *remote, void 
         return -1;
     }
 
-    produce_random(aes_random, sizeof(aes_random));
-    awss_report_token();
+    timeout = awss_token_timeout();
+    if (timeout) {
+        produce_random(aes_random, sizeof(aes_random));
+        awss_report_token();
+    }
 
     if (get_devinfo_timer == NULL)
         get_devinfo_timer = HAL_Timer_Create("get_devinfo", (void (*)(void *))awss_process_get_devinfo, NULL);
     HAL_Timer_Stop(get_devinfo_timer);
-    HAL_Timer_Start(get_devinfo_timer, AWSS_CHECK_RESP_TIME);
+    HAL_Timer_Start(get_devinfo_timer, timeout ? AWSS_CHECK_RESP_TIME : 1);
 
     return 0;
 }
@@ -344,7 +351,7 @@ int online_ucast_get_device_info(void *ctx, void *resource, void *remote, void *
 
 int awss_connectap_notify()
 {
-    static int connectap_interval = 300;
+    static int connectap_interval = 0;
     static char connectap_cnt = 0;
 
     /*

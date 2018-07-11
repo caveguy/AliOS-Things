@@ -35,7 +35,7 @@
 #include "utils.h"
 
 #define AWSS_DEV_RAND_FMT       ",\"random\":\"%s\",\"signMethod\":%d,\"sign\":\"%s\""
-#define AWSS_DEV_TOKEN_FMT      ",\"token\":\"%s\",\"type\":%d"
+#define AWSS_DEV_TOKEN_FMT      ",\"token\":\"%s\",\"remainTime\":%d,\"type\":%d"
 #define AWSS_SUC_FMT            ",\"type\":%d"
 #define AWSS_DEV_INFO_FMT       "\"awssVer\":%s,\"productKey\":\"%s\",\"deviceName\":\"%s\",\"mac\":\"%s\",\"ip\":\"%s\",\"cipherType\":%d"
 
@@ -85,7 +85,7 @@ void *awss_build_dev_info(int type, void *dev_info, int info_len)
         {
             char rand_str[(RANDOM_MAX_LEN << 1) + 1] = {0};
             utils_hex_to_str(aes_random, RANDOM_MAX_LEN, rand_str, sizeof(rand_str));
-            len += snprintf(dev_info + len, info_len - len - 1, AWSS_DEV_TOKEN_FMT, rand_str, 0);
+            len += snprintf(dev_info + len, info_len - len - 1, AWSS_DEV_TOKEN_FMT, rand_str, awss_token_remain_time(), 0);
             break;
         }
         case AWSS_NOTIFY_SUC:
