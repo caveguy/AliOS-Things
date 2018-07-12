@@ -28,9 +28,9 @@ static network_context_t *new_network_context(hal_context_t *hal, uint8_t index,
     assert(network);
     memset(network, 0, sizeof(network_context_t));
     network->index = index;
-    network->hal = hal;
+    network->hal   = hal;
 
-    network->router = ur_get_router_by_id(router_id);
+    network->router          = ur_get_router_by_id(router_id);
     network->router->network = network;
     if (index == 0) {
         ur_router_set_default_router(router_id);
@@ -40,11 +40,12 @@ static network_context_t *new_network_context(hal_context_t *hal, uint8_t index,
     return network;
 }
 
-static hal_context_t *new_hal_context(umesh_hal_module_t *module, media_type_t type)
+static hal_context_t *new_hal_context(umesh_hal_module_t *module,
+                                      media_type_t        type)
 {
     hal_context_t *hal;
-    int i;
-    int mtu;
+    int            i;
+    int            mtu;
 
     mtu = hal_umesh_get_bcast_mtu(module);
     if (mtu < 0) {
@@ -70,47 +71,50 @@ static hal_context_t *new_hal_context(umesh_hal_module_t *module, media_type_t t
     }
     hal->module = module;
     slist_init(&hal->neighbors_list);
-    hal->neighbors_num  = 0;
+    hal->neighbors_num = 0;
 
     hal->channel_list.num =
-        hal_umesh_get_chnlist(module, &hal->channel_list.channels);
+      hal_umesh_get_chnlist(module, &hal->channel_list.channels);
     memcpy(&hal->mac_addr, hal_umesh_get_mac_address(module),
            sizeof(hal->mac_addr));
 
-    memset(hal->frame.data, 0 , mtu);
+    memset(hal->frame.data, 0, mtu);
     memset(&hal->link_stats, 0, sizeof(hal->link_stats));
     hal->channel = hal_umesh_get_channel(module);
 
     if (type == MEDIA_TYPE_WIFI) {
-        hal->def_channel = 1;
-        hal->discovery_interval = WIFI_DISCOVERY_TIMEOUT;
-        hal->auth_request_interval = WIFI_AUTH_REQUEST_TIMEOUT;
-        hal->auth_relay_interval = WIFI_AUTH_RELAY_TIMEOUT;
-        hal->auth_response_interval = WIFI_AUTH_RESPONSE_TIMEOUT;
-        hal->link_quality_update_interval = (umesh_get_mode() & MODE_MOBILE)? \
-                          WIFI_LINK_QUALITY_MOBILE_TIMEOUT: WIFI_LINK_QUALITY_TIMEOUT;
+        hal->def_channel                  = 1;
+        hal->discovery_interval           = WIFI_DISCOVERY_TIMEOUT;
+        hal->auth_request_interval        = WIFI_AUTH_REQUEST_TIMEOUT;
+        hal->auth_relay_interval          = WIFI_AUTH_RELAY_TIMEOUT;
+        hal->auth_response_interval       = WIFI_AUTH_RESPONSE_TIMEOUT;
+        hal->link_quality_update_interval = (umesh_get_mode() & MODE_MOBILE)
+                                              ? WIFI_LINK_QUALITY_MOBILE_TIMEOUT
+                                              : WIFI_LINK_QUALITY_TIMEOUT;
         hal->neighbor_alive_interval = WIFI_NEIGHBOR_ALIVE_TIMEOUT;
-        hal->advertisement_interval = WIFI_ADVERTISEMENT_TIMEOUT;
+        hal->advertisement_interval  = WIFI_ADVERTISEMENT_TIMEOUT;
     } else if (module->type == MEDIA_TYPE_BLE) {
-        hal->def_channel = hal->channel_list.channels[0];
-        hal->discovery_interval = BLE_DISCOVERY_TIMEOUT;
-        hal->auth_request_interval = BLE_AUTH_REQUEST_TIMEOUT;
-        hal->auth_relay_interval = BLE_AUTH_RELAY_TIMEOUT;
-        hal->auth_response_interval = BLE_AUTH_RESPONSE_TIMEOUT;
-        hal->link_quality_update_interval = (umesh_get_mode() & MODE_MOBILE)? \
-                           BLE_LINK_QUALITY_MOBILE_TIMEOUT: BLE_LINK_QUALITY_TIMEOUT;
+        hal->def_channel                  = hal->channel_list.channels[0];
+        hal->discovery_interval           = BLE_DISCOVERY_TIMEOUT;
+        hal->auth_request_interval        = BLE_AUTH_REQUEST_TIMEOUT;
+        hal->auth_relay_interval          = BLE_AUTH_RELAY_TIMEOUT;
+        hal->auth_response_interval       = BLE_AUTH_RESPONSE_TIMEOUT;
+        hal->link_quality_update_interval = (umesh_get_mode() & MODE_MOBILE)
+                                              ? BLE_LINK_QUALITY_MOBILE_TIMEOUT
+                                              : BLE_LINK_QUALITY_TIMEOUT;
         hal->neighbor_alive_interval = BLE_NEIGHBOR_ALIVE_TIMEOUT;
-        hal->advertisement_interval = BLE_ADVERTISEMENT_TIMEOUT;
+        hal->advertisement_interval  = BLE_ADVERTISEMENT_TIMEOUT;
     } else if (module->type == MEDIA_TYPE_15_4) {
-        hal->def_channel = hal->channel_list.channels[0];
-        hal->discovery_interval = IEEE154_DISCOVERY_TIMEOUT;
-        hal->auth_request_interval = IEEE154_AUTH_REQUEST_TIMEOUT;
-        hal->auth_relay_interval = IEEE154_AUTH_RELAY_TIMEOUT;
+        hal->def_channel            = hal->channel_list.channels[0];
+        hal->discovery_interval     = IEEE154_DISCOVERY_TIMEOUT;
+        hal->auth_request_interval  = IEEE154_AUTH_REQUEST_TIMEOUT;
+        hal->auth_relay_interval    = IEEE154_AUTH_RELAY_TIMEOUT;
         hal->auth_response_interval = IEEE154_AUTH_RESPONSE_TIMEOUT;
-        hal->link_quality_update_interval = (umesh_get_mode() & MODE_MOBILE)? \
-                     IEEE154_LINK_QUALITY_MOBILE_TIMEOUT: IEEE154_LINK_QUALITY_TIMEOUT;
+        hal->link_quality_update_interval =
+          (umesh_get_mode() & MODE_MOBILE) ? IEEE154_LINK_QUALITY_MOBILE_TIMEOUT
+                                           : IEEE154_LINK_QUALITY_TIMEOUT;
         hal->neighbor_alive_interval = IEEE154_NEIGHBOR_ALIVE_TIMEOUT;
-        hal->advertisement_interval = IEEE154_ADVERTISEMENT_TIMEOUT;
+        hal->advertisement_interval  = IEEE154_ADVERTISEMENT_TIMEOUT;
     }
     return hal;
 }
@@ -121,7 +125,8 @@ void interface_init(void)
 
     module = hal_umesh_get_default_module();
     while (module) {
-        assert(module->type >= MEDIA_TYPE_DFL && module->type <= MEDIA_TYPE_15_4);
+        assert(module->type >= MEDIA_TYPE_DFL &&
+               module->type <= MEDIA_TYPE_15_4);
         new_hal_context(module, module->type);
         module = hal_umesh_get_next_module(module);
 #ifndef CONFIG_AOS_MESH_SUPER
@@ -133,10 +138,11 @@ void interface_init(void)
 void interface_start(void)
 {
     hal_context_t *hal;
-    uint8_t index;
+    uint8_t        index;
 
     index = 0;
-    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next) {
+    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next)
+    {
         bool is_wifi = hal->module->type == MEDIA_TYPE_WIFI;
 
         if (is_wifi) {
@@ -176,10 +182,11 @@ static void cleanup_queues(hal_context_t *hal)
 void interface_stop(void)
 {
     hal_context_t *hal;
-    neighbor_t *node;
+    neighbor_t *   node;
     reset_network_context();
 
-    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next) {
+    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next)
+    {
         cleanup_queues(hal);
         hal->send_message = NULL;
 
@@ -201,11 +208,12 @@ void interface_stop(void)
 
 void reset_network_context(void)
 {
-    slist_t *networks;
+    slist_t *          networks;
     network_context_t *network;
 
     networks = get_network_contexts();
-    slist_for_each_entry(networks, network, network_context_t, next) {
+    slist_for_each_entry(networks, network, network_context_t, next)
+    {
         network->state = INTERFACE_DOWN;
         ur_stop_timer(&network->advertisement_timer, network);
         network->meshnetid = BCAST_NETID;
@@ -229,7 +237,8 @@ network_context_t *get_sub_network_context(hal_context_t *hal)
     if (slist_entry_number(&g_networks_list) < 2) {
         return network;
     }
-    slist_for_each_entry(&g_networks_list, network, network_context_t, next) {
+    slist_for_each_entry(&g_networks_list, network, network_context_t, next)
+    {
         if (network->hal == hal) {
             break;
         }
@@ -245,7 +254,8 @@ network_context_t *get_hal_default_network_context(hal_context_t *hal)
 {
     network_context_t *network = NULL;
 
-    slist_for_each_entry(&g_networks_list, network, network_context_t, next) {
+    slist_for_each_entry(&g_networks_list, network, network_context_t, next)
+    {
         if (network->hal == hal) {
             break;
         }
@@ -254,11 +264,13 @@ network_context_t *get_hal_default_network_context(hal_context_t *hal)
     return network;
 }
 
-network_context_t *get_network_context_by_meshnetid(uint16_t meshnetid, bool def)
+network_context_t *get_network_context_by_meshnetid(uint16_t meshnetid,
+                                                    bool     def)
 {
     network_context_t *network = NULL;
 
-    slist_for_each_entry(&g_networks_list, network, network_context_t, next) {
+    slist_for_each_entry(&g_networks_list, network, network_context_t, next)
+    {
         if (network->meshnetid == meshnetid) {
             break;
         }
@@ -288,7 +300,8 @@ hal_context_t *get_hal_context(media_type_t type)
 {
     hal_context_t *hal = NULL;
 
-    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next) {
+    slist_for_each_entry(&g_hals_list, hal, hal_context_t, next)
+    {
         if (hal->module->type == type) {
             break;
         }
