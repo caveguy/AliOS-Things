@@ -5,24 +5,22 @@
 #include <assert.h>
 #include <string.h>
 
+#include "core/mcast.h"
 #include "umesh.h"
 #include "umesh_hal.h"
 #include "umesh_utils.h"
-#include "core/mcast.h"
 #ifdef CONFIG_AOS_MESH_AUTH
 #include "core/auth_mgmt.h"
 #endif
-#include "core/link_mgmt.h"
-#include "core/router_mgr.h"
-#include "core/network_data.h"
-#include "core/mesh_mgmt.h"
-#include "core/mesh_forwarder.h"
-#include "core/network_data.h"
-#include "core/mesh_forwarder.h"
-#include "core/crypto.h"
 #include "core/address_mgmt.h"
+#include "core/crypto.h"
 #include "core/fragments.h"
+#include "core/link_mgmt.h"
+#include "core/mesh_forwarder.h"
+#include "core/mesh_mgmt.h"
+#include "core/network_data.h"
 #include "core/network_mgmt.h"
+#include "core/router_mgr.h"
 #ifdef CONFIG_NET_LWIP
 #include "ip/compress6.h"
 #include "ip/lwip_adapter.h"
@@ -30,26 +28,31 @@
 #include "hal/interfaces.h"
 #include "tools/cli.h"
 
-typedef struct transmit_frame_s {
+mesh_start_complete_t g_mesh_start_complete_callback;
+
+typedef struct transmit_frame_s
+{
     struct pbuf *buf;
-    ur_addr_t dest;
+    ur_addr_t    dest;
 } transmit_frame_t;
 
-typedef struct urmesh_state_s {
+typedef struct urmesh_state_s
+{
     mm_cb_t mm_cb;
     slist_t adapter_callback;
-    bool initialized;
-    bool started;
+    bool    initialized;
+    bool    started;
 } urmesh_state_t;
 
-static urmesh_state_t g_um_state = {.initialized = false , .started = false};
+static urmesh_state_t g_um_state = { .initialized = false, .started = false };
 
 static ur_error_t umesh_interface_up(void)
 {
     ur_adapter_callback_t *callback;
 
     slist_for_each_entry(&g_um_state.adapter_callback, callback,
-                         ur_adapter_callback_t, next) {
+                         ur_adapter_callback_t, next)
+    {
         callback->interface_up();
     }
 
@@ -64,7 +67,8 @@ static ur_error_t umesh_interface_down(interface_state_t state)
     ur_adapter_callback_t *callback;
 
     slist_for_each_entry(&g_um_state.adapter_callback, callback,
-                         ur_adapter_callback_t, next) {
+                         ur_adapter_callback_t, next)
+    {
         callback->interface_down();
     }
 
@@ -75,17 +79,17 @@ static ur_error_t umesh_interface_down(interface_state_t state)
 
 static void output_frame_handler(void *args)
 {
-    transmit_frame_t *frame = (transmit_frame_t *)args;
-    struct pbuf *buf = frame->buf;
-    message_t *message = NULL;
-    uint8_t append_length;
-    ur_error_t error = UR_ERROR_NONE;
-    uint16_t ip_hdr_len = 0;
-    uint16_t lowpan_hdr_len = 0;
-    uint8_t *ip_payload = NULL;
-    uint8_t *lowpan_payload = NULL;
-    message_info_t *info;
-    uint16_t frame_len;
+    transmit_frame_t *frame   = (transmit_frame_t *)args;
+    struct pbuf *     buf     = frame->buf;
+    message_t *       message = NULL;
+    uint8_t           append_length;
+    ur_error_t        error          = UR_ERROR_NONE;
+    uint16_t          ip_hdr_len     = 0;
+    uint16_t          lowpan_hdr_len = 0;
+    uint8_t *         ip_payload     = NULL;
+    uint8_t *         lowpan_payload = NULL;
+    message_info_t *  info;
+    uint16_t          frame_len;
 
     if (umesh_mm_get_device_state() < DEVICE_STATE_LEAF) {
         pbuf_free(buf);
@@ -94,7 +98,7 @@ static void output_frame_handler(void *args)
     }
 
     append_length = sizeof(mcast_header_t);
-    frame_len = buf->tot_len + append_length;
+    frame_len     = buf->tot_len + append_length;
 #if LWIP_IPV6
     ip_payload = ur_mem_alloc((UR_IP6_HLEN + UR_UDP_HLEN) * 2);
     if (ip_payload == NULL) {
@@ -103,7 +107,8 @@ static void output_frame_handler(void *args)
     }
     pbuf_copy_partial(buf, ip_payload, UR_IP6_HLEN + UR_UDP_HLEN, 0);
     lowpan_payload = ip_payload + UR_IP6_HLEN + UR_UDP_HLEN;
-    error = lp_header_compress(ip_payload, lowpan_payload, &ip_hdr_len, &lowpan_hdr_len);
+    error          = lp_header_compress(ip_payload, lowpan_payload, &ip_hdr_len,
+                               &lowpan_hdr_len);
     if (error != UR_ERROR_NONE) {
         goto out;
     }
@@ -126,7 +131,7 @@ static void output_frame_handler(void *args)
 
     info = message->info;
     memcpy(&info->dest, &frame->dest, sizeof(frame->dest));
-    info->type = MESH_FRAME_TYPE_DATA;
+    info->type  = MESH_FRAME_TYPE_DATA;
     info->flags = 0;
 
     error = address_resolve(message);
@@ -144,7 +149,7 @@ out:
 
 static ur_error_t tx_frame(struct pbuf *buf, ur_addr_t *dest)
 {
-    ur_error_t error = UR_ERROR_FAIL;
+    ur_error_t        error = UR_ERROR_FAIL;
     transmit_frame_t *frame;
 
     if (umesh_mm_get_device_state() < DEVICE_STATE_LEAF) {
@@ -155,7 +160,7 @@ static ur_error_t tx_frame(struct pbuf *buf, ur_addr_t *dest)
         memcpy(&frame->dest, dest, sizeof(ur_addr_t));
         pbuf_ref(buf);
         frame->buf = buf;
-        error = umesh_task_schedule_call(output_frame_handler, frame);
+        error      = umesh_task_schedule_call(output_frame_handler, frame);
         if (error != UR_ERROR_NONE) {
             pbuf_free(buf);
             ur_mem_free(frame, sizeof(transmit_frame_t));
@@ -168,9 +173,9 @@ ur_error_t umesh_output_sid(struct pbuf *buf, uint16_t netid, uint16_t sid)
 {
     ur_addr_t dest;
 
-    dest.addr.len = SHORT_ADDR_SIZE;
+    dest.addr.len        = SHORT_ADDR_SIZE;
     dest.addr.short_addr = sid;
-    dest.netid = netid;
+    dest.netid           = netid;
     return tx_frame(buf, &dest);
 }
 
@@ -188,12 +193,12 @@ ur_error_t umesh_input(message_t *message)
     ur_adapter_callback_t *callback;
 
 #if LWIP_IPV6
-    ur_error_t error = UR_ERROR_NONE;
-    uint8_t *header;
-    uint16_t header_size;
-    uint16_t lowpan_header_size;
+    ur_error_t      error = UR_ERROR_NONE;
+    uint8_t *       header;
+    uint16_t        header_size;
+    uint16_t        lowpan_header_size;
     message_info_t *info;
-    message_t *message_header;
+    message_t *     message_header;
 
     header = ur_mem_alloc(UR_IP6_HLEN + UR_UDP_HLEN);
     if (header == NULL) {
@@ -223,7 +228,8 @@ ur_error_t umesh_input(message_t *message)
 
 handle_non_ipv6:
     slist_for_each_entry(&g_um_state.adapter_callback, callback,
-                         ur_adapter_callback_t, next) {
+                         ur_adapter_callback_t, next)
+    {
         callback->input(message->data);
     }
 
@@ -234,7 +240,8 @@ exit:
     return error;
 #else
     slist_for_each_entry(&g_um_state.adapter_callback, callback,
-                         ur_adapter_callback_t, next) {
+                         ur_adapter_callback_t, next)
+    {
         callback->input(message->data);
     }
     message_free((message_t *)message);
@@ -244,10 +251,10 @@ exit:
 
 #ifdef CONFIG_AOS_DDA
 #include <stdlib.h>
-int csp_get_args(const char ***pargv);
+int         csp_get_args(const char ***pargv);
 static void parse_args(void)
 {
-    int i, argc;
+    int          i, argc;
     const char **argv;
     argc = csp_get_args(&argv);
     for (i = 0; i < argc; i++) {
@@ -294,7 +301,7 @@ ur_error_t umesh_init(node_mode_t mode)
 
     umesh_mem_init();
     hal_umesh_init();
-    g_um_state.mm_cb.interface_up = umesh_interface_up;
+    g_um_state.mm_cb.interface_up   = umesh_interface_up;
     g_um_state.mm_cb.interface_down = umesh_interface_down;
 #if (defined CONFIG_NET_LWIP) || (defined CONFIG_AOS_MESH_TAPIF)
     ur_adapter_interface_init();
@@ -335,11 +342,11 @@ bool umesh_is_initialized(void)
     return g_um_state.initialized;
 }
 
-ur_error_t umesh_start(void)
+ur_error_t umesh_start(mesh_start_complete_t callback)
 {
     umesh_hal_module_t *hal = NULL;
-    umesh_extnetid_t extnetid;
-    int extnetid_len = 6;
+    umesh_extnetid_t    extnetid;
+    int                 extnetid_len = 6;
 
     if (g_um_state.started) {
         return UR_ERROR_NONE;
@@ -358,6 +365,10 @@ ur_error_t umesh_start(void)
     hal = hal_umesh_get_default_module();
     assert(hal);
     hal_umesh_enable(hal);
+
+    if (callback) {
+        g_mesh_start_complete_callback = callback;
+    }
 
     umesh_post_event(CODE_MESH_STARTED, 0);
     return UR_ERROR_NONE;
@@ -378,6 +389,9 @@ ur_error_t umesh_stop(void)
     hal = hal_umesh_get_default_module();
     assert(hal);
     hal_umesh_disable(hal);
+    if (g_mesh_start_complete_callback) {
+        g_mesh_start_complete_callback = NULL;
+    }
     return UR_ERROR_NONE;
 }
 
@@ -408,7 +422,7 @@ ur_error_t umesh_set_mode(uint8_t mode)
 
     error = umesh_mm_set_mode(mode);
     if (error == UR_ERROR_NONE) {
-       interface_init();
+        interface_init();
     }
     return error;
 }
@@ -436,7 +450,7 @@ uint16_t umesh_get_sid(void)
 slist_t *umesh_get_nbrs(media_type_t type)
 {
     hal_context_t *hal;
-    slist_t *nbrs = NULL;
+    slist_t *      nbrs = NULL;
 
     hal = get_hal_context(type);
     if (hal) {

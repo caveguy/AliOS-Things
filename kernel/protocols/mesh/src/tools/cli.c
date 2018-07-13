@@ -2,20 +2,19 @@
  * Copyright (C) 2015-2017 Alibaba Group Holding Limited
  */
 
-#include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
 #include <stdint.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "core/link_mgmt.h"
+#include "core/mesh_mgmt.h"
+#include "core/router_mgr.h"
+#include "core/sid_allocator.h"
 #include "umesh.h"
 #include "umesh_hal.h"
 #include "umesh_utils.h"
-#include "core/mesh_mgmt.h"
-#include "core/sid_allocator.h"
-#include "core/link_mgmt.h"
-#include "core/router_mgr.h"
 #ifdef CONFIG_AOS_MESH_LOWPOWER
 #include "core/lowpower_mgmt.h"
 #endif
@@ -55,7 +54,7 @@ extern void process_ping(int argc, char *argv[]);
 #endif
 static void process_whitelist(int argc, char *argv[]);
 
-void response_append(const char *format, ...);
+void        response_append(const char *format, ...);
 const char *routerid2str(uint8_t id);
 
 const cli_command_t g_commands[] = {
@@ -92,19 +91,21 @@ const cli_command_t g_commands[] = {
     { "whitelist", &process_whitelist },
 };
 
-enum {
+enum
+{
     MAX_ARGS_NUM = 6,
     RESP_BUF_LEN = 256,
 };
 
-typedef struct input_cli_s {
-    char *data;
-    int length;
+typedef struct input_cli_s
+{
+    char *   data;
+    int      length;
     cmd_cb_t cb;
-    void *priv;
+    void *   priv;
 } input_cli_t;
 static cmd_cb_t g_cur_cmd_cb;
-static void *g_cur_cmd_priv;
+static void *   g_cur_cmd_priv;
 
 const char *state2str(node_state_t state)
 {
@@ -182,9 +183,11 @@ static void get_channel(channel_t *channel)
         ur_wifi_hal = hal_umesh_get_default_module();
 
         channel->wifi_channel = (uint16_t)hal_umesh_get_channel(ur_wifi_hal);
-        channel->channel = channel->wifi_channel;
-        channel->hal_ucast_channel = (uint16_t)hal_umesh_get_channel(ur_wifi_hal);
-        channel->hal_bcast_channel = (uint16_t)hal_umesh_get_channel(ur_wifi_hal);
+        channel->channel      = channel->wifi_channel;
+        channel->hal_ucast_channel =
+          (uint16_t)hal_umesh_get_channel(ur_wifi_hal);
+        channel->hal_bcast_channel =
+          (uint16_t)hal_umesh_get_channel(ur_wifi_hal);
     }
 }
 
@@ -192,7 +195,8 @@ void process_help(int argc, char *argv[])
 {
     uint16_t index;
 
-    for (index = 0; index < sizeof(g_commands) / sizeof(g_commands[0]); ++index) {
+    for (index = 0; index < sizeof(g_commands) / sizeof(g_commands[0]);
+         ++index) {
         response_append("%s\r\n", g_commands[index].name);
     }
 }
@@ -229,18 +233,20 @@ void process_loglevel(int argc, char *argv[])
 
 void process_networks(int argc, char *argv[])
 {
-    slist_t *networks;
+    slist_t *          networks;
     network_context_t *network;
 
     networks = get_network_contexts();
-    slist_for_each_entry(networks, network, network_context_t, next) {
+    slist_for_each_entry(networks, network, network_context_t, next)
+    {
         response_append("index %d\r\n", network->index);
         response_append("  hal %d\r\n", network->hal->module->type);
         response_append("  state %s\r\n", network->state == 0 ? "up" : "down");
         response_append("  meshnetid %x\r\n", network->meshnetid);
         response_append("  sid type %d\r\n", network->router->sid_type);
         response_append("  route id %d\r\n", network->router->id);
-        response_append("  netdata version %d\r\n", network->network_data.version);
+        response_append("  netdata version %d\r\n",
+                        network->network_data.version);
         response_append("  size %d\r\n", network->network_data.size);
         response_append("  channel %d\r\n", network->hal->channel);
     }
@@ -251,8 +257,9 @@ void process_macaddr(int argc, char *argv[])
     const mac_address_t *addr = umesh_get_mac_address(MEDIA_TYPE_DFL);
     if (addr) {
         response_append("%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\r\n",
-                        addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3],
-                        addr->addr[4], addr->addr[5], addr->addr[6], addr->addr[7]);
+                        addr->addr[0], addr->addr[1], addr->addr[2],
+                        addr->addr[3], addr->addr[4], addr->addr[5],
+                        addr->addr[6], addr->addr[7]);
     }
     response_append("done\r\n");
 }
@@ -269,11 +276,11 @@ void process_meshnetsize(int argc, char *argv[])
 
 void process_mode(int argc, char *argv[])
 {
-    uint8_t mode, index;
+    uint8_t    mode, index;
     ur_error_t error;
-    char modestr[64];
+    char       modestr[64];
 
-    mode = umesh_get_mode();
+    mode       = umesh_get_mode();
     modestr[0] = '\x0';
 
     for (index = 0; index < argc; index++) {
@@ -354,7 +361,7 @@ void process_mode(int argc, char *argv[])
 
 void process_router(int argc, char *argv[])
 {
-    uint8_t id = 0, index;
+    uint8_t    id    = 0, index;
     ur_error_t error = UR_ERROR_NONE;
 
     for (index = 0; index < argc; index++) {
@@ -395,21 +402,24 @@ void process_state(int argc, char *argv[])
 
 void process_sids(int argc, char *argv[])
 {
-    sid_node_t *node;
-    slist_t *nodes_list;
-    slist_t *networks;
+    sid_node_t *       node;
+    slist_t *          nodes_list;
+    slist_t *          networks;
     network_context_t *network;
 
     response_append("me=%04x\r\n", umesh_get_sid());
     networks = get_network_contexts();
-    slist_for_each_entry(networks, network, network_context_t, next) {
+    slist_for_each_entry(networks, network, network_context_t, next)
+    {
         nodes_list = get_ssid_nodes_list(network->sid_base);
         if (nodes_list == NULL) {
             continue;
         }
-        slist_for_each_entry(nodes_list, node, sid_node_t, next) {
+        slist_for_each_entry(nodes_list, node, sid_node_t, next)
+        {
             response_append(EXT_ADDR_FMT ", %04x\r\n",
-                            EXT_ADDR_DATA(node->node_id.uuid), node->node_id.sid);
+                            EXT_ADDR_DATA(node->node_id.uuid),
+                            node->node_id.sid);
         }
     }
 }
@@ -417,11 +427,11 @@ void process_sids(int argc, char *argv[])
 
 static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
 {
-    uint16_t hex_length = strlen(hex);
-    const char *hex_end = hex + hex_length;
-    uint8_t *cur = bin;
-    uint8_t num_chars = hex_length & 1;
-    uint8_t byte = 0;
+    uint16_t    hex_length = strlen(hex);
+    const char *hex_end    = hex + hex_length;
+    uint8_t *   cur        = bin;
+    uint8_t     num_chars  = hex_length & 1;
+    uint8_t     byte       = 0;
 
     if ((hex_length + 1) / 2 > bin_length) {
         return -1;
@@ -442,8 +452,8 @@ static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
 
         if (num_chars >= 2) {
             num_chars = 0;
-            *cur++ = byte;
-            byte = 0;
+            *cur++    = byte;
+            byte      = 0;
         } else {
             byte <<= 4;
         }
@@ -453,15 +463,15 @@ static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
 
 void response_append(const char *format, ...)
 {
-    va_list list;
-    char res_buf[CMD_LINE_SIZE];
+    va_list  list;
+    char     res_buf[CMD_LINE_SIZE];
     uint16_t len;
 
     va_start(list, format);
     len = vsnprintf(res_buf, sizeof(res_buf) - 1, format, list);
     va_end(list);
     if (len >= sizeof(res_buf)) {
-        len = sizeof(res_buf) - 1;
+        len          = sizeof(res_buf) - 1;
         res_buf[len] = 0;
     }
 
@@ -481,7 +491,7 @@ void response_append(const char *format, ...)
 void process_extnetid(int argc, char *argv[])
 {
     umesh_extnetid_t extnetid;
-    uint8_t length;
+    uint8_t          length;
 
     if (argc > 0) {
         length = hex2bin(argv[0], extnetid.netid, 6);
@@ -503,23 +513,27 @@ void process_extnetid(int argc, char *argv[])
 
 void process_nbrs(int argc, char *argv[])
 {
-    neighbor_t *nbr;
-    slist_t *hals;
+    neighbor_t *   nbr;
+    slist_t *      hals;
     hal_context_t *hal;
-    slist_t *nbrs;
+    slist_t *      nbrs;
 
     response_append("neighbors:\r\n");
     hals = get_hal_contexts();
-    slist_for_each_entry(hals, hal, hal_context_t, next) {
+    slist_for_each_entry(hals, hal, hal_context_t, next)
+    {
         uint16_t num = 0;
-        response_append("\t<<hal type %s>>\r\n", mediatype2str(hal->module->type));
+        response_append("\t<<hal type %s>>\r\n",
+                        mediatype2str(hal->module->type));
         nbrs = umesh_get_nbrs(hal->module->type);
-        slist_for_each_entry(nbrs, nbr, neighbor_t, next) {
-            response_append("\t" EXT_ADDR_FMT ",%s,0x%04x,0x%04x,%d,%d,%d,%d,%d,%d,%d\r\n", \
-                            EXT_ADDR_DATA(nbr->mac), nbrstate2str(nbr->state), \
-                            nbr->netid, nbr->sid, nbr->stats.link_cost, nbr->ssid_info.child_num, \
-                            nbr->channel, nbr->stats.reverse_rssi, nbr->stats.forward_rssi, \
-                            nbr->last_heard, (nbr->flags & NBR_WAKEUP)? 1: 0);
+        slist_for_each_entry(nbrs, nbr, neighbor_t, next)
+        {
+            response_append(
+              "\t" EXT_ADDR_FMT ",%s,0x%04x,0x%04x,%d,%d,%d,%d,%d,%d,%d\r\n",
+              EXT_ADDR_DATA(nbr->mac), nbrstate2str(nbr->state), nbr->netid,
+              nbr->sid, nbr->stats.link_cost, nbr->ssid_info.child_num,
+              nbr->channel, nbr->stats.reverse_rssi, nbr->stats.forward_rssi,
+              nbr->last_heard, (nbr->flags & NBR_WAKEUP) ? 1 : 0);
             num++;
         }
         response_append("\tnum=%d\r\n", num);
@@ -543,45 +557,53 @@ const char *routerid2str(uint8_t id)
 
 void process_start(int argc, char *argv[])
 {
-    umesh_start();
+    umesh_start(NULL);
     response_append("done\r\n");
 }
 
 void process_stats(int argc, char *argv[])
 {
-    slist_t *hals;
-    hal_context_t *hal;
+    slist_t *                 hals;
+    hal_context_t *           hal;
     const ur_message_stats_t *message_stats;
-    const frame_stats_t *hal_stats;
-    const ur_mem_stats_t *mem_stats;
+    const frame_stats_t *     hal_stats;
+    const ur_mem_stats_t *    mem_stats;
 
     hals = get_hal_contexts();
-    slist_for_each_entry(hals, hal, hal_context_t, next) {
+    slist_for_each_entry(hals, hal, hal_context_t, next)
+    {
 #ifdef CONFIG_AOS_MESH_DEBUG
-        const ur_link_stats_t    *link_stats;
+        const ur_link_stats_t *link_stats;
         link_stats = mf_get_stats(hal);
         if (link_stats) {
-            response_append("\t<<hal type %s>>\r\n", mediatype2str(hal->module->type));
+            response_append("\t<<hal type %s>>\r\n",
+                            mediatype2str(hal->module->type));
             response_append("link stats\r\n");
             response_append("  in_frames %d\r\n", link_stats->in_frames);
             response_append("  in_command %d\r\n", link_stats->in_command);
             response_append("  in_data %d\r\n", link_stats->in_data);
-            response_append("  in_filterings %d\r\n", link_stats->in_filterings);
+            response_append("  in_filterings %d\r\n",
+                            link_stats->in_filterings);
             response_append("  in_drops %d\r\n", link_stats->in_drops);
             response_append("  out_frames %d\r\n", link_stats->out_frames);
             response_append("  out_command %d\r\n", link_stats->out_command);
             response_append("  out_data %d\r\n", link_stats->out_data);
             response_append("  out_errors %d\r\n", link_stats->out_errors);
-            response_append("  send_queue_size %d\r\n", link_stats->send_queue_size);
-            response_append("  recv_queue_size %d\r\n", link_stats->recv_queue_size);
-            response_append("  sending %s\r\n", link_stats->sending ? "true" : "false");
-            response_append("  sending_timeouts %d\r\n", link_stats->sending_timeouts);
+            response_append("  send_queue_size %d\r\n",
+                            link_stats->send_queue_size);
+            response_append("  recv_queue_size %d\r\n",
+                            link_stats->recv_queue_size);
+            response_append("  sending %s\r\n",
+                            link_stats->sending ? "true" : "false");
+            response_append("  sending_timeouts %d\r\n",
+                            link_stats->sending_timeouts);
         }
 #endif
 
         hal_stats = hal_umesh_get_stats(hal->module);
         if (hal_stats) {
-            response_append("\t<<hal type %s>>\r\n", mediatype2str(hal->module->type));
+            response_append("\t<<hal type %s>>\r\n",
+                            mediatype2str(hal->module->type));
             response_append("hal stats\r\n");
             response_append("  in_frames %d\r\n", hal_stats->in_frames);
             response_append("  out_frames %d\r\n", hal_stats->out_frames);
@@ -614,16 +636,19 @@ void process_stats(int argc, char *argv[])
 
 static void process_status(int argc, char *argv[])
 {
-    slist_t *networks;
+    slist_t *          networks;
     network_context_t *network;
-    channel_t channel;
+    channel_t          channel;
 
     response_append("state\t%s\r\n", state2str(umesh_get_device_state()));
-    response_append("attach\t%s\r\n", attachstate2str(umesh_mm_get_attach_state()));
+    response_append("attach\t%s\r\n",
+                    attachstate2str(umesh_mm_get_attach_state()));
     networks = get_network_contexts();
-    slist_for_each_entry(networks, network, network_context_t, next) {
+    slist_for_each_entry(networks, network, network_context_t, next)
+    {
         response_append("<<network %s %d>>\r\n",
-                        mediatype2str(network->hal->module->type), network->index);
+                        mediatype2str(network->hal->module->type),
+                        network->index);
         response_append("\tnetid\t0x%x\r\n", umesh_mm_get_meshnetid(network));
         response_append("\tmac\t" EXT_ADDR_FMT "\r\n",
                         EXT_ADDR_DATA(network->hal->mac_addr.addr));
@@ -637,8 +662,8 @@ static void process_status(int argc, char *argv[])
     }
     response_append("uptime\t%d\r\n", umesh_now_ms());
 #ifdef CONFIG_AOS_MESH_LOWPOWER
-    response_append("sleetime\t%d, ratio %d\%\r\n",
-            lowpower_get_sleep_time(), (lowpower_get_sleep_time() * 100) / umesh_now_ms());
+    response_append("sleetime\t%d, ratio %d\%\r\n", lowpower_get_sleep_time(),
+                    (lowpower_get_sleep_time() * 100) / umesh_now_ms());
 #endif
     get_channel(&channel);
     response_append("channel\t%d\r\n", channel.channel);
@@ -652,26 +677,28 @@ void process_stop(int argc, char *argv[])
 
 void process_whitelist(int argc, char *argv[])
 {
-    uint8_t arg_index = 0;
-    int length;
-    mac_address_t addr;
-    int8_t rssi;
+    uint8_t            arg_index = 0;
+    int                length;
+    mac_address_t      addr;
+    int8_t             rssi;
     whitelist_entry_t *entry;
 
     if (arg_index >= argc) {
-        int i = 0;
-        bool enabled = is_whitelist_enabled();
+        int                      i         = 0;
+        bool                     enabled   = is_whitelist_enabled();
         const whitelist_entry_t *whitelist = whitelist_get_entries();
-        response_append("whitelist is %s, entries:\r\n", enabled ? "enabled" : "disabled");
+        response_append("whitelist is %s, entries:\r\n",
+                        enabled ? "enabled" : "disabled");
         for (i = 0; i < WHITELIST_ENTRY_NUM; i++) {
             if (whitelist[i].valid == false) {
                 continue;
             }
-            response_append("%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\r\n",
-                            whitelist[i].address.addr[0], whitelist[i].address.addr[1],
-                            whitelist[i].address.addr[2], whitelist[i].address.addr[3],
-                            whitelist[i].address.addr[4], whitelist[i].address.addr[5],
-                            whitelist[i].address.addr[6], whitelist[i].address.addr[7]);
+            response_append(
+              "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\r\n",
+              whitelist[i].address.addr[0], whitelist[i].address.addr[1],
+              whitelist[i].address.addr[2], whitelist[i].address.addr[3],
+              whitelist[i].address.addr[4], whitelist[i].address.addr[5],
+              whitelist[i].address.addr[6], whitelist[i].address.addr[7]);
         }
         return;
     }
@@ -681,7 +708,7 @@ void process_whitelist(int argc, char *argv[])
             return;
         }
         addr.len = 8;
-        length = hex2bin(argv[arg_index], addr.addr, sizeof(addr.addr));
+        length   = hex2bin(argv[arg_index], addr.addr, sizeof(addr.addr));
         if (length != sizeof(addr.addr)) {
             return;
         }
@@ -701,7 +728,7 @@ void process_whitelist(int argc, char *argv[])
             return;
         }
         addr.len = 8;
-        length = hex2bin(argv[arg_index], addr.addr, sizeof(addr.addr));
+        length   = hex2bin(argv[arg_index], addr.addr, sizeof(addr.addr));
         if (length != sizeof(addr.addr)) {
             return;
         }
@@ -713,18 +740,19 @@ void process_whitelist(int argc, char *argv[])
 static void do_cli(void *arg)
 {
     input_cli_t *buf = arg;
-    char *argv[MAX_ARGS_NUM];
-    char *cmd;
-    int argc;
-    char *last;
-    uint16_t index;
+    char *       argv[MAX_ARGS_NUM];
+    char *       cmd;
+    int          argc;
+    char *       last;
+    uint16_t     index;
 
-    g_cur_cmd_cb = buf->cb;
+    g_cur_cmd_cb   = buf->cb;
     g_cur_cmd_priv = buf->priv;
 
     cmd = strtok_r(buf->data, " ", &last);
-    if (!cmd)
+    if (!cmd) {
         goto out;
+    }
 
     for (argc = 0; argc < MAX_ARGS_NUM; ++argc) {
         if ((argv[argc] = strtok_r(NULL, " ", &last)) == NULL) {
@@ -736,7 +764,8 @@ static void do_cli(void *arg)
         goto out;
     }
 
-    for (index = 0; index < sizeof(g_commands) / sizeof(g_commands[0]); index++) {
+    for (index = 0; index < sizeof(g_commands) / sizeof(g_commands[0]);
+         index++) {
         if (strcmp(cmd, g_commands[index].name) == 0) {
             g_commands[index].function(argc, argv);
             break;
@@ -747,7 +776,7 @@ out:
     if (g_cur_cmd_cb) {
         g_cur_cmd_cb(NULL, 0, buf->priv);
     }
-    g_cur_cmd_cb = NULL;
+    g_cur_cmd_cb   = NULL;
     g_cur_cmd_priv = NULL;
 
     ur_mem_free(buf->data, buf->length);
@@ -767,25 +796,27 @@ void umesh_cli_cmd(char *buf, int length, cmd_cb_t cb, void *priv)
     }
 
     input_cli->length = length + 1;
-    input_cli->data = ur_mem_alloc(input_cli->length);
+    input_cli->data   = ur_mem_alloc(input_cli->length);
     if (input_cli->data == NULL) {
         goto err_out;
     }
 
     memcpy(input_cli->data, buf, input_cli->length);
-    input_cli->cb = cb;
+    input_cli->cb   = cb;
     input_cli->priv = priv;
 
-    if (umesh_task_schedule_call(do_cli, input_cli) == 0)
+    if (umesh_task_schedule_call(do_cli, input_cli) == 0) {
         return;
+    }
 
 err_out:
     if (cb) {
         cb(NULL, 0, priv);
     }
 
-    if (input_cli == NULL)
+    if (input_cli == NULL) {
         return;
+    }
 
     if (input_cli->data) {
         ur_mem_free(input_cli->data, input_cli->length);
@@ -794,9 +825,9 @@ err_out:
     ur_mem_free(input_cli, sizeof(input_cli_t));
 }
 
-int g_cli_silent;
+int         g_cli_silent;
 extern void mesh_cli_ip_init(void);
-ur_error_t mesh_cli_init(void)
+ur_error_t  mesh_cli_init(void)
 {
 #ifdef CONFIG_NET_LWIP
     mesh_cli_ip_init();
