@@ -128,6 +128,8 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
         uint8_t bssid_connected[ETH_ALEN];
         char *other_apinfo = os_zalloc(64);
         char *encode_ssid = os_zalloc(OS_MAX_SSID_LEN * 2 + 1);
+        int ssid_len = strlen(ssid);
+        ssid_len = ssid_len > OS_MAX_SSID_LEN - 1 ? OS_MAX_SSID_LEN - 1 : ssid_len;
         os_wifi_get_ap_info(NULL, NULL, bssid_connected);
         if (other_apinfo && encode_ssid) {
             if (memcmp(bssid_connected, bssid, ETH_ALEN) == 0) {
@@ -135,13 +137,14 @@ static int awss_scan_cb(const char ssid[PLATFORM_MAX_SSID_LEN],
             } else {
                 snprintf(other_apinfo, 64 - 1, "\"auth\":\"%d\"", auth);
             }
-            if (is_utf8(ssid, strlen(ssid))) {
+            if (is_utf8(ssid, ssid_len)) {
+                strncpy(encode_ssid, ssid, ssid_len);
                 msg_len += snprintf(aplist + msg_len, WIFI_APINFO_LIST_LEN - msg_len - 1,
                                     "{\"ssid\":\"%s\",\"bssid\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"rssi\":\"%d\",%s},",
-                                    ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
+                                    encode_ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
                                     rssi > 0 ? rssi - 256 : rssi, other_apinfo);
             } else {
-                utils_hex_to_str((unsigned char *)ssid, strlen(ssid), encode_ssid, OS_MAX_SSID_LEN * 2);
+                utils_hex_to_str((unsigned char *)ssid, ssid_len, encode_ssid, OS_MAX_SSID_LEN * 2);
                 msg_len += snprintf(aplist + msg_len, WIFI_APINFO_LIST_LEN - msg_len - 1,
                                     "{\"xssid\":\"%s\",\"bssid\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"rssi\":\"%d\",%s},",
                                     encode_ssid, bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
