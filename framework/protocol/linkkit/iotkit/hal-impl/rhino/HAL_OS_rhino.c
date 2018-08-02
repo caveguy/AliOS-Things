@@ -13,15 +13,16 @@
 #include "iot_import_product.h"
 
 
-#define DEFAULT_THREAD_PRI          AOS_DEFAULT_APP_PRI
+#define DEFAULT_THREAD_PRI AOS_DEFAULT_APP_PRI
 
 #define _RHINO_SDK_DEMO__ 1
 
-#define PLATFORM_LINUX_LOG(format, ...) \
-    do { \
-        printf("Linux:%s:%d %s()| "format"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__);\
-        fflush(stdout);\
-    }while(0);
+#define PLATFORM_LINUX_LOG(format, ...)                              \
+    do {                                                             \
+        printf("Linux:%s:%d %s()| " format "\n", __FILE__, __LINE__, \
+               __FUNCTION__, ##__VA_ARGS__);                         \
+        fflush(stdout);                                              \
+    } while (0);
 
 void *HAL_MutexCreate(void)
 {
@@ -120,7 +121,8 @@ int HAL_Snprintf(_IN_ char *str, const int len, const char *fmt, ...)
 }
 
 
-int HAL_Vsnprintf(_IN_ char *str, _IN_ const int len, _IN_ const char *format, va_list ap)
+int HAL_Vsnprintf(_IN_ char *str, _IN_ const int len, _IN_ const char *format,
+                  va_list ap)
 {
     return vsnprintf(str, len, format, ap);
 }
@@ -140,14 +142,14 @@ void HAL_Printf(_IN_ const char *fmt, ...)
 
 void HAL_Srandom(uint32_t seed)
 {
-    //srandom(seed);
+    // srandom(seed);
     srand(seed);
 }
 
 uint32_t HAL_Random(uint32_t region)
 {
     return (region > 0) ? (rand() % region) : 0;
-    //return 0;
+    // return 0;
 }
 
 
@@ -182,10 +184,11 @@ int HAL_SemaphoreWait(_IN_ void *sem, _IN_ uint32_t timeout_ms)
     }
 }
 
-typedef struct {
+typedef struct
+{
     aos_task_t task;
-    int detached;
-    void *arg;
+    int        detached;
+    void *     arg;
     void *(*routine)(void *arg);
 } task_context_t;
 
@@ -203,18 +206,16 @@ static void task_wrapper(void *arg)
 
 #define DEFAULT_THREAD_NAME "AosThread"
 #define DEFAULT_THREAD_SIZE 4096
-int HAL_ThreadCreate(
-    _OU_ void **thread_handle,
-    _IN_ void *(*work_routine)(void *),
-    _IN_ void *arg,
-    _IN_ hal_os_thread_param_t *hal_os_thread_param,
-    _OU_ int *stack_used)
+int HAL_ThreadCreate(_OU_ void **thread_handle,
+                     _IN_ void *(*work_routine)(void *), _IN_ void *arg,
+                     _IN_ hal_os_thread_param_t *hal_os_thread_param,
+                     _OU_ int *                  stack_used)
 {
-    int ret = -1;
+    int ret     = -1;
     *stack_used = 0;
-    char *tname;
+    char * tname;
     size_t ssiz;
-    int detach_state = 0;
+    int    detach_state = 0;
 
     if (hal_os_thread_param) {
         detach_state = hal_os_thread_param->detach_state;
@@ -238,13 +239,12 @@ int HAL_ThreadCreate(
     }
     memset(task, 0, sizeof(task_context_t));
 
-    task->arg = arg;
-    task->routine = work_routine;
+    task->arg      = arg;
+    task->routine  = work_routine;
     task->detached = detach_state;
 
-    ret = aos_task_new_ext(&task->task,
-                           tname, task_wrapper, task,
-                           ssiz, DEFAULT_THREAD_PRI);
+    ret = aos_task_new_ext(&task->task, tname, task_wrapper, task, ssiz,
+                           DEFAULT_THREAD_PRI);
 
     *thread_handle = (void *)task;
 
@@ -254,7 +254,7 @@ int HAL_ThreadCreate(
 void HAL_ThreadDetach(_IN_ void *thread_handle)
 {
     task_context_t *task = thread_handle;
-    task->detached = 1;
+    task->detached       = 1;
 }
 
 void HAL_ThreadDelete(_IN_ void *thread_handle)
@@ -269,10 +269,7 @@ void HAL_ThreadDelete(_IN_ void *thread_handle)
 #endif
 
 
-void HAL_Firmware_Persistence_Start(void)
-{
-
-}
+void HAL_Firmware_Persistence_Start(void) {}
 
 int HAL_Firmware_Persistence_Write(_IN_ char *buffer, _IN_ uint32_t length)
 {
@@ -284,7 +281,6 @@ int HAL_Firmware_Persistence_Stop(void)
 {
     return 0;
 }
-
 
 
 int HAL_Config_Write(const char *buffer, int length)
@@ -305,13 +301,13 @@ int HAL_Config_Read(char *buffer, int length)
     return aos_kv_get("alink", buffer, &length);
 }
 
-#define LINKKIT_KV_START  "linkkit_%s"
+#define LINKKIT_KV_START "linkkit_%s"
 
 int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 {
-    int ret;
-    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
-    char *temp = aos_malloc(real_len);
+    int   ret;
+    int   real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
+    char *temp     = aos_malloc(real_len);
     if (!temp) {
         return -1;
     }
@@ -323,9 +319,9 @@ int HAL_Kv_Set(const char *key, const void *val, int len, int sync)
 
 int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 {
-    int ret;
-    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
-    char *temp = aos_malloc(real_len);
+    int   ret;
+    int   real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
+    char *temp     = aos_malloc(real_len);
     if (!temp) {
         return -1;
     }
@@ -337,9 +333,9 @@ int HAL_Kv_Get(const char *key, void *buffer, int *buffer_len)
 
 int HAL_Kv_Del(const char *key)
 {
-    int ret = 0;
-    int real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
-    char *temp = aos_malloc(real_len);
+    int   ret      = 0;
+    int   real_len = strlen(key) + strlen(LINKKIT_KV_START) + 1;
+    char *temp     = aos_malloc(real_len);
     if (!temp) {
         return -1;
     }
@@ -357,65 +353,63 @@ typedef void (*async_fd_cb)(int, void *);
 typedef void (*async_task_cb)(void *);
 typedef void (*async_event_cb)(void *, void *);
 
-typedef struct {
-    int fd;
+typedef struct
+{
+    int         fd;
     async_fd_cb cb;
-    void *data;
+    void *      data;
 } schedule_fd_t;
 
 static void schedule_fd(void *p)
 {
-    if(p == NULL) {
+    if (p == NULL) {
         return;
     }
-    schedule_fd_t *pfd=(schedule_fd_t *)p;
+    schedule_fd_t *pfd = (schedule_fd_t *)p;
     aos_poll_read_fd(pfd->fd, pfd->cb, pfd->data);
     aos_free(pfd);
-
 }
 
 static void schedule_fd_cancel(void *p)
 {
-    if(p == NULL) {
+    if (p == NULL) {
         return;
     }
-    schedule_fd_t *pfd=(schedule_fd_t *)p;
+    schedule_fd_t *pfd = (schedule_fd_t *)p;
     aos_cancel_poll_read_fd(pfd->fd, pfd->cb, pfd->data);
     aos_free(pfd);
-
 }
 
-int HAL_Register_Recv_Callback(int fd, async_fd_cb  action, void *user_data)
+int HAL_Register_Recv_Callback(int fd, async_fd_cb action, void *user_data)
 {
-    schedule_fd_t  *pfd = (schedule_fd_t *)aos_malloc(sizeof(schedule_fd_t));
+    schedule_fd_t *pfd = (schedule_fd_t *)aos_malloc(sizeof(schedule_fd_t));
     if (pfd == NULL) {
         return -1;
     }
-    
-    pfd->fd = fd;
-    pfd->cb = action;
+
+    pfd->fd   = fd;
+    pfd->cb   = action;
     pfd->data = user_data;
     return aos_schedule_call(schedule_fd, pfd);
-
-
 }
 int HAL_Unregister_Recv_Callback(int fd, async_fd_cb action)
 {
-    schedule_fd_t  *pfd = (schedule_fd_t *)aos_malloc(sizeof(schedule_fd_t));
+    schedule_fd_t *pfd = (schedule_fd_t *)aos_malloc(sizeof(schedule_fd_t));
     if (pfd == NULL) {
         return -1;
     }
-    pfd->fd = fd;
-    pfd->cb = action;
+    pfd->fd   = fd;
+    pfd->cb   = action;
     pfd->data = NULL;
     return aos_schedule_call(schedule_fd_cancel, pfd);
 }
 
-typedef struct {
+typedef struct
+{
     const char *name;
-    int ms;
-    aos_call_t cb;
-    void *data;
+    int         ms;
+    aos_call_t  cb;
+    void *      data;
 } schedule_timer_t;
 
 
@@ -454,13 +448,14 @@ static void schedule_timer_delete(void *p)
 void *HAL_Timer_Create(const char *name, void (*func)(void *), void *user_data)
 {
 #ifdef USE_YLOOP
-    schedule_timer_t  *timer = (schedule_timer_t *)aos_malloc(sizeof(schedule_timer_t));
+    schedule_timer_t *timer =
+      (schedule_timer_t *)aos_malloc(sizeof(schedule_timer_t));
     if (timer == NULL) {
         return NULL;
     }
 
     timer->name = name;
-    timer->cb = func;
+    timer->cb   = func;
     timer->data = user_data;
 
     return timer;
@@ -476,7 +471,7 @@ int HAL_Timer_Start(void *t, int ms)
         return -1;
     }
     schedule_timer_t *timer = t;
-    timer->ms = ms;
+    timer->ms               = ms;
     return aos_schedule_call(schedule_timer, t);
 #else
     return 0;
